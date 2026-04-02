@@ -1,0 +1,1890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel: The State of AI Regulation</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f4f5f7;
+    --header: #1a1f2e;
+    --header-text: #ffffff;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --card: #ffffff;
+    --card-shadow: 0 2px 8px rgba(0,0,0,0.10);
+    --border: #e2e6ea;
+    --text: #1e2533;
+    --muted: #6b7280;
+    --danger: #dc2626;
+    --success: #16a34a;
+    --warning-bg: #fef9c3;
+    --warning-border: #ca8a04;
+    --warning-text: #713f12;
+    --radius: 8px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --btn-secondary-bg: #e5e7eb;
+    --btn-primary-text: #ffffff;
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+
+  /* ── HEADER ICON BUTTONS (Reset, Prev, Next, Help, Settings) ── */
+  .header-btn {
+    width: 36px; height: 36px;
+    border-radius: 7px;
+    border: 1.5px solid rgba(255,255,255,0.22);
+    background: rgba(255,255,255,0.10);
+    color: var(--header-text);
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s, border-color 0.15s;
+    flex-shrink: 0;
+    user-select: none;
+    line-height: 1;
+  }
+  .header-btn:hover { background: rgba(255,255,255,0.22); border-color: rgba(255,255,255,0.42); }
+  .header-btn:disabled { opacity: 0.28; cursor: not-allowed; }
+  .header-btn:disabled:hover { background: rgba(255,255,255,0.10); border-color: rgba(255,255,255,0.22); }
+
+  /* ── NAMES TEXTAREA ── */
+  #names-textarea {
+    width: 100%;
+    min-height: 130px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 1rem;
+    font-family: var(--font);
+    color: #1e2533;
+    background: #ffffff;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.15s;
+    line-height: 1.6;
+  }
+  #names-textarea:focus { border-color: var(--accent); }
+  .names-hint { font-size: 0.82rem; color: var(--muted); margin-top: 6px; }
+
+  /* ── LOADING / ERROR ── */
+  #loading-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    gap: 18px;
+  }
+  .spinner {
+    width: 48px; height: 48px;
+    border: 5px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { color: var(--muted); font-size: 1rem; }
+
+  #error-screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    gap: 16px;
+    padding: 32px;
+    text-align: center;
+  }
+  .error-icon { font-size: 3rem; }
+  .error-msg { font-size: 1.05rem; color: var(--danger); max-width: 520px; line-height: 1.6; }
+  .error-hint { font-size: 0.9rem; color: var(--muted); max-width: 480px; line-height: 1.5; }
+
+  /* ── SCREENS ── */
+  .screen { display: none; padding: 28px; max-width: 900px; margin: 0 auto; }
+  .screen.active { display: block; }
+
+  /* ── SECTION CARDS ── */
+  .section-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--card-shadow);
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+  .section-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--text);
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 10px;
+  }
+
+  /* ── FORM CONTROLS ── */
+  label { font-size: 0.9rem; font-weight: 600; color: var(--muted); display: block; margin-bottom: 6px; }
+  input[type="text"], input[type="number"] {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 1rem;
+    font-family: var(--font);
+    color: #1e2533;
+    background: #ffffff;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input[type="text"]:focus, input[type="number"]:focus { border-color: var(--accent); }
+  input[type="number"] { width: 72px; text-align: center; }
+
+  /* ── STEPPER ROW ── */
+  .stepper-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    border-radius: 6px;
+    border: none;
+    font-size: 0.95rem;
+    font-family: var(--font);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, opacity 0.15s;
+    text-decoration: none;
+  }
+  .btn-primary { background: var(--accent); color: var(--btn-primary-text, #fff); }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-secondary { background: var(--btn-secondary-bg); color: var(--text); }
+  .btn-secondary:hover { filter: brightness(0.92); }
+  .btn-outline { background: transparent; border: 1.5px solid var(--accent); color: var(--accent); }
+  .btn-outline:hover { background: #eff6ff; }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-danger:hover { background: #b91c1c; }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn-sm { padding: 7px 14px; font-size: 0.85rem; }
+
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 16px; }
+
+  /* ── WARNING / SUCCESS ── */
+  .inline-warning {
+    display: none;
+    background: var(--warning-bg);
+    border: 1px solid var(--warning-border);
+    color: var(--warning-text);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 0.9rem;
+    margin-top: 12px;
+  }
+  .inline-warning.show { display: block; }
+
+  /* ── GROUPS DISPLAY ── */
+  #groups-display { margin-top: 18px; }
+  .groups-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 14px;
+    margin-top: 10px;
+  }
+  .group-card {
+    background: transparent;
+    border: 1.5px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 14px;
+  }
+  .group-card-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .group-member {
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.95rem;
+  }
+  .group-member:last-child { border-bottom: none; }
+  .group-member-name { 
+    font-weight: 600; 
+    color: var(--muted);
+  }
+  .group-member-prompt {
+    font-size: 1rem;
+    color: var(--text);
+    margin-top: 4px;
+    line-height: 1.45;
+  }
+
+  /* ── MODERATOR SCREEN ── 
+  #mod-reset-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: none;
+    color: rgba(255,255,255,0.8);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 6px 0;
+    transition: color 0.15s;
+  }
+  #mod-reset-btn:hover { color: #fff; }
+*/
+  /* Opening remarks cards */
+  .opening-cards { display: flex; flex-direction: column; gap: 14px; }
+  .opening-card {
+    background: transparent;
+    border: 1.5px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+  .opening-card-name {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .opening-card-script {
+    font-size: 1.05rem;
+    line-height: 1.65;
+    color: var(--text);
+  }
+
+  /* Q&A section */
+  .qa-drawn-card {
+    background: transparent;
+    border: 1.5px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-top: 14px;
+  }
+  .qa-drawn-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .qa-drawn-script {
+    font-size: 1.1rem;
+    line-height: 1.65;
+    color: var(--text);
+  }
+  .qa-exhausted {
+    display: none;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.95rem;
+    padding: 12px;
+    margin-top: 10px;
+  }
+  .qa-exhausted.show { display: block; }
+
+  /* Question history */
+  #q-secondary-buttons { margin-top: 16px; }
+  #q-history-list {
+    display: none;
+    margin-top: 12px;
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+  }
+  #q-history-list.show { display: block; }
+  .history-item {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.9rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .history-item:last-child { border-bottom: none; }
+  .history-num { font-weight: 700; color: var(--text); margin-right: 6px; }
+
+  /* Timer section */
+  .collapsible-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+  }
+  .collapsible-header .toggle-icon { font-size: 0.85rem; color: var(--muted); }
+  .collapsible-body { display: none; margin-top: 16px; }
+  .collapsible-body.expanded { display: block; }
+
+  .timer-display {
+    font-size: 3.5rem;
+    font-weight: 700;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+    margin: 18px 0;
+    letter-spacing: 0.03em;
+  }
+  .timer-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    align-items: center;
+  }
+  .timer-mode-row {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+  }
+  .timer-mode-row label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text);
+    cursor: pointer;
+    margin: 0;
+  }
+  .timer-countdown-inputs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.95rem;
+  }
+  .timer-countdown-inputs input[type="number"] { width: 64px; }
+  .timer-btn-row { display: flex; gap: 10px; }
+  .timer-warn-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    font-size: 0.88rem;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+  .timer-warn-row input[type="number"] { width: 56px; background: #ffffff; color: #1e2533; }
+  .timer-warn-row label { margin: 0; font-size: 0.88rem; }
+
+  /* Timer flash: applies to the section-card wrapping the timer */
+  @keyframes timer-flash {
+    0%, 100% { background: var(--card); }
+    50% { background: rgba(220,38,38,0.18); }
+  }
+  .timer-flash-active { animation: timer-flash 0.7s ease-in-out 2; }
+  .timer-flash-done { background: rgba(220,38,38,0.22) !important; }
+
+  /* Timer warnings list */
+  .warn-entry-row { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .warn-entry-row label { margin:0; font-size:0.88rem; font-weight:500; color:var(--text); display:flex; align-items:center; gap:4px; cursor:pointer; }
+  .warn-entry-row input[type="number"] { width:60px; }
+  .warn-remove-btn { background:none; border:none; cursor:pointer; color:var(--muted); font-size:1rem; padding:2px 5px; line-height:1; }
+  .warn-remove-btn:hover { color:var(--danger); }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 500;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: var(--card);
+    box-shadow: var(--card-shadow);
+    border-radius: 10px;
+    padding: 32px;
+    max-width: 560px;
+    width: 90%;
+    max-height: 85vh;
+    overflow-y: auto;
+    position: relative;
+  }
+  .modal-close {
+    position: absolute;
+    top: 14px; right: 16px;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--muted);
+    line-height: 1;
+  }
+  .modal-close:hover { color: var(--text); }
+  .modal-box h2 { font-size: 1.3rem; margin-bottom: 18px; color: var(--text); }
+  .modal-box h3 { font-size: 1rem; font-weight: 700; margin: 16px 0 8px; color: var(--text); }
+  .modal-box h4 { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin: 18px 0 8px; }
+  .modal-box p { font-size: 0.95rem; line-height: 1.65; color: var(--text); margin-bottom: 10px; }
+  .modal-box ul { padding-left: 20px; }
+  .modal-box ul li { font-size: 0.95rem; line-height: 1.65; color: var(--text); margin-bottom: 6px; }
+
+  /* ── UTILITY ── */
+  .hidden { display: none !important; }
+
+  /* ── MOD HEADER ── */
+  .mod-header-bar {
+    background: var(--header);
+    color: var(--header-text);
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .mod-header-bar h1 { font-size: 1.1rem; font-weight: 700; }
+
+  /* ── MOD NAV LABEL ── */
+  .group-nav-label {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--header-text);
+    text-align: center;
+    white-space: nowrap;
+    opacity: 0.9;
+  }
+
+  /* ── ADVANCED SECTION ── */
+  .advanced-subsection { padding: 16px 0; }
+  .advanced-subsection:first-child { padding-top: 4px; }
+  .advanced-subtitle {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+  .advanced-divider { border: none; border-top: 1px solid var(--border); margin: 4px 0; }
+
+  /* Color scheme controls */
+  .scheme-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .scheme-row label { margin: 0; }
+  .scheme-row select {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 0.95rem;
+    font-family: var(--font);
+    color: var(--text);
+    background: var(--card);
+    cursor: pointer;
+    outline: none;
+  }
+  .color-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    margin-top: 8px;
+  }
+  .color-row {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    min-width: 100px;
+  }
+  .color-row label { margin: 0; font-size: 0.85rem; }
+  .color-row input[type="color"] {
+    width: 52px; height: 52px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 2px;
+    cursor: pointer;
+    background: #ffffff;
+    display: block;
+  }
+  .color-hex-input {
+    width: 90px;
+    font-size: 0.82rem;
+    font-family: monospace;
+    padding: 4px 7px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: #ffffff;
+    color: #1e2533;
+    outline: none;
+  }
+  .color-hex-input:focus { border-color: var(--accent); }
+</style>
+</head>
+<body>
+
+<!-- HELP MODAL -->
+<div class="modal-overlay" id="help-modal">
+  <div class="modal-box">
+    <button class="modal-close" id="help-modal-close">&times;</button>
+    <h2>Panel: The State of AI Regulation</h2>
+    <h3>Setup</h3> 
+    <p>You're a panelist at a Silicon Slopes panel called <b>The State of AI Regulation</b>. The audience is founders, executives, lawyers, and consultants — smart, but not necessarily up to speed on the law in this area. Each panelist will give a 2–3 minute opening on an assigned topic, then the floor opens for audience questions.</p>
+    <h3>Goals</h3>
+    <ul>
+      <li>Practice translating what you know into clear, accessible answers for a non-expert audience</li>
+      <li>Build confidence speaking on a complex topic without overstating your expertise</li>
+      <li>Practice handling questions that are vague, poorly phrased, or outside your wheelhouse</li>
+      <li>Practice being a panelist — listening to others, building on what they say, and knowing when to defer</li>
+    </ul>
+    <h3>Tips</h3>
+    <ul>
+      <li>You don't need to know everything. "That's a great question — my understanding is..." and "I'd want to look more closely at that, but the general principle is..." are legitimate and professional answers.</li>
+      <li>You're not testifying under oath or giving legal advice. A confident, well-reasoned general answer is more valuable to this audience than a hedged, hyper-specific one.</li>
+      <li>2–3 minutes is short. Pick two or three things you actually know well and make them land clearly.</li>
+      <li>Listen to your co-panelists. You can agree, add to, or respectfully push back on what they say — that's what makes it a panel and not three separate presentations.</li>
+    </ul>
+    <h3>Keyboard Shortcuts</h3>
+    <h4>Global</h4>
+    <ul style="list-style:none;padding:0;">
+      <li style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">?</kbd> <span>Open Help</span></li>
+      <li style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">S</kbd> <span>Open Settings</span></li>
+      <li style="display:flex;gap:12px;padding:5px 0;"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">Esc</kbd> <span>Close popups</span></li>
+    </ul>
+    <h4>Setup</h4>
+    <ul style="list-style:none;padding:0;">
+      <li style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">Q</kbd> <span>Quick Fill</span></li>
+      <li style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">W</kbd> <span>Quick Fill + Start</span></li>
+      <li style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">Enter</kbd> <span>Start Panel</span></li>
+      <li style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">A</kbd> <span>Toggle Advanced</span></li>
+    </ul>
+    <h4>Moderator View</h4>
+    <ul style="list-style:none;padding:0;">
+      <li style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">→</kbd> <span>Next Panel</span></li>
+      <li style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">←</kbd> <span>Previous Panel</span></li>
+      <li style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">Space</kbd> <span>New Question</span></li>
+      <li style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">R</kbd> <span>Return to Setup</span></li>
+      <li style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">T</kbd> <span>Toggle Timer panel</span></li>
+      <li style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">C</kbd> <span>Toggle Count Up / Down</span></li>
+      <li style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">F</kbd> <span>Start / Pause Timer</span></li>
+      <li style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">G</kbd> <span>Reset Timer</span></li>
+      
+      
+    </ul>
+  </div>
+</div>
+
+<!-- ALL QUESTIONS MODAL -->
+<div class="modal-overlay" id="all-q-modal">
+  <div class="modal-box" style="max-width:640px;">
+    <button class="modal-close" id="all-q-modal-close">&times;</button>
+    <h2>All Questions</h2>
+    <div id="all-q-list"></div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal-box" style="max-width:600px;">
+    <button class="modal-close" id="settings-modal-close">&times;</button>
+    <h2>Appearance</h2>
+    <div class="scheme-row">
+      <label>Color scheme</label>
+      <select id="scheme-select"></select>
+      <button class="btn btn-secondary btn-sm" id="save-scheme-btn">Save as new theme</button>
+      <button class="btn btn-danger btn-sm" id="delete-scheme-btn" style="display:none;" title="Delete this saved theme">Delete</button>
+    </div>
+    <div class="color-grid">
+      <div class="color-row">
+        <label>Background</label>
+        <input type="color" id="cp-bg" data-var="--bg">
+        <input type="text" class="color-hex-input" id="hex-bg" maxlength="7" placeholder="#f4f5f7">
+      </div>
+      <div class="color-row">
+        <label>Header</label>
+        <input type="color" id="cp-header" data-var="--header">
+        <input type="text" class="color-hex-input" id="hex-header" maxlength="7" placeholder="#1a1f2e">
+      </div>
+      <div class="color-row">
+        <label>Accent / Buttons</label>
+        <input type="color" id="cp-accent" data-var="--accent">
+        <input type="text" class="color-hex-input" id="hex-accent" maxlength="7" placeholder="#2563eb">
+      </div>
+      <div class="color-row">
+        <label>Cards</label>
+        <input type="color" id="cp-card" data-var="--card">
+        <input type="text" class="color-hex-input" id="hex-card" maxlength="7" placeholder="#ffffff">
+      </div>
+      <div class="color-row">
+        <label>Body text</label>
+        <input type="color" id="cp-text" data-var="--text">
+        <input type="text" class="color-hex-input" id="hex-text" maxlength="7" placeholder="#1e2533">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LOADING SCREEN -->
+<div id="loading-screen">
+  <div class="spinner"></div>
+  <div class="loading-text">Loading…</div>
+</div>
+
+<!-- ERROR SCREEN -->
+<div id="error-screen">
+  <div class="error-icon">⚠️</div>
+  <div class="error-msg">Could not load data. Make sure the Google Sheet is published to the web (File → Share → Publish to web → CSV).</div>
+  <div class="error-hint" id="error-detail"></div>
+</div>
+
+<!-- SETUP SCREEN -->
+<div id="setup-screen" class="screen">
+  <div id="setup-header" class="mod-header-bar">
+    <div>
+      <div style="font-size:1.25rem;font-weight:700;">Panel: The State of AI Regulation</div>
+      <div style="font-size:0.8rem;opacity:0.65;margin-top:2px;">Setup</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="header-btn" id="settings-btn" title="Appearance settings (S)">⚙</button>
+      <button class="header-btn help-btn" title="Help / Info (?)">?</button>
+    </div>
+  </div>
+
+  <div style="padding-top:28px;">
+
+  <!-- Names -->
+  <div class="section-card">
+    <div class="section-title">Names</div>
+    <label for="names-textarea">Enter one name per line, or separate names with commas.</label>
+    <textarea id="names-textarea" placeholder=""></textarea>
+    <div style="margin-top:8px;">
+      <button class="btn btn-secondary btn-sm" id="clear-names-btn">Clear</button>
+    </div>
+  </div>
+
+  <!-- Group Size -->
+  <div class="section-card">
+    <div class="section-title">Panels</div>
+    <div class="stepper-row">
+      <label style="margin:0;font-size:0.95rem;">Groups of</label>
+      <input type="number" id="group-size" value="2" min="1" max="50">
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="randomize-btn">Create Groups</button>
+      <button class="btn btn-outline" id="assign-prompts-btn">Assign Prompts</button>
+    </div>
+    <div class="inline-warning" id="warn-no-groups">Groups haven't been created yet. Create groups first.</div>
+    <div class="inline-warning" id="warn-no-prompts">Prompts haven't been assigned yet. Assign prompts before starting.</div>
+    <div class="inline-warning" id="warn-start-blocked"></div>
+    <div id="groups-display"></div>
+  </div>
+
+  <!-- Advanced -->
+  <div class="section-card">
+    <div class="collapsible-header" id="advanced-toggle-header">
+      <div class="section-title" style="margin:0;border:none;padding:0;">Advanced</div>
+      <span class="toggle-icon" id="advanced-toggle-icon">▲ Hide</span>
+    </div>
+    <!-- To hide Advanced by default: remove the "expanded" class from the div below -->
+    <div class="collapsible-body expanded" id="advanced-body">
+
+      <!-- Quick Fill -->
+      <div class="advanced-subsection">
+        <div class="advanced-subtitle">Auto-populate</div>
+        
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <label style="margin:0;font-size:0.95rem;">Students</label>
+          <input type="number" id="qf-count" value="9" min="1" max="50" style="width:64px;">
+          <label style="margin:0;font-size:0.95rem;">Panel size</label>
+          <input type="number" id="qf-groupsize" value="3" min="2" max="20" style="width:64px;">
+          <button class="btn btn-secondary btn-sm" id="qf-btn">⚡ Quick Fill</button>
+          <button class="btn btn-primary btn-sm" id="qf-start-btn" title="Quick Fill then start the panel (W)">⚡ Quick Fill + Start →</button>
+        </div>
+        
+      </div>
+
+      <div class="advanced-divider"></div>
+
+      <!--Minimum Panel Size -->
+      <div class="advanced-subsection">
+        <div class="advanced-subtitle">Minimum Panel Size</div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          
+          <input type="number" id="min-group-size" value="2" min="1" max="20" style="width:64px;">
+          <span class="names-hint" style="margin:0;">Groups smaller than this will be distributed among other groups.</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Start Panel -->
+  <div style="display:flex;justify-content:flex-end;margin-bottom:28px;">
+    <button class="btn btn-primary" id="start-panel-btn" style="font-size:1.05rem;padding:12px 28px;">
+      Start →
+    </button>
+  </div>
+
+  </div><!-- end inner padding wrapper -->
+</div>
+
+<!-- MODERATOR SCREEN -->
+<div id="mod-screen" class="screen">
+  <div class="mod-header-bar">
+    <button id="mod-reset-btn" class="header-btn" title="Reset / New Panel (R)">↩</button>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <button class="header-btn" id="group-prev-btn" title="Previous Panel (←)">‹</button>
+      <div class="group-nav-label" id="group-nav-label">Panel 1 of 1</div>
+      <button class="header-btn" id="group-next-btn" title="Next Panel (→)">›</button>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="header-btn" id="settings-btn-mod" title="Appearance settings (S)">⚙</button>
+      <button class="header-btn help-btn" title="Help / Info (?)">?</button>
+    </div>
+  </div>
+
+  <div style="padding:28px;max-width:900px;margin:0 auto;">
+
+    
+
+    <!-- Opening Remarks -->
+    <div class="section-card">
+      <div class="section-title">Opening Remarks</div>
+      <div class="opening-cards" id="opening-cards"></div>
+    </div>
+
+    <!-- Audience Q&A -->
+    <div class="section-card">
+      <div class="section-title">Audience Questions</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <button class="btn btn-primary" id="draw-question-btn">New Question</button>
+        
+      </div>
+      <div class="qa-exhausted" id="qa-exhausted">All questions have been drawn.</div>
+      <div id="qa-drawn-area"></div>
+      <div id="q-secondary-buttons">
+        <button class="btn btn-secondary btn-sm" id="toggle-history-btn">View Question History</button>
+        <button class="btn btn-secondary btn-sm" id="view-all-q-btn">View All</button>
+        <button class="btn btn-secondary btn-sm" id="reset-q-btn">Reset Questions</button>
+        <div id="q-history-list"></div>
+      </div>
+    </div>
+
+    <!-- Timer -->
+    <div class="section-card" id="timer-card">
+      <div class="collapsible-header" id="timer-toggle-header">
+        <div class="section-title" style="margin:0;border:none;padding:0;">Timer</div>
+        <span class="toggle-icon" id="timer-toggle-icon">▼ Show</span>
+      </div>
+      <div class="collapsible-body" id="timer-body">
+        <div class="timer-display" id="timer-display">0:00</div>
+        <div class="timer-controls">
+          <div class="timer-mode-row">
+            <label>
+              <input type="radio" name="timer-mode" value="down" checked> Count Down
+            </label>
+            <label>
+              <input type="radio" name="timer-mode" value="up"> Count Up
+            </label>
+          </div>
+          <div class="timer-countdown-inputs" id="timer-countdown-inputs">
+            <span>Minutes:</span>
+            <input type="number" id="timer-min" value="2" min="0" max="99" step="1">
+            <span>Seconds:</span>
+            <input type="number" id="timer-sec" value="0" min="0" max="59" step="1">
+          </div>
+          <div id="timer-decimal-warn" style="display:none;font-size:0.82rem;color:var(--danger);margin-top:-6px;">Decimals aren't allowed — value rounded down.</div>
+          <div id="timer-warnings-section">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:8px;">
+              <span style="font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);">Warnings</span>
+              <button class="btn btn-secondary btn-sm" id="add-warning-btn" style="padding:3px 10px;font-size:0.82rem;">+ Add</button>
+            </div>
+            <div id="timer-warnings-list"></div>
+          </div>
+          <div class="timer-warn-row" id="timer-countup-row">
+            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-weight:500;">
+              <input type="checkbox" id="timer-countup-after" checked>
+              Continue counting up when countdown ends
+            </label>
+          </div>
+          <div class="timer-btn-row">
+            <button class="btn btn-primary" id="timer-start-btn">Start</button>
+            <button class="btn btn-secondary" id="timer-reset-btn">Reset</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════
+//  CONFIG
+// ════════════════════════════════════════════════
+const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhb7lQIBLc78-V9CtLw53tZ6E9x3OX6lwHEOSz5kastQG2bkH9gYK1ZmrMHqVnkr5HLBrmwtRAxJvZ/pub?output=csv";
+
+// ════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════
+let presentationItems = []; // { script, prompt }
+let questions = [];          // { script }
+
+let groupSize = 3;
+let groups = [];         // array of arrays of names
+let promptAssigned = []; // flat list: { name, prompt, script }
+let groupsRandomized = false;
+let promptsAssigned = false;
+
+// Moderator state
+let drawnQuestions = [];    // indices into questions[]
+let usedQuestionSet = new Set();
+let currentGroupIndex = 0;
+
+// Timer
+let timerInterval = null;
+let timerSeconds = 0;
+let timerRunning = false;
+let timerMode = 'down'; // 'up' | 'down'
+let timerCountdownTotal = 120;
+let timerFlashState = null;
+let timerCountingUpAfterCD = false;
+let timerWarningEntries = [{value:60,unit:'s'},{value:30,unit:'s'}]; // each {value, unit:'s'|'m'}
+let timerFlashedThresholds = new Set(); // seconds values we've already flashed for this run
+
+// ════════════════════════════════════════════════
+//  ELEMENT REFS
+// ════════════════════════════════════════════════
+const $loading      = document.getElementById('loading-screen');
+const $error        = document.getElementById('error-screen');
+const $errorDetail  = document.getElementById('error-detail');
+const $setup        = document.getElementById('setup-screen');
+const $mod          = document.getElementById('mod-screen');
+
+const $namesTextarea   = document.getElementById('names-textarea');
+const $groupSizeInput  = document.getElementById('group-size');
+const $randomizeBtn    = document.getElementById('randomize-btn');
+const $assignPromptsBtn= document.getElementById('assign-prompts-btn');
+const $groupsDisplay   = document.getElementById('groups-display');
+const $warnNoGroups    = document.getElementById('warn-no-groups');
+const $warnNoPrompts   = document.getElementById('warn-no-prompts');
+const $startPanelBtn   = document.getElementById('start-panel-btn');
+
+const $modResetBtn     = document.getElementById('mod-reset-btn');
+const $groupPrevBtn    = document.getElementById('group-prev-btn');
+const $groupNextBtn    = document.getElementById('group-next-btn');
+const $groupNavLabel   = document.getElementById('group-nav-label');
+const $openingCards    = document.getElementById('opening-cards');
+const $drawQBtn        = document.getElementById('draw-question-btn');
+const $qaExhausted     = document.getElementById('qa-exhausted');
+const $qaDrawnArea     = document.getElementById('qa-drawn-area');
+const $toggleHistoryBtn= document.getElementById('toggle-history-btn');
+const $qHistoryList    = document.getElementById('q-history-list');
+
+const $timerToggleHeader = document.getElementById('timer-toggle-header');
+const $timerToggleIcon   = document.getElementById('timer-toggle-icon');
+const $timerBody         = document.getElementById('timer-body');
+const $timerDisplay      = document.getElementById('timer-display');
+const $timerStartBtn     = document.getElementById('timer-start-btn');
+const $timerResetBtn     = document.getElementById('timer-reset-btn');
+const $timerCountdownInputs = document.getElementById('timer-countdown-inputs');
+const $timerMin          = document.getElementById('timer-min');
+const $timerSec          = document.getElementById('timer-sec');
+
+// $helpBtn — handled by class selector in bindHelpEvents
+const $helpModal       = document.getElementById('help-modal');
+const $helpModalClose  = document.getElementById('help-modal-close');
+
+// ════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', async () => {
+  bindSetupEvents();
+  bindModEvents();
+  bindHelpEvents();
+  bindAdvancedEvents();
+  bindKeyboardShortcuts();
+  await loadData();
+});
+
+// ════════════════════════════════════════════════
+//  DATA LOADING
+// ════════════════════════════════════════════════
+async function loadData() {
+  try {
+    const res = await fetch(SHEET_CSV_URL);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const text = await res.text();
+    parseCSV(text);
+    showScreen('setup');
+  } catch (e) {
+    $loading.style.display = 'none';
+    $error.style.display = 'flex';
+    $errorDetail.textContent = e.message || String(e);
+  }
+}
+
+function parseCSV(text) {
+  const rows = text.trim().split('\n').map(line => parseCSVLine(line));
+  // first row is header
+  for (let i = 1; i < rows.length; i++) {
+    const [type, script, prompt] = rows[i];
+    if (!type) continue;
+    if (type.trim().toLowerCase() === 'presentation') {
+      presentationItems.push({ script: script || '', prompt: prompt || '' });
+    } else if (type.trim().toLowerCase() === 'question') {
+      questions.push({ script: script || '' });
+    }
+  }
+}
+
+function parseCSVLine(line) {
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i+1] === '"') { current += '"'; i++; }
+      else inQuotes = !inQuotes;
+    } else if (ch === ',' && !inQuotes) {
+      result.push(current);
+      current = '';
+    } else {
+      current += ch;
+    }
+  }
+  result.push(current);
+  return result;
+}
+
+// ════════════════════════════════════════════════
+//  SCREEN MANAGEMENT
+// ════════════════════════════════════════════════
+function showScreen(name) {
+  $loading.style.display = 'none';
+  $error.style.display = 'none';
+  $setup.classList.remove('active');
+  $mod.classList.remove('active');
+  if (name === 'setup') $setup.classList.add('active');
+  if (name === 'mod')   $mod.classList.add('active');
+}
+
+// ════════════════════════════════════════════════
+//  SETUP: NAMES FROM TEXTAREA
+// ════════════════════════════════════════════════
+function getNamesFromTextarea() {
+  // Split on newlines or commas, trim each token, drop blanks
+  return $namesTextarea.value
+    .split(/[\n,]/)
+    .map(n => n.trim())
+    .filter(n => n.length > 0);
+}
+
+function bindSetupEvents() {
+  $randomizeBtn.addEventListener('click', randomizeGroups);
+  $assignPromptsBtn.addEventListener('click', assignPrompts);
+  $startPanelBtn.addEventListener('click', startPanel);
+}
+
+// ════════════════════════════════════════════════
+//  SETUP: RANDOMIZE GROUPS
+// ════════════════════════════════════════════════
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function randomizeGroups() {
+  $warnNoGroups.classList.remove('show');
+  document.getElementById('warn-start-blocked').classList.remove('show');
+
+  const names = getNamesFromTextarea();
+  if (names.length === 0) {
+    $warnNoGroups.textContent = 'No names entered. Add names before randomizing panels.';
+    $warnNoGroups.classList.add('show');
+    return;
+  }
+
+  groupSize = parseInt($groupSizeInput.value) || 3;
+  const count = names.length;
+
+  if (groupSize >= count) {
+    $warnNoGroups.textContent = `Group size (${groupSize}) is ≥ number of students (${count}). Reduce group size so there is more than one panel.`;
+    $warnNoGroups.classList.add('show');
+    return;
+  }
+
+  $warnNoGroups.textContent = 'Groups haven\'t been created yet. Create groups first.';
+
+  const minSize = parseInt((document.getElementById('min-group-size') || {}).value) || 2;
+  const shuffled = shuffle(names);
+  groups = [];
+
+  const numGroups = Math.ceil(count / groupSize);
+  const bigGroupCount = count % numGroups;
+  const bigSize = Math.ceil(count / numGroups);
+  const smallSize = Math.floor(count / numGroups);
+
+  let idx = 0;
+  for (let g = 0; g < numGroups; g++) {
+    const size = (bigGroupCount === 0 || g < bigGroupCount) ? bigSize : smallSize;
+    groups.push(shuffled.slice(idx, idx + size));
+    idx += size;
+  }
+
+  // Distribute members of any group smaller than minSize across other groups one-by-one
+  // (adding each member to whichever remaining group is currently smallest)
+  for (let g = groups.length - 1; g >= 0; g--) {
+    if (groups[g].length < minSize && groups.length > 1) {
+      const members = groups.splice(g, 1)[0];
+      members.forEach(member => {
+        let minLen = Infinity, minIdx = 0;
+        groups.forEach((grp, i) => { if (grp.length < minLen) { minLen = grp.length; minIdx = i; } });
+        groups[minIdx].push(member);
+      });
+    }
+  }
+
+  groupsRandomized = true;
+  promptsAssigned = false;
+  promptAssigned = [];
+
+  renderGroups();
+}
+
+function renderGroups() {
+  $groupsDisplay.innerHTML = '';
+  if (!groups.length) return;
+  const grid = document.createElement('div');
+  grid.className = 'groups-grid';
+  groups.forEach((members, gi) => {
+    const card = document.createElement('div');
+    card.className = 'group-card';
+    card.innerHTML = `<div class="group-card-title">Panel ${gi + 1}</div>`;
+    members.forEach(name => {
+      const member = document.createElement('div');
+      member.className = 'group-member';
+      const nameDiv = document.createElement('div');
+      nameDiv.className = 'group-member-name';
+      nameDiv.textContent = name;
+      member.appendChild(nameDiv);
+      // If prompts assigned, show prompt
+      const pa = promptAssigned.find(p => p.name === name);
+      if (pa) {
+        const promptDiv = document.createElement('div');
+        promptDiv.className = 'group-member-prompt';
+        promptDiv.textContent = pa.prompt;
+        member.appendChild(promptDiv);
+      }
+      card.appendChild(member);
+    });
+    grid.appendChild(card);
+  });
+  $groupsDisplay.appendChild(grid);
+}
+
+// ════════════════════════════════════════════════
+//  SETUP: ASSIGN PROMPTS
+// ════════════════════════════════════════════════
+function assignPrompts() {
+  $warnNoGroups.classList.remove('show');
+  $warnNoPrompts.classList.remove('show');
+  document.getElementById('warn-start-blocked').classList.remove('show');
+  if (!groupsRandomized || !groups.length) {
+    $warnNoGroups.classList.add('show');
+    return;
+  }
+
+  const allMembers = groups.flat();
+  const shuffledPrompts = shuffle(presentationItems);
+
+  promptAssigned = [];
+  allMembers.forEach((name, i) => {
+    const item = shuffledPrompts[i % shuffledPrompts.length];
+    promptAssigned.push({ name, prompt: item.prompt, script: item.script });
+  });
+
+  promptsAssigned = true;
+
+  // Warn if there are more students than unique prompts
+  if (allMembers.length > presentationItems.length) {
+    $warnNoPrompts.textContent = `Note: there are only ${presentationItems.length} unique prompts for ${allMembers.length} students — some prompts will be repeated.`;
+    $warnNoPrompts.classList.add('show');
+  }
+
+  renderGroups();
+}
+
+// ════════════════════════════════════════════════
+//  START PANEL
+// ════════════════════════════════════════════════
+function startPanel() {
+  $warnNoGroups.classList.remove('show');
+  $warnNoPrompts.classList.remove('show');
+  const $blocked = document.getElementById('warn-start-blocked');
+  $blocked.classList.remove('show');
+
+  if (!groupsRandomized) {
+    $blocked.textContent = 'Please create groups and assign prompts before starting.';
+    $blocked.classList.add('show');
+    return;
+  }
+  if (!promptsAssigned) {
+    $blocked.textContent = 'Please assign prompts before starting.';
+    $blocked.classList.add('show');
+    return;
+  }
+
+  buildModeratorScreen();
+  showScreen('mod');
+}
+
+// ════════════════════════════════════════════════
+//  MODERATOR SCREEN: BUILD
+// ════════════════════════════════════════════════
+function buildModeratorScreen() {
+  // Reset Q&A state
+  drawnQuestions = [];
+  usedQuestionSet = new Set();
+  $qaDrawnArea.innerHTML = '';
+  $qaExhausted.classList.remove('show');
+  $drawQBtn.disabled = false;
+  $qHistoryList.innerHTML = '';
+  $qHistoryList.classList.remove('show');
+  $toggleHistoryBtn.textContent = 'View Question History';
+
+  // Opening remarks — group navigation
+  currentGroupIndex = 0;
+  renderGroupView(currentGroupIndex);
+  updateGroupNav();
+
+  // Timer reset
+  stopTimer();
+  timerSeconds = 0;
+  updateTimerDisplay();
+  $timerStartBtn.textContent = 'Start';
+}
+
+// ════════════════════════════════════════════════
+//  MODERATOR: RESET
+// ════════════════════════════════════════════════
+function bindModEvents() {
+  $modResetBtn.addEventListener('click', () => {
+    // preserve student names & count, clear group/prompt/panel state
+    groupsRandomized = false;
+    promptsAssigned = false;
+    groups = [];
+    promptAssigned = [];
+    $groupsDisplay.innerHTML = '';
+    $warnNoGroups.classList.remove('show');
+    $warnNoPrompts.classList.remove('show');
+    stopTimer();
+    showScreen('setup');
+  });
+
+  // Group navigation
+  $groupPrevBtn.addEventListener('click', () => {
+    if (currentGroupIndex > 0) {
+      resetTimer();
+      $qaDrawnArea.innerHTML = '';
+      currentGroupIndex--;
+      renderGroupView(currentGroupIndex);
+      updateGroupNav();
+    }
+  });
+  $groupNextBtn.addEventListener('click', () => {
+    if (currentGroupIndex < groups.length - 1) {
+      resetTimer();
+      $qaDrawnArea.innerHTML = '';
+      currentGroupIndex++;
+      renderGroupView(currentGroupIndex);
+      updateGroupNav();
+    }
+  });
+
+  // Draw question
+  $drawQBtn.addEventListener('click', drawQuestion);
+
+  // History toggle
+  $toggleHistoryBtn.addEventListener('click', () => {
+    const open = $qHistoryList.classList.toggle('show');
+    $toggleHistoryBtn.textContent = open ? 'Hide Question History' : 'View Question History';
+  });
+
+  // Timer toggle
+  $timerToggleHeader.addEventListener('click', () => {
+    const expanded = $timerBody.classList.toggle('expanded');
+    $timerToggleIcon.textContent = expanded ? '▲ Hide' : '▼ Show';
+    if (!expanded) resetTimer();
+  });
+
+  // Timer mode
+  document.querySelectorAll('input[name="timer-mode"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      timerMode = radio.value;
+      const isDown = timerMode === 'down';
+      $timerCountdownInputs.classList.toggle('hidden', !isDown);
+      const warnSection = document.getElementById('timer-warnings-section');
+      if (warnSection) warnSection.classList.toggle('hidden', !isDown);
+      const countupRow = document.getElementById('timer-countup-row');
+      if (countupRow) countupRow.classList.toggle('hidden', !isDown);
+      if ($timerCard) { $timerCard.classList.remove('timer-flash-active','timer-flash-done'); }
+      timerFlashedThresholds.clear();
+      stopTimer();
+      timerSeconds = 0;
+      updateTimerDisplay();
+      $timerStartBtn.textContent = 'Start';
+      timerRunning = false;
+    });
+  });
+
+  // View All Questions
+  const $viewAllQBtn = document.getElementById('view-all-q-btn');
+  const $allQModal = document.getElementById('all-q-modal');
+  const $allQModalClose = document.getElementById('all-q-modal-close');
+  const $allQList = document.getElementById('all-q-list');
+
+  if ($viewAllQBtn) {
+    $viewAllQBtn.addEventListener('click', () => {
+      renderAllQuestionsModal();
+      $allQModal.classList.add('open');
+    });
+  }
+  if ($allQModalClose) {
+    $allQModalClose.addEventListener('click', () => $allQModal.classList.remove('open'));
+  }
+  if ($allQModal) {
+    $allQModal.addEventListener('click', e => { if (e.target === $allQModal) $allQModal.classList.remove('open'); });
+  }
+
+  // Reset Questions
+  const $resetQBtn = document.getElementById('reset-q-btn');
+  if ($resetQBtn) {
+    $resetQBtn.addEventListener('click', () => {
+      drawnQuestions = [];
+      usedQuestionSet = new Set();
+      $qaDrawnArea.innerHTML = '';
+      $qaExhausted.classList.remove('show');
+      $drawQBtn.disabled = false;
+      $qHistoryList.innerHTML = '';
+      $qHistoryList.classList.remove('show');
+      $toggleHistoryBtn.textContent = 'View Question History';
+    });
+  }
+
+  // Timer warnings: init render + add button
+  renderTimerWarnings();
+  const $addWarnBtn = document.getElementById('add-warning-btn');
+  if ($addWarnBtn) {
+    $addWarnBtn.addEventListener('click', () => {
+      timerWarningEntries.push({value:30, unit:'s'});
+      renderTimerWarnings();
+    });
+  }
+
+  // Timer start/pause
+  $timerStartBtn.addEventListener('click', () => {
+    if (timerRunning) {
+      pauseTimer();
+    } else {
+      startTimer();
+    }
+  });
+
+  // Timer reset
+  $timerResetBtn.addEventListener('click', resetTimer);
+}
+
+// ════════════════════════════════════════════════
+//  GROUP VIEW
+// ════════════════════════════════════════════════
+function renderGroupView(idx) {
+  $openingCards.innerHTML = '';
+  if (!groups.length || idx >= groups.length) {
+    $openingCards.innerHTML = '<p style="color:var(--muted);font-size:0.95rem;">No groups formed. Return to setup.</p>';
+    return;
+  }
+  const members = groups[idx];
+  if (!promptAssigned.length) {
+    $openingCards.innerHTML = '<p style="color:var(--muted);font-size:0.95rem;">No prompts assigned. Return to setup to assign prompts.</p>';
+    return;
+  }
+  members.forEach(name => {
+    const pa = promptAssigned.find(p => p.name === name);
+    const card = document.createElement('div');
+    card.className = 'opening-card';
+    card.innerHTML = `
+      <div class="opening-card-name">${escHtml(name)}</div>
+      <div class="opening-card-script">${escHtml(pa ? pa.script : '(no script assigned)')}</div>
+    `;
+    $openingCards.appendChild(card);
+  });
+}
+
+function updateGroupNav() {
+  const total = groups.length || 1;
+  $groupNavLabel.textContent = `Panel ${currentGroupIndex + 1} of ${total}`;
+  $groupPrevBtn.disabled = currentGroupIndex === 0;
+  $groupNextBtn.disabled = currentGroupIndex >= groups.length - 1;
+}
+
+// ════════════════════════════════════════════════
+//  Q&A
+// ════════════════════════════════════════════════
+function drawQuestion() {
+  if (usedQuestionSet.size >= questions.length) return;
+
+  let idx;
+  do { idx = Math.floor(Math.random() * questions.length); }
+  while (usedQuestionSet.has(idx));
+
+  usedQuestionSet.add(idx);
+  drawnQuestions.push(idx);
+
+  // Show in main area
+  $qaDrawnArea.innerHTML = `
+    <div class="qa-drawn-card">
+      <div class="qa-drawn-label">Question ${drawnQuestions.length}</div>
+      <div class="qa-drawn-script">${escHtml(questions[idx].script)}</div>
+    </div>
+  `;
+
+  // Update history
+  $qHistoryList.innerHTML = '';
+  drawnQuestions.forEach((qi, i) => {
+    const item = document.createElement('div');
+    item.className = 'history-item';
+    item.innerHTML = `<span class="history-num">Q${i + 1}.</span>${escHtml(questions[qi].script)}`;
+    $qHistoryList.appendChild(item);
+  });
+
+  // Check exhausted
+  if (usedQuestionSet.size >= questions.length) {
+    $drawQBtn.disabled = true;
+    $qaExhausted.classList.add('show');
+  }
+}
+
+// ════════════════════════════════════════════════
+//  TIMER
+// ════════════════════════════════════════════════
+const $timerCard = document.getElementById('timer-card');
+
+function getTimerWarnSecondsArray() {
+  // Returns sorted-descending array of threshold values in seconds
+  return timerWarningEntries
+    .map(e => e.unit === 'm' ? (e.value || 0) * 60 : (e.value || 0))
+    .filter(v => v > 0)
+    .sort((a, b) => b - a);
+}
+
+function triggerTimerFlash(thenDone) {
+  if (!$timerCard) return;
+  $timerCard.classList.remove('timer-flash-active', 'timer-flash-done');
+  void $timerCard.offsetWidth; // force reflow to restart animation
+  $timerCard.classList.add('timer-flash-active');
+  if (thenDone) {
+    const onEnd = () => {
+      $timerCard.removeEventListener('animationend', onEnd);
+      $timerCard.classList.remove('timer-flash-active');
+      $timerCard.classList.add('timer-flash-done');
+    };
+    $timerCard.addEventListener('animationend', onEnd);
+  }
+}
+
+function updateTimerFlash() {
+  if (!$timerCard || (timerMode !== 'down' && !timerCountingUpAfterCD)) {
+    if ($timerCard) $timerCard.classList.remove('timer-flash-active', 'timer-flash-done');
+    timerFlashedThresholds.clear();
+    return;
+  }
+  if (timerCountingUpAfterCD) return; // keep whatever state was set at zero
+
+  if (timerSeconds === 0) {
+    if (!timerFlashedThresholds.has('zero')) {
+      timerFlashedThresholds.add('zero');
+      triggerTimerFlash(true); // flash then stay red
+    }
+    return;
+  }
+
+  const thresholds = getTimerWarnSecondsArray();
+  for (const ws of thresholds) {
+    if (timerSeconds <= ws && !timerFlashedThresholds.has(ws)) {
+      timerFlashedThresholds.add(ws);
+      triggerTimerFlash(false);
+      break;
+    }
+  }
+}
+
+function renderTimerWarnings() {
+  const list = document.getElementById('timer-warnings-list');
+  if (!list) return;
+  list.innerHTML = '';
+  timerWarningEntries.forEach((entry, i) => {
+    const row = document.createElement('div');
+    row.className = 'warn-entry-row';
+    row.innerHTML = `
+      <input type="number" value="${entry.value}" min="1" max="9999" class="warn-val-input" data-i="${i}">
+      <label><input type="radio" name="wu${i}" value="s" class="warn-unit-input" data-i="${i}" ${entry.unit==='s'?'checked':''}> s</label>
+      <label><input type="radio" name="wu${i}" value="m" class="warn-unit-input" data-i="${i}" ${entry.unit==='m'?'checked':''}> min</label>
+      <button class="warn-remove-btn" data-i="${i}" title="Remove">✕</button>
+    `;
+    list.appendChild(row);
+  });
+  list.querySelectorAll('.warn-val-input').forEach(inp => {
+    inp.addEventListener('change', () => { timerWarningEntries[+inp.dataset.i].value = parseInt(inp.value) || 1; });
+  });
+  list.querySelectorAll('.warn-unit-input').forEach(inp => {
+    inp.addEventListener('change', () => { timerWarningEntries[+inp.dataset.i].unit = inp.value; });
+  });
+  list.querySelectorAll('.warn-remove-btn').forEach(btn => {
+    btn.addEventListener('click', () => { timerWarningEntries.splice(+btn.dataset.i, 1); renderTimerWarnings(); });
+  });
+}
+
+function startTimer() {
+  if (timerMode === 'down' && timerSeconds === 0 && !timerCountingUpAfterCD) {
+    const mins = parseInt($timerMin.value) || 0;
+    const secs = parseInt($timerSec.value) || 0;
+    timerCountdownTotal = mins * 60 + secs;
+    timerSeconds = timerCountdownTotal;
+    if (timerSeconds <= 0) return;
+  }
+  timerRunning = true;
+  $timerStartBtn.textContent = 'Pause';
+  timerInterval = setInterval(() => {
+    if (timerMode === 'up' || timerCountingUpAfterCD) {
+      timerSeconds++;
+    } else {
+      timerSeconds--;
+      if (timerSeconds <= 0) {
+        timerSeconds = 0;
+        updateTimerDisplay();
+        updateTimerFlash(); // must run BEFORE timerCountingUpAfterCD is set
+        const countUpAfterEl = document.getElementById('timer-countup-after');
+        if (countUpAfterEl && countUpAfterEl.checked) {
+          timerCountingUpAfterCD = true; // flip to count-up mode internally
+        } else {
+          stopTimer();
+          $timerStartBtn.textContent = 'Start';
+          timerRunning = false;
+        }
+        return;
+      }
+    }
+    updateTimerDisplay();
+    updateTimerFlash();
+  }, 1000);
+  updateTimerDisplay();
+  updateTimerFlash();
+}
+
+function pauseTimer() {
+  clearInterval(timerInterval);
+  timerInterval = null;
+  timerRunning = false;
+  $timerStartBtn.textContent = 'Start';
+}
+
+function stopTimer() {
+  clearInterval(timerInterval);
+  timerInterval = null;
+  timerRunning = false;
+  timerCountingUpAfterCD = false;
+}
+
+function resetTimer() {
+  stopTimer();
+  timerRunning = false;
+  timerCountingUpAfterCD = false;
+  timerFlashState = null;
+  timerFlashedThresholds.clear();
+  $timerStartBtn.textContent = 'Start';
+  if (timerMode === 'down') {
+    const mins = parseInt($timerMin.value) || 0;
+    const secs = parseInt($timerSec.value) || 0;
+    timerSeconds = mins * 60 + secs;
+  } else {
+    timerSeconds = 0;
+  }
+  if ($timerCard) $timerCard.classList.remove('timer-flash-active', 'timer-flash-done');
+  updateTimerDisplay();
+}
+
+function updateTimerDisplay() {
+  const m = Math.floor(Math.abs(timerSeconds) / 60);
+  const s = Math.abs(timerSeconds) % 60;
+  $timerDisplay.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+// ════════════════════════════════════════════════
+//  HELP MODAL
+// ════════════════════════════════════════════════
+function bindHelpEvents() {
+  document.querySelectorAll('.help-btn').forEach(btn => {
+    btn.addEventListener('click', () => $helpModal.classList.add('open'));
+  });
+  $helpModalClose.addEventListener('click', () => $helpModal.classList.remove('open'));
+  $helpModal.addEventListener('click', e => {
+    if (e.target === $helpModal) $helpModal.classList.remove('open');
+  });
+
+  // Settings modal
+  const $settingsModal = document.getElementById('settings-modal');
+  const $settingsClose = document.getElementById('settings-modal-close');
+  function openSettings() { if ($settingsModal) $settingsModal.classList.add('open'); }
+  function closeSettings() { if ($settingsModal) $settingsModal.classList.remove('open'); }
+  document.querySelectorAll('#settings-btn, #settings-btn-mod').forEach(btn => {
+    btn.addEventListener('click', openSettings);
+  });
+  if ($settingsClose) $settingsClose.addEventListener('click', closeSettings);
+  if ($settingsModal) $settingsModal.addEventListener('click', e => { if (e.target === $settingsModal) closeSettings(); });
+}
+
+function bindKeyboardShortcuts() {
+  document.addEventListener('keydown', e => {
+    // Don't fire shortcuts when typing in inputs/textareas
+    const tag = e.target.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+    // Esc: close any open modal
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+      return;
+    }
+
+    // Don't fire other shortcuts if a modal is open
+    if (document.querySelector('.modal-overlay.open')) return;
+
+    const onMod = $mod.classList.contains('active');
+    const onSetup = $setup.classList.contains('active');
+
+    // Moderator-screen shortcuts
+    if (e.key === 'ArrowRight' && onMod) {
+      e.preventDefault();
+      $groupNextBtn.click();
+    } else if (e.key === 'ArrowLeft' && onMod) {
+      e.preventDefault();
+      $groupPrevBtn.click();
+    } else if (e.key === ' ' && onMod) {
+      e.preventDefault();
+      if (!$drawQBtn.disabled) $drawQBtn.click();
+    } else if ((e.key === 'r' || e.key === 'R') && onMod) {
+      $modResetBtn.click();
+    } else if ((e.key === 't' || e.key === 'T') && onMod) {
+      $timerToggleHeader.click();
+    } else if ((e.key === 'c' || e.key === 'C') && onMod) {
+      
+      e.preventDefault();
+      // Toggle the two timer-mode radios (down <-> up)
+      const radios = document.querySelectorAll('input[name="timer-mode"]');
+      if (radios && radios.length) {
+        const checked = document.querySelector('input[name="timer-mode"]:checked');
+        let next = radios[0];
+        if (checked) next = (checked === radios[0]) ? (radios[1] || radios[0]) : radios[0];
+        next.checked = true;
+        next.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    } else if ((e.key === 'f' || e.key === 'F') && onMod) {
+      $timerStartBtn.click();
+    } else if ((e.key === 'g' || e.key === 'G') && onMod) {
+      $timerResetBtn.click();
+    }
+
+    // Setup-screen shortcuts
+    if ((e.key === 'q' || e.key === 'Q') && onSetup) {
+      quickFill();
+    } else if (e.key === 'Enter' && onSetup) {
+      e.preventDefault();
+      $startPanelBtn.click();
+    } else if ((e.key === 'a' || e.key === 'A') && onSetup) {
+      document.getElementById('advanced-toggle-header').click();
+    }
+
+    // Global shortcuts (both screens)
+    if (e.key === '?') {
+      $helpModal.classList.add('open');
+    } else if (e.key === 's' || e.key === 'S') {
+      const $sm = document.getElementById('settings-modal');
+      if ($sm) $sm.classList.add('open');
+    }
+  });
+}
+
+// ════════════════════════════════════════════════
+//  COLOR SCHEMES
+// ════════════════════════════════════════════════
+const BUILTIN_SCHEMES = [
+  {
+    name: 'Classic Blue',
+    vars: {
+      '--bg': '#f4f5f7', '--header': '#1a1f2e', '--header-text': '#ffffff',
+      '--accent': '#2563eb', '--accent-hover': '#1d4ed8',
+      '--card': '#ffffff', '--card-shadow': '0 2px 8px rgba(0,0,0,0.10)',
+      '--text': '#1e2533', '--muted': '#6b7280', '--border': '#e2e6ea',
+      '--btn-secondary-bg': '#e5e7eb'
+    }
+  },
+  {
+    name: 'Forest',
+    vars: {
+      '--bg': '#f0f5f1', '--header': '#1c3829', '--header-text': '#ffffff',
+      '--accent': '#16a34a', '--accent-hover': '#15803d',
+      '--card': '#ffffff', '--card-shadow': '0 2px 8px rgba(0,0,0,0.10)',
+      '--text': '#1a2b1e', '--muted': '#4d7a5a', '--border': '#c8dece',
+      '--btn-secondary-bg': '#d9f0df'
+    }
+  },
+  {
+    name: 'Midnight',
+    vars: {
+      '--bg': '#0d1117', '--header': '#161b22', '--header-text': '#e6edf3',
+      '--accent': '#7c3aed', '--accent-hover': '#6d28d9',
+      '--card': '#21262d', '--card-shadow': '0 2px 8px rgba(0,0,0,0.45)',
+      '--text': '#e6edf3', '--muted': '#8b949e', '--border': '#30363d',
+      '--btn-secondary-bg': '#30363d'
+    }
+  }
+];
+
+const SCHEMES_KEY = 'panel-color-schemes';
+let colorSchemes = [];
+
+function loadColorSchemes() {
+  let userSaved = [];
+  try { userSaved = JSON.parse(localStorage.getItem(SCHEMES_KEY) || '[]'); } catch(e) {}
+  colorSchemes = [...BUILTIN_SCHEMES, ...userSaved];
+  renderSchemeDropdown(0);
+  // Sync pickers to default scheme without re-applying vars (already set in :root)
+  syncPickersFromScheme(BUILTIN_SCHEMES[0]);
+}
+
+function renderSchemeDropdown(selectedIdx) {
+  const sel = document.getElementById('scheme-select');
+  sel.innerHTML = '';
+  colorSchemes.forEach((s, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = s.name;
+    sel.appendChild(opt);
+  });
+  if (selectedIdx !== undefined) sel.value = selectedIdx;
+}
+
+function applyScheme(scheme) {
+  const root = document.documentElement;
+  Object.entries(scheme.vars).forEach(([k, v]) => root.style.setProperty(k, v));
+  // Auto-contrast for primary button text
+  if (scheme.vars['--accent']) {
+    const lum = hexLuminance(scheme.vars['--accent']);
+    root.style.setProperty('--btn-primary-text', lum > 0.35 ? '#1e2533' : '#ffffff');
+  }
+  syncPickersFromScheme(scheme);
+}
+
+function syncPickersFromScheme(scheme) {
+  [['cp-bg','--bg','hex-bg'],['cp-header','--header','hex-header'],['cp-accent','--accent','hex-accent'],
+   ['cp-card','--card','hex-card'],['cp-text','--text','hex-text']].forEach(([id, v, hexId]) => {
+    const el = document.getElementById(id);
+    const hexEl = document.getElementById(hexId);
+    if (el && scheme.vars[v]) {
+      el.value = scheme.vars[v];
+      if (hexEl) hexEl.value = scheme.vars[v];
+    }
+  });
+}
+
+function hexLuminance(hex) {
+  // Returns perceived luminance 0-1 from a #rrggbb hex string
+  const r = parseInt(hex.slice(1,3),16)/255;
+  const g = parseInt(hex.slice(3,5),16)/255;
+  const b = parseInt(hex.slice(5,7),16)/255;
+  const toLinear = c => c <= 0.03928 ? c/12.92 : Math.pow((c+0.055)/1.055, 2.4);
+  return 0.2126*toLinear(r) + 0.7152*toLinear(g) + 0.0722*toLinear(b);
+}
+
+function applyIndividualColor(varName, value) {
+  document.documentElement.style.setProperty(varName, value);
+  if (varName === '--accent') {
+    document.documentElement.style.setProperty('--accent-hover', value);
+    // Auto-contrast: choose white or dark text for primary buttons
+    const lum = hexLuminance(value);
+    const btnTextColor = lum > 0.35 ? '#1e2533' : '#ffffff';
+    document.documentElement.style.setProperty('--btn-primary-text', btnTextColor);
+  }
+}
+
+// ════════════════════════════════════════════════
+//  QUICK FILL (TESTING)
+// ════════════════════════════════════════════════
+const FILLER_NAMES = [
+  'Alex','Bailey','Cameron','Dakota','Elliot',
+  'Finley','Gray','Harper','Indigo','Jordan',
+  'Kenji','Logan','Morgan','Nico','Oakley',
+  'Parker','Quinn','Reese','Sage','Taylor',
+  'Uma','Val','Winter','Xen','Yara','Zion'
+];
+
+function quickFill() {
+  const n = Math.min(parseInt(document.getElementById('qf-count').value) || 9, FILLER_NAMES.length);
+  const gs = parseInt(document.getElementById('qf-groupsize').value) || 3;
+  const chosen = FILLER_NAMES.slice(0, n).slice().sort();
+  $namesTextarea.value = chosen.join('\n');
+  $groupSizeInput.value = gs;
+  randomizeGroups();
+  if (groupsRandomized) assignPrompts();
+}
+
+// ════════════════════════════════════════════════
+//  ALL QUESTIONS MODAL
+// ════════════════════════════════════════════════
+function renderAllQuestionsModal() {
+  const $allQList = document.getElementById('all-q-list');
+  if (!$allQList) return;
+  $allQList.innerHTML = '';
+
+  const unasked = [];
+  const asked = [];
+  questions.forEach((q, i) => {
+    if (usedQuestionSet.has(i)) asked.push({ q, i });
+    else unasked.push({ q, i });
+  });
+
+  if (unasked.length === 0 && asked.length === 0) {
+    $allQList.innerHTML = '<p style="color:var(--muted)">No questions loaded.</p>';
+    return;
+  }
+
+  unasked.forEach(({ q, i }) => {
+    const div = document.createElement('div');
+    div.style.cssText = 'padding:10px 0;border-bottom:1px solid var(--border);font-size:0.95rem;line-height:1.55;color:var(--text);';
+    div.textContent = q.script;
+    $allQList.appendChild(div);
+  });
+
+  if (asked.length > 0) {
+    const sep = document.createElement('div');
+    sep.style.cssText = 'margin:14px 0 10px;font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);';
+    sep.textContent = 'Already Asked';
+    $allQList.appendChild(sep);
+    asked.forEach(({ q }) => {
+      const div = document.createElement('div');
+      div.style.cssText = 'padding:10px 0;border-bottom:1px solid var(--border);font-size:0.95rem;line-height:1.55;color:var(--muted);text-decoration:line-through;opacity:0.6;';
+      div.textContent = q.script;
+      $allQList.appendChild(div);
+    });
+  }
+}
+
+// ════════════════════════════════════════════════
+//  ADVANCED SECTION EVENTS
+// ════════════════════════════════════════════════
+function bindAdvancedEvents() {
+  // Collapsible toggle
+  document.getElementById('advanced-toggle-header').addEventListener('click', () => {
+    const body = document.getElementById('advanced-body');
+    const icon = document.getElementById('advanced-toggle-icon');
+    const expanded = body.classList.toggle('expanded');
+    icon.textContent = expanded ? '▲ Hide' : '▼ Show';
+  });
+
+  // Quick Fill button
+  document.getElementById('qf-btn').addEventListener('click', quickFill);
+
+  // Scheme dropdown (in settings modal)
+  const schemeSelect = document.getElementById('scheme-select');
+  if (schemeSelect) schemeSelect.addEventListener('change', function() {
+    const idx = parseInt(this.value);
+    if (!isNaN(idx) && colorSchemes[idx]) applyScheme(colorSchemes[idx]);
+  });
+
+  // Individual color pickers + hex inputs (in settings modal)
+  document.querySelectorAll('.color-grid input[type="color"]').forEach(input => {
+    const hexId = 'hex-' + input.id.replace('cp-', '');
+    const hexInput = document.getElementById(hexId);
+    input.addEventListener('input', () => {
+      applyIndividualColor(input.dataset.var, input.value);
+      if (hexInput) hexInput.value = input.value;
+    });
+    if (hexInput) {
+      hexInput.addEventListener('input', () => {
+        const v = hexInput.value.trim();
+        if (/^#[0-9a-fA-F]{6}$/.test(v)) {
+          input.value = v;
+          applyIndividualColor(input.dataset.var, v);
+        }
+      });
+    }
+  });
+
+  // Save scheme button (in settings modal)
+  const saveSchemeBtn = document.getElementById('save-scheme-btn');
+  if (saveSchemeBtn) saveSchemeBtn.addEventListener('click', () => {
+    const name = prompt('Name this color scheme:');
+    if (!name || !name.trim()) return;
+    const root = document.documentElement;
+    const cs = getComputedStyle(root);
+    const getVar = v => root.style.getPropertyValue(v) || cs.getPropertyValue(v).trim();
+    const allVarNames = ['--bg','--header','--header-text','--accent','--accent-hover',
+                         '--card','--card-shadow','--text','--muted','--border','--btn-secondary-bg'];
+    const vars = {};
+    allVarNames.forEach(v => { vars[v] = getVar(v); });
+    const newScheme = { name: name.trim(), vars };
+    colorSchemes.push(newScheme);
+    const userSchemes = colorSchemes.slice(BUILTIN_SCHEMES.length);
+    try { localStorage.setItem(SCHEMES_KEY, JSON.stringify(userSchemes)); } catch(e) {}
+    renderSchemeDropdown(colorSchemes.length - 1);
+  });
+
+  // Clear names button
+  const $clearNamesBtn = document.getElementById('clear-names-btn');
+  if ($clearNamesBtn) {
+    $clearNamesBtn.addEventListener('click', () => {
+      $namesTextarea.value = '';
+      groupsRandomized = false;
+      promptsAssigned = false;
+      groups = [];
+      promptAssigned = [];
+      $groupsDisplay.innerHTML = '';
+    });
+  }
+
+  loadColorSchemes();
+}
+
+// ════════════════════════════════════════════════
+//  UTILITIES
+// ════════════════════════════════════════════════
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+</script>
+</body>
+</html>
