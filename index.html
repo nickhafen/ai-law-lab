@@ -1155,6 +1155,7 @@ function startPanel() {
     return;
   }
 
+  resetTimer();
   buildModeratorScreen();
   showScreen('mod');
 }
@@ -1313,6 +1314,23 @@ function bindModEvents() {
 
   // Timer reset
   $timerResetBtn.addEventListener('click', resetTimer);
+
+  // Prevent decimals in timer minute/second inputs
+  ['timer-min', 'timer-sec'].forEach(id => {
+    const inp = document.getElementById(id);
+    if (!inp) return;
+    inp.addEventListener('input', () => {
+      if (inp.value !== '' && inp.value.includes('.')) {
+        inp.value = Math.floor(parseFloat(inp.value));
+        const warn = document.getElementById('timer-decimal-warn');
+        if (warn) {
+          warn.style.display = '';
+          clearTimeout(inp._decWarnTimer);
+          inp._decWarnTimer = setTimeout(() => { warn.style.display = 'none'; }, 2500);
+        }
+      }
+    });
+  });
 }
 
 // ════════════════════════════════════════════════
@@ -1431,7 +1449,7 @@ function updateTimerFlash() {
 
   const thresholds = getTimerWarnSecondsArray();
   for (const ws of thresholds) {
-    if (timerSeconds <= ws && !timerFlashedThresholds.has(ws)) {
+    if (timerSeconds <= ws && !timerFlashedThresholds.has(ws) && timerCountdownTotal > ws) {
       timerFlashedThresholds.add(ws);
       triggerTimerFlash(false);
       break;
@@ -1617,6 +1635,8 @@ function bindKeyboardShortcuts() {
     // Setup-screen shortcuts
     if ((e.key === 'q' || e.key === 'Q') && onSetup) {
       quickFill();
+    } else if ((e.key === 'w' || e.key === 'W') && onSetup) {
+      quickFillAndStart();
     } else if (e.key === 'Enter' && onSetup) {
       e.preventDefault();
       $startPanelBtn.click();
@@ -1692,6 +1712,8 @@ function renderSchemeDropdown(selectedIdx) {
     sel.appendChild(opt);
   });
   if (selectedIdx !== undefined) sel.value = selectedIdx;
+  const delBtn = document.getElementById('delete-scheme-btn');
+  if (delBtn) delBtn.style.display = (selectedIdx !== undefined && selectedIdx >= BUILTIN_SCHEMES.length) ? '' : 'none';
 }
 
 function applyScheme(scheme) {
@@ -1758,6 +1780,11 @@ function quickFill() {
   if (groupsRandomized) assignPrompts();
 }
 
+function quickFillAndStart() {
+  quickFill();
+  $startPanelBtn.click();
+}
+
 // ════════════════════════════════════════════════
 //  ALL QUESTIONS MODAL
 // ════════════════════════════════════════════════
@@ -1814,11 +1841,17 @@ function bindAdvancedEvents() {
   // Quick Fill button
   document.getElementById('qf-btn').addEventListener('click', quickFill);
 
+  // Quick Fill + Start button
+  const qfStartBtn = document.getElementById('qf-start-btn');
+  if (qfStartBtn) qfStartBtn.addEventListener('click', quickFillAndStart);
+
   // Scheme dropdown (in settings modal)
   const schemeSelect = document.getElementById('scheme-select');
   if (schemeSelect) schemeSelect.addEventListener('change', function() {
     const idx = parseInt(this.value);
     if (!isNaN(idx) && colorSchemes[idx]) applyScheme(colorSchemes[idx]);
+    const delBtn = document.getElementById('delete-scheme-btn');
+    if (delBtn) delBtn.style.display = (!isNaN(idx) && idx >= BUILTIN_SCHEMES.length) ? '' : 'none';
   });
 
   // Individual color pickers + hex inputs (in settings modal)
@@ -1838,6 +1871,19 @@ function bindAdvancedEvents() {
         }
       });
     }
+  });
+
+  // Delete scheme button (user-saved only)
+  const deleteSchemeBtn = document.getElementById('delete-scheme-btn');
+  if (deleteSchemeBtn) deleteSchemeBtn.addEventListener('click', () => {
+    const idx = parseInt(document.getElementById('scheme-select').value);
+    if (isNaN(idx) || idx < BUILTIN_SCHEMES.length) return;
+    colorSchemes.splice(idx, 1);
+    const userSchemes = colorSchemes.slice(BUILTIN_SCHEMES.length);
+    try { localStorage.setItem(SCHEMES_KEY, JSON.stringify(userSchemes)); } catch(e) {}
+    const newIdx = Math.min(idx, colorSchemes.length - 1);
+    renderSchemeDropdown(newIdx);
+    applyScheme(colorSchemes[newIdx]);
   });
 
   // Save scheme button (in settings modal)
