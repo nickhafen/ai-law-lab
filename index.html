@@ -3,547 +3,856 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Panel: The State of AI Regulation</title>
+<title>AI &amp; Law · BYU Law</title>
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@400;500;600&display=swap');
 
-  :root {
-    --bg: #f4f5f7;
-    --header: #1a1f2e;
-    --header-text: #ffffff;
-    --accent: #2563eb;
-    --accent-hover: #1d4ed8;
-    --card: #ffffff;
-    --card-shadow: 0 2px 8px rgba(0,0,0,0.10);
-    --border: #e2e6ea;
-    --text: #1e2533;
-    --muted: #6b7280;
-    --danger: #dc2626;
-    --success: #16a34a;
-    --warning-bg: #fef9c3;
-    --warning-border: #ca8a04;
-    --warning-text: #713f12;
-    --radius: 8px;
-    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    --btn-secondary-bg: #e5e7eb;
-    --btn-primary-text: #ffffff;
-  }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  body {
-    font-family: var(--font);
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-  }
+/* ── ROOT VARIABLES (unified warm palette) ── */
+:root {
+  --font: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --serif: 'DM Serif Display', Georgia, serif;
+  --bg: #f0ece4;
+  --header: #1c1814;
+  --header-text: #ffffff;
+  --accent: #8b1a1a;
+  --accent-hover: #6e1414;
+  --card: #ffffff;
+  --card-shadow: 0 2px 8px rgba(0,0,0,0.10);
+  --text: #1c1814;
+  --muted: #6b6259;
+  --border: #d8d0c4;
+  --btn-secondary-bg: #e8e2d8;
+  --btn-primary-text: #ffffff;
+  --radius: 8px;
+  --gold: #a07030;
+  --green: #2d6a4f;
+  --green-light: #eaf3ee;
+  --danger: #dc2626;
+  --success: #16a34a;
+  --warning-bg: #fef9c3;
+  --warning-border: #ca8a04;
+  --warning-text: #713f12;
+}
 
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
 
-  /* ── HEADER ICON BUTTONS (Reset, Prev, Next, Help, Settings) ── */
-  .header-btn {
-    width: 36px; height: 36px;
-    border-radius: 7px;
-    border: 1.5px solid rgba(255,255,255,0.22);
-    background: rgba(255,255,255,0.10);
-    color: var(--header-text);
-    font-size: 1.1rem;
-    font-weight: 700;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    transition: background 0.15s, border-color 0.15s;
-    flex-shrink: 0;
-    user-select: none;
-    line-height: 1;
-  }
-  .header-btn:hover { background: rgba(255,255,255,0.22); border-color: rgba(255,255,255,0.42); }
-  .header-btn:disabled { opacity: 0.28; cursor: not-allowed; }
-  .header-btn:disabled:hover { background: rgba(255,255,255,0.10); border-color: rgba(255,255,255,0.22); }
+/* ── GLOBAL UTILITIES ── */
+.hidden { display: none !important; }
+.app-wrapper { min-height: 100vh; }
 
-  /* ── NAMES TEXTAREA ── */
-  #names-textarea {
-    width: 100%;
-    min-height: 130px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 10px 12px;
-    font-size: 1rem;
-    font-family: var(--font);
-    color: #1e2533;
-    background: #ffffff;
-    resize: vertical;
-    outline: none;
-    transition: border-color 0.15s;
-    line-height: 1.6;
-  }
-  #names-textarea:focus { border-color: var(--accent); }
-  .names-hint { font-size: 0.82rem; color: var(--muted); margin-top: 6px; }
+/* ── LANDING SCREEN ── */
+#home-screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 72px 24px 80px;
+  position: relative;
+}
 
-  /* ── LOADING / ERROR ── */
-  #loading-screen {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 60vh;
-    gap: 18px;
-  }
-  .spinner {
-    width: 48px; height: 48px;
-    border: 5px solid var(--border);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .loading-text { color: var(--muted); font-size: 1rem; }
+.settings-btn-light {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  width: 36px; height: 36px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.settings-btn-light:hover {
+  background: var(--card);
+  border-color: var(--muted);
+  color: var(--text);
+}
 
-  #error-screen {
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 60vh;
-    gap: 16px;
-    padding: 32px;
-    text-align: center;
-  }
-  .error-icon { font-size: 3rem; }
-  .error-msg { font-size: 1.05rem; color: var(--danger); max-width: 520px; line-height: 1.6; }
-  .error-hint { font-size: 0.9rem; color: var(--muted); max-width: 480px; line-height: 1.5; }
+.home-wordmark {
+  font-family: var(--serif);
+  font-size: clamp(2.4rem, 6vw, 3.6rem);
+  font-weight: 400;
+  color: var(--text);
+  line-height: 1;
+  text-align: center;
+}
 
-  /* ── SCREENS ── */
-  .screen { display: none; padding: 28px; max-width: 900px; margin: 0 auto; }
-  .screen.active { display: block; }
+.home-subtitle {
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-top: 10px;
+  text-align: center;
+}
 
-  /* ── SECTION CARDS ── */
-  .section-card {
-    background: var(--card);
-    border-radius: var(--radius);
-    box-shadow: var(--card-shadow);
-    padding: 24px;
-    margin-bottom: 24px;
-  }
-  .section-title {
-    font-size: 1.1rem;
-    font-weight: 700;
-    margin-bottom: 16px;
-    color: var(--text);
-    border-bottom: 2px solid var(--border);
-    padding-bottom: 10px;
-  }
+.home-rule {
+  border: none;
+  border-top: 1px solid var(--border);
+  width: 60px;
+  margin: 16px auto 56px;
+}
 
-  /* ── FORM CONTROLS ── */
-  label { font-size: 0.9rem; font-weight: 600; color: var(--muted); display: block; margin-bottom: 6px; }
-  input[type="text"], input[type="number"] {
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 8px 12px;
-    font-size: 1rem;
-    font-family: var(--font);
-    color: #1e2533;
-    background: #ffffff;
-    outline: none;
-    transition: border-color 0.15s;
-  }
-  input[type="text"]:focus, input[type="number"]:focus { border-color: var(--accent); }
-  input[type="number"] { width: 72px; text-align: center; }
+.exercise-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  width: 100%;
+  max-width: 740px;
+}
 
-  /* ── STEPPER ROW ── */
-  .stepper-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 4px;
-  }
+.exercise-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 32px 28px 28px;
+  cursor: pointer;
+  transition: box-shadow 0.18s, border-color 0.18s, transform 0.12s;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  text-decoration: none;
+  color: inherit;
+}
 
-  /* ── BUTTONS ── */
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 10px 20px;
-    border-radius: 6px;
-    border: none;
-    font-size: 0.95rem;
-    font-family: var(--font);
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.15s, opacity 0.15s;
-    text-decoration: none;
-  }
-  .btn-primary { background: var(--accent); color: var(--btn-primary-text, #fff); }
-  .btn-primary:hover { background: var(--accent-hover); }
-  .btn-secondary { background: var(--btn-secondary-bg); color: var(--text); }
-  .btn-secondary:hover { filter: brightness(0.92); }
-  .btn-outline { background: transparent; border: 1.5px solid var(--accent); color: var(--accent); }
-  .btn-outline:hover { background: #eff6ff; }
-  .btn-danger { background: var(--danger); color: #fff; }
-  .btn-danger:hover { background: #b91c1c; }
-  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
-  .btn-sm { padding: 7px 14px; font-size: 0.85rem; }
+.exercise-card:hover {
+  box-shadow: 0 4px 20px rgba(0,0,0,0.13);
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
 
-  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 16px; }
+.exercise-card-eyebrow {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 10px;
+}
 
-  /* ── WARNING / SUCCESS ── */
-  .inline-warning {
-    display: none;
-    background: var(--warning-bg);
-    border: 1px solid var(--warning-border);
-    color: var(--warning-text);
-    border-radius: 6px;
-    padding: 10px 14px;
-    font-size: 0.9rem;
-    margin-top: 12px;
-  }
-  .inline-warning.show { display: block; }
+.exercise-card-title {
+  font-family: var(--serif);
+  font-size: 1.55rem;
+  font-weight: 400;
+  color: var(--text);
+  margin-bottom: 12px;
+  line-height: 1.2;
+}
 
-  /* ── GROUPS DISPLAY ── */
-  #groups-display { margin-top: 18px; }
-  .groups-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 14px;
-    margin-top: 10px;
-  }
-  .group-card {
-    background: transparent;
-    border: 1.5px solid var(--accent);
-    border-radius: var(--radius);
-    padding: 14px;
-  }
-  .group-card-title {
-    font-size: 0.78rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--muted);
-    margin-bottom: 8px;
-  }
-  .group-member {
-    padding: 6px 0;
-    border-bottom: 1px solid var(--border);
-    font-size: 0.95rem;
-  }
-  .group-member:last-child { border-bottom: none; }
-  .group-member-name { 
-    font-weight: 600; 
-    color: var(--muted);
-  }
-  .group-member-prompt {
-    font-size: 1rem;
-    color: var(--text);
-    margin-top: 4px;
-    line-height: 1.45;
-  }
+.exercise-card-desc {
+  font-size: 0.88rem;
+  line-height: 1.7;
+  color: var(--muted);
+  flex: 1;
+}
 
-  /* ── MODERATOR SCREEN ── 
-  #mod-reset-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: transparent;
-    border: none;
-    color: rgba(255,255,255,0.8);
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    padding: 6px 0;
-    transition: color 0.15s;
-  }
-  #mod-reset-btn:hover { color: #fff; }
-*/
-  /* Opening remarks cards */
-  .opening-cards { display: flex; flex-direction: column; gap: 14px; }
-  .opening-card {
-    background: transparent;
-    border: 1.5px solid var(--accent);
-    border-radius: var(--radius);
-    padding: 16px;
-  }
-  .opening-card-name {
-    font-size: 0.8rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--muted);
-    margin-bottom: 6px;
-  }
-  .opening-card-script {
-    font-size: 1.05rem;
-    line-height: 1.65;
-    color: var(--text);
-  }
+.exercise-card-arrow {
+  margin-top: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
 
-  /* Q&A section */
-  .qa-drawn-card {
-    background: transparent;
-    border: 1.5px solid var(--accent);
-    border-radius: var(--radius);
-    padding: 16px;
-    margin-top: 14px;
-  }
-  .qa-drawn-label {
-    font-size: 0.8rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--muted);
-    margin-bottom: 6px;
-  }
-  .qa-drawn-script {
-    font-size: 1.1rem;
-    line-height: 1.65;
-    color: var(--text);
-  }
-  .qa-exhausted {
-    display: none;
-    text-align: center;
-    color: var(--muted);
-    font-size: 0.95rem;
-    padding: 12px;
-    margin-top: 10px;
-  }
-  .qa-exhausted.show { display: block; }
+/* ── SHARED HEADER BAR ── */
+.mod-header-bar {
+  background: var(--header);
+  color: var(--header-text);
+  padding: 14px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
 
-  /* Question history */
-  #q-secondary-buttons { margin-top: 16px; }
-  #q-history-list {
-    display: none;
-    margin-top: 12px;
-    border-top: 1px solid var(--border);
-    padding-top: 12px;
-  }
-  #q-history-list.show { display: block; }
-  .history-item {
-    padding: 10px 0;
-    border-bottom: 1px solid var(--border);
-    font-size: 0.9rem;
-    color: var(--muted);
-    line-height: 1.5;
-  }
-  .history-item:last-child { border-bottom: none; }
-  .history-num { font-weight: 700; color: var(--text); margin-right: 6px; }
+.mod-header-bar h1 { font-size: 1.1rem; font-weight: 700; }
+.header-left { display: flex; align-items: center; gap: 10px; }
+.header-title { font-size: 1.1rem; font-weight: 700; }
+.header-subtitle { font-size: 0.8rem; opacity: 0.65; margin-top: 2px; }
+.header-right { display: flex; gap: 8px; align-items: center; }
+.header-nav { display: flex; align-items: center; gap: 6px; }
 
-  /* Timer section */
-  .collapsible-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    cursor: pointer;
-    user-select: none;
-  }
-  .collapsible-header .toggle-icon { font-size: 0.85rem; color: var(--muted); }
-  .collapsible-body { display: none; margin-top: 16px; }
-  .collapsible-body.expanded { display: block; }
+.header-btn {
+  width: 36px; height: 36px;
+  border-radius: 7px;
+  border: 1.5px solid rgba(255,255,255,0.22);
+  background: rgba(255,255,255,0.10);
+  color: var(--header-text);
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+  user-select: none;
+  line-height: 1;
+}
+.header-btn:hover { background: rgba(255,255,255,0.22); border-color: rgba(255,255,255,0.42); }
+.header-btn:disabled { opacity: 0.28; cursor: not-allowed; }
+.header-btn:disabled:hover { background: rgba(255,255,255,0.10); border-color: rgba(255,255,255,0.22); }
 
-  .timer-display {
-    font-size: 3.5rem;
-    font-weight: 700;
-    text-align: center;
-    font-variant-numeric: tabular-nums;
-    color: var(--text);
-    margin: 18px 0;
-    letter-spacing: 0.03em;
-  }
-  .timer-controls {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    align-items: center;
-  }
-  .timer-mode-row {
-    display: flex;
-    gap: 20px;
-    align-items: center;
-  }
-  .timer-mode-row label {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--text);
-    cursor: pointer;
-    margin: 0;
-  }
-  .timer-countdown-inputs {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.95rem;
-  }
-  .timer-countdown-inputs input[type="number"] { width: 64px; }
-  .timer-btn-row { display: flex; gap: 10px; }
-  .timer-warn-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-    font-size: 0.88rem;
-    color: var(--muted);
-    margin-top: 6px;
-  }
-  .timer-warn-row input[type="number"] { width: 56px; background: #ffffff; color: #1e2533; }
-  .timer-warn-row label { margin: 0; font-size: 0.88rem; }
+/* ── SHARED FORM CONTROLS ── */
+label { font-size: 0.9rem; font-weight: 600; color: var(--muted); display: block; margin-bottom: 6px; }
+input[type="text"], input[type="number"] {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 1rem;
+  font-family: var(--font);
+  color: var(--text);
+  background: var(--card);
+  outline: none;
+  transition: border-color 0.15s;
+}
+input[type="text"]:focus, input[type="number"]:focus { border-color: var(--accent); }
+input[type="number"] { width: 72px; text-align: center; }
 
-  /* Timer flash: applies to the section-card wrapping the timer */
-  @keyframes timer-flash {
-    0%, 100% { background: var(--card); }
-    50% { background: rgba(220,38,38,0.18); }
-  }
-  .timer-flash-active { animation: timer-flash 0.7s ease-in-out 2; }
-  .timer-flash-done { background: rgba(220,38,38,0.22) !important; }
+/* ── SHARED BUTTONS ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-radius: 6px;
+  border: none;
+  font-size: 0.95rem;
+  font-family: var(--font);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+  text-decoration: none;
+}
+.btn-primary { background: var(--accent); color: var(--btn-primary-text, #fff); }
+.btn-primary:hover { background: var(--accent-hover); }
+.btn-secondary { background: var(--btn-secondary-bg); color: var(--text); }
+.btn-secondary:hover { filter: brightness(0.92); }
+.btn-outline { background: transparent; border: 1.5px solid var(--accent); color: var(--accent); }
+.btn-outline:hover { background: rgba(139,26,26,0.07); }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-danger:hover { background: #b91c1c; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-sm { padding: 7px 14px; font-size: 0.85rem; }
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 16px; }
 
-  /* Timer warnings list */
-  .warn-entry-row { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
-  .warn-entry-row label { margin:0; font-size:0.88rem; font-weight:500; color:var(--text); display:flex; align-items:center; gap:4px; cursor:pointer; }
-  .warn-entry-row input[type="number"] { width:60px; }
-  .warn-remove-btn { background:none; border:none; cursor:pointer; color:var(--muted); font-size:1rem; padding:2px 5px; line-height:1; }
-  .warn-remove-btn:hover { color:var(--danger); }
+/* ── SHARED MODAL ── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 500;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+  background: var(--card);
+  box-shadow: var(--card-shadow);
+  border-radius: 10px;
+  padding: 32px;
+  max-width: 560px;
+  width: 90%;
+  max-height: 85vh;
+  overflow-y: auto;
+  position: relative;
+}
+.modal-close {
+  position: absolute;
+  top: 14px; right: 16px;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--muted);
+  line-height: 1;
+}
+.modal-close:hover { color: var(--text); }
+.modal-box h2 { font-size: 1.3rem; margin-bottom: 18px; color: var(--text); }
+.modal-box h3 { font-size: 1rem; font-weight: 700; margin: 16px 0 8px; color: var(--text); }
+.modal-box h4 { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin: 18px 0 8px; }
+.modal-box p { font-size: 0.95rem; line-height: 1.65; color: var(--text); margin-bottom: 10px; }
+.modal-box ul { padding-left: 20px; }
+.modal-box ul li { font-size: 0.95rem; line-height: 1.65; color: var(--text); margin-bottom: 6px; }
 
-  /* ── MODAL ── */
-  .modal-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 500;
-    align-items: center;
-    justify-content: center;
-  }
-  .modal-overlay.open { display: flex; }
-  .modal-box {
-    background: var(--card);
-    box-shadow: var(--card-shadow);
-    border-radius: 10px;
-    padding: 32px;
-    max-width: 560px;
-    width: 90%;
-    max-height: 85vh;
-    overflow-y: auto;
-    position: relative;
-  }
-  .modal-close {
-    position: absolute;
-    top: 14px; right: 16px;
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    cursor: pointer;
-    color: var(--muted);
-    line-height: 1;
-  }
-  .modal-close:hover { color: var(--text); }
-  .modal-box h2 { font-size: 1.3rem; margin-bottom: 18px; color: var(--text); }
-  .modal-box h3 { font-size: 1rem; font-weight: 700; margin: 16px 0 8px; color: var(--text); }
-  .modal-box h4 { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin: 18px 0 8px; }
-  .modal-box p { font-size: 0.95rem; line-height: 1.65; color: var(--text); margin-bottom: 10px; }
-  .modal-box ul { padding-left: 20px; }
-  .modal-box ul li { font-size: 0.95rem; line-height: 1.65; color: var(--text); margin-bottom: 6px; }
+/* ── PANEL EXERCISE STYLES ── */
 
-  /* ── UTILITY ── */
-  .hidden { display: none !important; }
+/* Loading / Error */
+#loading-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 18px;
+  position: relative;
+}
+.spinner {
+  width: 48px; height: 48px;
+  border: 5px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { color: var(--muted); font-size: 1rem; }
 
-  /* ── MOD HEADER ── */
-  .mod-header-bar {
-    background: var(--header);
-    color: var(--header-text);
-    padding: 14px 28px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-  }
-  .mod-header-bar h1 { font-size: 1.1rem; font-weight: 700; }
+#error-screen {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 16px;
+  padding: 32px;
+  text-align: center;
+  position: relative;
+}
+.error-icon { font-size: 3rem; }
+.error-msg { font-size: 1.05rem; color: var(--danger); max-width: 520px; line-height: 1.6; }
+.error-hint { font-size: 0.9rem; color: var(--muted); max-width: 480px; line-height: 1.5; }
 
-  /* ── MOD NAV LABEL ── */
-  .group-nav-label {
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--header-text);
-    text-align: center;
-    white-space: nowrap;
-    opacity: 0.9;
-  }
+/* Screens */
+.screen { display: none; max-width: 900px; margin: 0 auto; }
+.screen.active { display: block; }
+.counsel-screen { display: none; }
+.counsel-screen.active { display: block; }
 
-  /* ── ADVANCED SECTION ── */
-  .advanced-subsection { padding: 16px 0; }
-  .advanced-subsection:first-child { padding-top: 4px; }
-  .advanced-subtitle {
-    font-size: 0.8rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-    color: var(--muted);
-    margin-bottom: 12px;
-  }
-  .advanced-divider { border: none; border-top: 1px solid var(--border); margin: 4px 0; }
+/* Section cards */
+.section-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+.section-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: var(--text);
+  border-bottom: 2px solid var(--border);
+  padding-bottom: 10px;
+}
 
-  /* Color scheme controls */
-  .scheme-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin-bottom: 16px;
-  }
-  .scheme-row label { margin: 0; }
-  .scheme-row select {
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 7px 10px;
-    font-size: 0.95rem;
-    font-family: var(--font);
-    color: var(--text);
-    background: var(--card);
-    cursor: pointer;
-    outline: none;
-  }
-  .color-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 18px;
-    margin-top: 8px;
-  }
-  .color-row {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
-    min-width: 100px;
-  }
-  .color-row label { margin: 0; font-size: 0.85rem; }
-  .color-row input[type="color"] {
-    width: 52px; height: 52px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 2px;
-    cursor: pointer;
-    background: #ffffff;
-    display: block;
-  }
-  .color-hex-input {
-    width: 90px;
-    font-size: 0.82rem;
-    font-family: monospace;
-    padding: 4px 7px;
-    border: 1px solid var(--border);
-    border-radius: 5px;
-    background: #ffffff;
-    color: #1e2533;
-    outline: none;
-  }
-  .color-hex-input:focus { border-color: var(--accent); }
+/* Names textarea */
+#names-textarea {
+  width: 100%;
+  min-height: 130px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 1rem;
+  font-family: var(--font);
+  color: var(--text);
+  background: var(--card);
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s;
+  line-height: 1.6;
+}
+#names-textarea:focus { border-color: var(--accent); }
+.names-hint { font-size: 0.82rem; color: var(--muted); margin-top: 6px; }
+
+/* Stepper */
+.stepper-row { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+
+/* Warnings */
+.inline-warning {
+  display: none;
+  background: var(--warning-bg);
+  border: 1px solid var(--warning-border);
+  color: var(--warning-text);
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 0.9rem;
+  margin-top: 12px;
+}
+.inline-warning.show { display: block; }
+
+/* ── SHARED LABEL STYLES ── */
+/* Muted caps labels (light surfaces — panel exercise) */
+.group-card-title, .opening-card-name, .qa-drawn-label, .advanced-subtitle {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+/* Gold caps labels (dark surfaces — counsel result card) */
+.called-label, .scenario-label, .risks-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+/* Groups */
+#groups-display { margin-top: 18px; }
+.groups-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+  margin-top: 10px;
+}
+.group-card {
+  background: transparent;
+  border: 1.5px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 14px;
+}
+.group-card-title { margin-bottom: 8px; }
+.group-member { padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 0.95rem; }
+.group-member:last-child { border-bottom: none; }
+.group-member-name { font-weight: 600; color: var(--muted); }
+.group-member-prompt { font-size: 1rem; color: var(--text); margin-top: 4px; line-height: 1.45; }
+
+/* Opening remarks */
+.opening-cards { display: flex; flex-direction: column; gap: 14px; }
+.opening-card {
+  background: transparent;
+  border: 1.5px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+.opening-card-name { margin-bottom: 6px; }
+.opening-card-script { font-size: 1.05rem; line-height: 1.65; color: var(--text); }
+
+/* Q&A */
+.qa-drawn-card {
+  background: transparent;
+  border: 1.5px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-top: 14px;
+}
+.qa-drawn-label { margin-bottom: 6px; }
+.qa-drawn-script { font-size: 1.1rem; line-height: 1.65; color: var(--text); }
+.qa-exhausted { display: none; text-align: center; color: var(--muted); font-size: 0.95rem; padding: 12px; margin-top: 10px; }
+.qa-exhausted.show { display: block; }
+
+/* Question history */
+#q-secondary-buttons { margin-top: 16px; }
+#q-history-list { display: none; margin-top: 12px; border-top: 1px solid var(--border); padding-top: 12px; }
+#q-history-list.show { display: block; }
+.history-item { padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 0.9rem; color: var(--muted); line-height: 1.5; }
+.history-item:last-child { border-bottom: none; }
+.history-num { font-weight: 700; color: var(--text); margin-right: 6px; }
+
+/* Timer */
+.collapsible-header { display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; }
+.collapsible-header .toggle-icon { font-size: 0.85rem; color: var(--muted); }
+.collapsible-body { display: none; margin-top: 16px; }
+.collapsible-body.expanded { display: block; }
+
+.timer-display {
+  font-size: 3.5rem;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  margin: 18px 0;
+  letter-spacing: 0.03em;
+}
+.timer-controls { display: flex; flex-direction: column; gap: 14px; align-items: center; }
+.timer-mode-row { display: flex; gap: 20px; align-items: center; }
+.timer-mode-row label { display: flex; align-items: center; gap: 6px; font-size: 0.95rem; font-weight: 600; color: var(--text); cursor: pointer; margin: 0; }
+.timer-countdown-inputs { display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.timer-countdown-inputs input[type="number"] { width: 64px; }
+.timer-btn-row { display: flex; gap: 10px; }
+.timer-warn-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 0.88rem; color: var(--muted); margin-top: 6px; }
+.timer-warn-row input[type="number"] { width: 56px; }
+.timer-warn-row label { margin: 0; font-size: 0.88rem; }
+
+@keyframes timer-flash {
+  0%, 100% { background: var(--card); }
+  50% { background: rgba(220,38,38,0.18); }
+}
+.timer-flash-active { animation: timer-flash 0.7s ease-in-out 2; }
+.timer-flash-done { background: rgba(220,38,38,0.22) !important; }
+
+.warn-entry-row { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+.warn-entry-row label { margin:0; font-size:0.88rem; font-weight:500; color:var(--text); display:flex; align-items:center; gap:4px; cursor:pointer; }
+.warn-entry-row input[type="number"] { width:60px; }
+.warn-remove-btn { background:none; border:none; cursor:pointer; color:var(--muted); font-size:1rem; padding:2px 5px; line-height:1; }
+.warn-remove-btn:hover { color:var(--danger); }
+
+/* Mod nav */
+.group-nav-label {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--header-text);
+  text-align: center;
+  white-space: nowrap;
+  opacity: 0.9;
+}
+
+/* Advanced section */
+.advanced-subsection { padding: 16px 0; }
+.advanced-subsection:first-child { padding-top: 4px; }
+.advanced-subtitle { margin-bottom: 12px; }
+.advanced-divider { border: none; border-top: 1px solid var(--border); margin: 4px 0; }
+
+/* Settings color controls */
+.scheme-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+.scheme-row label { margin: 0; }
+.scheme-row select {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-size: 0.95rem;
+  font-family: var(--font);
+  color: var(--text);
+  background: var(--card);
+  cursor: pointer;
+  outline: none;
+}
+.color-grid { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 8px; }
+.color-row { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 100px; }
+.color-row label { margin: 0; font-size: 0.85rem; }
+.color-row input[type="color"] {
+  width: 52px; height: 52px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px;
+  cursor: pointer;
+  background: var(--card);
+  display: block;
+}
+.color-hex-input {
+  width: 90px;
+  font-size: 0.82rem;
+  font-family: monospace;
+  padding: 4px 7px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--card);
+  color: var(--text);
+  outline: none;
+}
+.color-hex-input:focus { border-color: var(--accent); }
+
+/* ── COUNSEL EXERCISE STYLES ── */
+.counsel-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 20px 72px;
+  width: 100%;
+}
+
+#counsel-app .c-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 24px 28px;
+  width: 100%;
+  max-width: 640px;
+  margin-bottom: 12px;
+}
+
+.field-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  display: block;
+  margin-bottom: 8px;
+}
+
+.field-hint {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-bottom: 10px;
+  display: block;
+  line-height: 1.5;
+}
+
+.field-hint code {
+  background: var(--bg);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 0.7rem;
+  color: var(--accent);
+}
+
+#counsel-app input[type="text"] {
+  width: 100%;
+  background: var(--bg);
+}
+
+#counsel-app textarea {
+  width: 100%;
+  min-height: 100px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--bg);
+  font-family: var(--font);
+  font-size: 0.95rem;
+  color: var(--text);
+  resize: vertical;
+  outline: none;
+  padding: 10px 12px;
+  line-height: 1.7;
+  transition: border-color 0.15s;
+}
+#counsel-app textarea:focus { border-color: var(--accent); }
+#counsel-app textarea::placeholder { color: #b0a898; }
+
+#csv-status { font-size: 0.75rem; margin-top: 8px; min-height: 18px; color: var(--muted); }
+#csv-status.ok { color: var(--green); }
+#csv-status.err { color: var(--accent); }
+
+.c-btn-row {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  max-width: 640px;
+  margin-bottom: 32px;
+}
+
+.btn-load {
+  padding: 14px 22px;
+  background: var(--card);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.btn-load:hover { background: var(--bg); }
+
+.btn-draw {
+  flex: 1;
+  padding: 14px;
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--font);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+.btn-draw:hover { background: var(--accent-hover); }
+.btn-draw:active { transform: translateY(1px); }
+.btn-draw:disabled { background: #c0b8b0; cursor: not-allowed; }
+
+#counsel-result {
+  width: 100%;
+  max-width: 640px;
+  display: none;
+}
+#counsel-result.visible { display: block; }
+
+.result-card {
+  background: var(--header);
+  color: #fff;
+  border-radius: 4px;
+  padding: 36px 36px 28px;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+.result-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--gold));
+}
+
+.called-label { margin-bottom: 6px; }
+.called-name {
+  font-family: var(--serif);
+  font-size: clamp(2.2rem, 6vw, 3.4rem);
+  line-height: 1.1;
+  margin-bottom: 30px;
+  animation: rise 0.35s ease both;
+}
+.scenario-sep { border: none; border-top: 1px solid rgba(255,255,255,0.12); margin-bottom: 22px; }
+.scenario-label { margin-bottom: 8px; }
+.scenario-title {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 1.15rem;
+  color: rgba(255,255,255,0.85);
+  margin-bottom: 12px;
+  animation: rise 0.35s 0.08s ease both;
+}
+.scenario-text {
+  font-size: 0.92rem;
+  line-height: 1.8;
+  color: rgba(255,255,255,0.55);
+  animation: rise 0.35s 0.16s ease both;
+}
+
+.btn-reveal {
+  display: block;
+  width: 100%;
+  margin-top: 22px;
+  padding: 11px;
+  background: transparent;
+  color: rgba(255,255,255,0.6);
+  font-family: var(--font);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.btn-reveal:hover { background: rgba(255,255,255,0.07); color: #fff; }
+
+.risks-panel { display: none; margin-top: 18px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,0.12); animation: rise 0.3s ease both; }
+.risks-panel.visible { display: block; }
+.risks-label { margin-bottom: 10px; }
+
+.risks-md { color: rgba(255,255,255,0.75); font-size: 0.88rem; line-height: 1.75; }
+.risks-md p { margin-bottom: 0.6em; }
+.risks-md ul, .risks-md ol { padding-left: 1.2em; margin-bottom: 0.6em; }
+.risks-md li { margin-bottom: 0.35em; color: rgba(255,255,255,0.75); }
+.risks-md strong { color: #fff; font-weight: 600; }
+.risks-md em { color: rgba(255,255,255,0.85); }
+.risks-md p:last-child, .risks-md li:last-child { margin-bottom: 0; }
+
+.btn-reset {
+  display: block;
+  width: 100%;
+  padding: 13px;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.btn-reset:hover { background: var(--card); color: var(--text); }
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
 </head>
 <body>
+
+<!-- SETTINGS MODAL (global) -->
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal-box" style="max-width:600px;">
+    <button class="modal-close" id="settings-modal-close">&times;</button>
+    <h2>Appearance</h2>
+    <div class="scheme-row">
+      <label>Color scheme</label>
+      <select id="scheme-select"></select>
+      <button class="btn btn-secondary btn-sm" id="save-scheme-btn">Save as new theme</button>
+      <button class="btn btn-danger btn-sm" id="delete-scheme-btn" style="display:none;" title="Delete this saved theme">Delete</button>
+    </div>
+    <div class="color-grid">
+      <div class="color-row">
+        <label>Background</label>
+        <input type="color" id="cp-bg" data-var="--bg">
+        <input type="text" class="color-hex-input" id="hex-bg" maxlength="7" placeholder="#f0ece4">
+      </div>
+      <div class="color-row">
+        <label>Header</label>
+        <input type="color" id="cp-header" data-var="--header">
+        <input type="text" class="color-hex-input" id="hex-header" maxlength="7" placeholder="#1c1814">
+      </div>
+      <div class="color-row">
+        <label>Accent / Buttons</label>
+        <input type="color" id="cp-accent" data-var="--accent">
+        <input type="text" class="color-hex-input" id="hex-accent" maxlength="7" placeholder="#8b1a1a">
+      </div>
+      <div class="color-row">
+        <label>Cards</label>
+        <input type="color" id="cp-card" data-var="--card">
+        <input type="text" class="color-hex-input" id="hex-card" maxlength="7" placeholder="#ffffff">
+      </div>
+      <div class="color-row">
+        <label>Body text</label>
+        <input type="color" id="cp-text" data-var="--text">
+        <input type="text" class="color-hex-input" id="hex-text" maxlength="7" placeholder="#1c1814">
+      </div>
+      <div class="color-row">
+        <label>Labels</label>
+        <input type="color" id="cp-gold" data-var="--gold">
+        <input type="text" class="color-hex-input" id="hex-gold" maxlength="7" placeholder="#a07030">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ HOME SCREEN ═══════════════════════════════════ -->
+<div id="home-screen">
+  <button class="settings-btn-light settings-trigger" title="Appearance settings">⚙</button>
+  <div class="home-wordmark">AI &amp; Law</div>
+  <div class="home-subtitle">Practical Exercise Launcher</div>
+  <hr class="home-rule">
+
+  <div class="exercise-grid">
+    <div class="exercise-card" onclick="showPanelApp()">
+      <div class="exercise-card-eyebrow">Group Exercise</div>
+      <div class="exercise-card-title">AI Regulation Panel</div>
+      <div class="exercise-card-desc">A simulated Silicon Slopes panel on the state of AI regulation. Randomize student groups, assign panelist topics, and moderate the Q&amp;A with a built-in timer.</div>
+      <div class="exercise-card-arrow">Open →</div>
+    </div>
+
+    <div class="exercise-card" onclick="showCounselApp()">
+      <div class="exercise-card-eyebrow">Cold Call Exercise</div>
+      <div class="exercise-card-title">Product Counsel</div>
+      <div class="exercise-card-desc">Practice advising a tech company on AI product scenarios. Draw a student and scenario at random, then reveal the priority legal issues for discussion.</div>
+      <div class="exercise-card-arrow">Open →</div>
+    </div>
+    <a class="exercise-card" href="https://nickhafen.github.io/3d-plotter/" target="_blank" rel="noopener">
+      <div class="exercise-card-eyebrow">Visualization</div>
+      <div class="exercise-card-title">3D Word Plotter</div>
+      <div class="exercise-card-desc">Explore how word embeddings work — plot words in 3D space and see how numbers capture semantic meaning and relationships between concepts.</div>
+      <div class="exercise-card-arrow">Open ↗</div>
+    </a>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ PANEL APP ═══════════════════════════════════ -->
+<div id="panel-app" class="hidden app-wrapper">
 
 <!-- HELP MODAL -->
 <div class="modal-overlay" id="help-modal">
   <div class="modal-box">
     <button class="modal-close" id="help-modal-close">&times;</button>
     <h2>Panel: The State of AI Regulation</h2>
-    <h3>Setup</h3> 
+    <h3>Setup</h3>
     <p>You're a panelist at a Silicon Slopes panel called <b>The State of AI Regulation</b>. The audience is founders, executives, lawyers, and consultants — smart, but not necessarily up to speed on the law in this area. Each panelist will give a 2–3 minute opening on an assigned topic, then the floor opens for audience questions.</p>
     <h3>Goals</h3>
     <ul>
@@ -563,7 +872,7 @@
     <h4>Global</h4>
     <ul style="list-style:none;padding:0;">
       <li style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">?</kbd> <span>Open Help</span></li>
-      <li style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">S</kbd> <span>Open Settings</span></li>
+      <li style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">S</kbd> <span>Open Appearance Settings</span></li>
       <li style="display:flex;gap:12px;padding:5px 0;"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">Esc</kbd> <span>Close popups</span></li>
     </ul>
     <h4>Setup</h4>
@@ -571,7 +880,7 @@
       <li style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">Q</kbd> <span>Quick Fill</span></li>
       <li style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">W</kbd> <span>Quick Fill + Start</span></li>
       <li style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">Enter</kbd> <span>Start Panel</span></li>
-      <li style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">A</kbd> <span>Toggle Advanced</span></li>
+      <li style="display:flex;gap:12px;padding:5px 0;"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">A</kbd> <span>Toggle Advanced</span></li>
     </ul>
     <h4>Moderator View</h4>
     <ul style="list-style:none;padding:0;">
@@ -582,9 +891,7 @@
       <li style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">T</kbd> <span>Toggle Timer panel</span></li>
       <li style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">C</kbd> <span>Toggle Count Up / Down</span></li>
       <li style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">F</kbd> <span>Start / Pause Timer</span></li>
-      <li style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">G</kbd> <span>Reset Timer</span></li>
-      
-      
+      <li style="display:flex;gap:12px;padding:5px 0;"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">G</kbd> <span>Reset Timer</span></li>
     </ul>
   </div>
 </div>
@@ -598,55 +905,20 @@
   </div>
 </div>
 
-<!-- SETTINGS MODAL -->
-<div class="modal-overlay" id="settings-modal">
-  <div class="modal-box" style="max-width:600px;">
-    <button class="modal-close" id="settings-modal-close">&times;</button>
-    <h2>Appearance</h2>
-    <div class="scheme-row">
-      <label>Color scheme</label>
-      <select id="scheme-select"></select>
-      <button class="btn btn-secondary btn-sm" id="save-scheme-btn">Save as new theme</button>
-      <button class="btn btn-danger btn-sm" id="delete-scheme-btn" style="display:none;" title="Delete this saved theme">Delete</button>
-    </div>
-    <div class="color-grid">
-      <div class="color-row">
-        <label>Background</label>
-        <input type="color" id="cp-bg" data-var="--bg">
-        <input type="text" class="color-hex-input" id="hex-bg" maxlength="7" placeholder="#f4f5f7">
-      </div>
-      <div class="color-row">
-        <label>Header</label>
-        <input type="color" id="cp-header" data-var="--header">
-        <input type="text" class="color-hex-input" id="hex-header" maxlength="7" placeholder="#1a1f2e">
-      </div>
-      <div class="color-row">
-        <label>Accent / Buttons</label>
-        <input type="color" id="cp-accent" data-var="--accent">
-        <input type="text" class="color-hex-input" id="hex-accent" maxlength="7" placeholder="#2563eb">
-      </div>
-      <div class="color-row">
-        <label>Cards</label>
-        <input type="color" id="cp-card" data-var="--card">
-        <input type="text" class="color-hex-input" id="hex-card" maxlength="7" placeholder="#ffffff">
-      </div>
-      <div class="color-row">
-        <label>Body text</label>
-        <input type="color" id="cp-text" data-var="--text">
-        <input type="text" class="color-hex-input" id="hex-text" maxlength="7" placeholder="#1e2533">
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- LOADING SCREEN -->
 <div id="loading-screen">
+  <div style="position:absolute;top:16px;right:20px;">
+    <button class="settings-btn-light settings-trigger" title="Appearance settings">⚙</button>
+  </div>
   <div class="spinner"></div>
   <div class="loading-text">Loading…</div>
 </div>
 
 <!-- ERROR SCREEN -->
 <div id="error-screen">
+  <div style="position:absolute;top:16px;right:20px;">
+    <button class="settings-btn-light settings-trigger" title="Appearance settings">⚙</button>
+  </div>
   <div class="error-icon">⚠️</div>
   <div class="error-msg">Could not load data. Make sure the Google Sheet is published to the web (File → Share → Publish to web → CSV).</div>
   <div class="error-hint" id="error-detail"></div>
@@ -655,17 +927,20 @@
 <!-- SETUP SCREEN -->
 <div id="setup-screen" class="screen">
   <div id="setup-header" class="mod-header-bar">
-    <div>
-      <div style="font-size:1.25rem;font-weight:700;">Panel: The State of AI Regulation</div>
-      <div style="font-size:0.8rem;opacity:0.65;margin-top:2px;">Setup</div>
+    <div class="header-left">
+      <button class="header-btn" onclick="showHomeScreen()" title="Back to Home">←</button>
+      <div>
+        <div class="header-title">Panel: The State of AI Regulation</div>
+        <div class="header-subtitle">Setup</div>
+      </div>
     </div>
-    <div style="display:flex;gap:8px;align-items:center;">
-      <button class="header-btn" id="settings-btn" title="Appearance settings (S)">⚙</button>
+    <div class="header-right">
+      <button class="header-btn settings-trigger" id="settings-btn" title="Appearance settings (S)">⚙</button>
       <button class="header-btn help-btn" title="Help / Info (?)">?</button>
     </div>
   </div>
 
-  <div style="padding-top:28px;">
+  <div style="padding:28px;">
 
   <!-- Names -->
   <div class="section-card">
@@ -700,13 +975,9 @@
       <div class="section-title" style="margin:0;border:none;padding:0;">Advanced</div>
       <span class="toggle-icon" id="advanced-toggle-icon">▲ Hide</span>
     </div>
-    <!-- To hide Advanced by default: remove the "expanded" class from the div below -->
     <div class="collapsible-body expanded" id="advanced-body">
-
-      <!-- Quick Fill -->
       <div class="advanced-subsection">
         <div class="advanced-subtitle">Auto-populate</div>
-        
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
           <label style="margin:0;font-size:0.95rem;">Students</label>
           <input type="number" id="qf-count" value="9" min="1" max="50" style="width:64px;">
@@ -715,53 +986,42 @@
           <button class="btn btn-secondary btn-sm" id="qf-btn">⚡ Quick Fill</button>
           <button class="btn btn-primary btn-sm" id="qf-start-btn" title="Quick Fill then start the panel (W)">⚡ Quick Fill + Start →</button>
         </div>
-        
       </div>
-
       <div class="advanced-divider"></div>
-
-      <!--Minimum Panel Size -->
       <div class="advanced-subsection">
         <div class="advanced-subtitle">Minimum Panel Size</div>
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-          
           <input type="number" id="min-group-size" value="2" min="1" max="20" style="width:64px;">
           <span class="names-hint" style="margin:0;">Groups smaller than this will be distributed among other groups.</span>
         </div>
       </div>
-
     </div>
   </div>
 
   <!-- Start Panel -->
   <div style="display:flex;justify-content:flex-end;margin-bottom:28px;">
-    <button class="btn btn-primary" id="start-panel-btn" style="font-size:1.05rem;padding:12px 28px;">
-      Start →
-    </button>
+    <button class="btn btn-primary" id="start-panel-btn" style="font-size:1.05rem;padding:12px 28px;">Start →</button>
   </div>
 
-  </div><!-- end inner padding wrapper -->
+  </div>
 </div>
 
 <!-- MODERATOR SCREEN -->
 <div id="mod-screen" class="screen">
   <div class="mod-header-bar">
     <button id="mod-reset-btn" class="header-btn" title="Reset / New Panel (R)">↩</button>
-    <div style="display:flex;align-items:center;gap:6px;">
+    <div class="header-nav">
       <button class="header-btn" id="group-prev-btn" title="Previous Panel (←)">‹</button>
       <div class="group-nav-label" id="group-nav-label">Panel 1 of 1</div>
       <button class="header-btn" id="group-next-btn" title="Next Panel (→)">›</button>
     </div>
-    <div style="display:flex;gap:8px;align-items:center;">
-      <button class="header-btn" id="settings-btn-mod" title="Appearance settings (S)">⚙</button>
+    <div class="header-right">
+      <button class="header-btn settings-trigger" id="settings-btn-mod" title="Appearance settings (S)">⚙</button>
       <button class="header-btn help-btn" title="Help / Info (?)">?</button>
     </div>
   </div>
 
   <div style="padding:28px;max-width:900px;margin:0 auto;">
-
-    
-
     <!-- Opening Remarks -->
     <div class="section-card">
       <div class="section-title">Opening Remarks</div>
@@ -773,7 +1033,6 @@
       <div class="section-title">Audience Questions</div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
         <button class="btn btn-primary" id="draw-question-btn">New Question</button>
-        
       </div>
       <div class="qa-exhausted" id="qa-exhausted">All questions have been drawn.</div>
       <div id="qa-drawn-area"></div>
@@ -795,12 +1054,8 @@
         <div class="timer-display" id="timer-display">0:00</div>
         <div class="timer-controls">
           <div class="timer-mode-row">
-            <label>
-              <input type="radio" name="timer-mode" value="down" checked> Count Down
-            </label>
-            <label>
-              <input type="radio" name="timer-mode" value="up"> Count Up
-            </label>
+            <label><input type="radio" name="timer-mode" value="down" checked> Count Down</label>
+            <label><input type="radio" name="timer-mode" value="up"> Count Up</label>
           </div>
           <div class="timer-countdown-inputs" id="timer-countdown-inputs">
             <span>Minutes:</span>
@@ -829,46 +1084,216 @@
         </div>
       </div>
     </div>
-
   </div>
 </div>
 
+</div><!-- end #panel-app -->
+
+<!-- ═══════════════════════════════════ COUNSEL APP ═══════════════════════════════════ -->
+<div id="counsel-app" class="hidden app-wrapper">
+
+  <!-- SETUP SUB-SCREEN -->
+  <div id="counsel-setup" class="counsel-screen active">
+    <div class="mod-header-bar">
+      <div class="header-left">
+        <button class="header-btn" onclick="showHomeScreen()" title="Back to Home (M)">←</button>
+        <div>
+          <div class="header-title">Product Counsel Exercise</div>
+          <div class="header-subtitle">Setup</div>
+        </div>
+      </div>
+      <div class="header-right">
+        <button class="header-btn settings-trigger" title="Appearance settings (S)">⚙</button>
+      </div>
+    </div>
+
+    <div class="counsel-content">
+
+      <!-- CSV URL -->
+      <div class="c-card">
+        <span class="field-label">Scenarios — Google Sheets CSV URL</span>
+        <span class="field-hint">
+          In Google Sheets: <strong>File → Share → Publish to web</strong>, choose <strong>CSV</strong>, copy the link.<br>
+          Expected columns: <code>title</code>, <code>text</code>, <code>top legal risks</code>
+        </span>
+        <input type="text" id="csv-url"
+          value="https://docs.google.com/spreadsheets/d/e/2PACX-1vQQPMiRPx47QcUqn8HWLGkH8nQdS8yKETLV_NzG3Lsf5RGoCZ4rN-6EtZ217Brzb-rPzg1B7MkOFLUP/pub?gid=0&amp;single=true&amp;output=csv" />
+        <div id="csv-status"></div>
+      </div>
+
+      <!-- Roster -->
+      <div class="c-card">
+        <span class="field-label">Roster</span>
+        <span class="field-hint">Separate names with commas or new lines</span>
+        <textarea id="counsel-names"></textarea>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;">
+          <span class="field-hint" style="margin:0;">Quick fill:</span>
+          <input type="number" id="counsel-qf-count" value="6" min="1" max="26" style="width:60px;border:1px solid var(--border);border-radius:4px;padding:5px 8px;font-size:0.88rem;background:var(--bg);color:var(--text);outline:none;">
+          <button class="btn-load" style="padding:7px 14px;font-size:0.75rem;" onclick="counselQuickFill()">⚡ Quick Fill</button>
+        </div>
+      </div>
+
+      <div class="c-btn-row">
+        <button class="btn-draw" id="btn-draw" onclick="counselStart()">▸ Start</button>
+      </div>
+
+    </div>
+  </div><!-- end counsel-setup -->
+
+  <!-- MOD SUB-SCREEN -->
+  <div id="counsel-mod" class="counsel-screen">
+    <div class="mod-header-bar">
+      <button class="header-btn" onclick="counselReset()" title="Reset / New Session (R)">↩</button>
+      <div class="header-nav">
+        <button class="header-btn" id="counsel-prev-btn" title="Previous (←)">‹</button>
+        <div class="group-nav-label" id="counsel-nav-label">Result 1 of 1</div>
+        <button class="header-btn" id="counsel-next-btn" title="Next (→)">›</button>
+      </div>
+      <div class="header-right">
+        <button class="header-btn settings-trigger" title="Appearance settings (S)">⚙</button>
+      </div>
+    </div>
+
+    <div class="counsel-content">
+
+      <!-- Result Card -->
+      <div class="result-card" style="width:100%;max-width:640px;">
+        <div class="called-label">Name</div>
+        <div class="called-name" id="out-name"></div>
+        <hr class="scenario-sep">
+        <div class="scenario-label">Scenario</div>
+        <div class="scenario-title" id="out-title"></div>
+        <div class="scenario-text" id="out-scenario"></div>
+        <button class="btn-reveal" id="btn-reveal" onclick="counselToggleRisks()">▸ Show Priority Legal Issues</button>
+        <div class="risks-panel" id="risks-panel">
+          <div class="risks-label">Priority Legal Issues</div>
+          <div class="risks-md" id="risks-list"></div>
+        </div>
+      </div>
+
+      <!-- Timer -->
+      <div class="c-card" id="counsel-timer-card" style="margin-top:16px;">
+        <div class="collapsible-header" id="counsel-timer-toggle-header">
+          <div style="font-weight:700;font-size:0.95rem;">Timer</div>
+          <span class="toggle-icon" id="counsel-timer-toggle-icon">▼ Show</span>
+        </div>
+        <div class="collapsible-body" id="counsel-timer-body">
+          <div class="timer-display" id="counsel-timer-display">0:00</div>
+          <div class="timer-controls">
+            <div class="timer-mode-row">
+              <label><input type="radio" name="counsel-timer-mode" value="down" checked> Count Down</label>
+              <label><input type="radio" name="counsel-timer-mode" value="up"> Count Up</label>
+            </div>
+            <div class="timer-countdown-inputs" id="counsel-timer-countdown-inputs">
+              <span>Minutes:</span>
+              <input type="number" id="counsel-timer-min" value="2" min="0" max="99" step="1">
+              <span>Seconds:</span>
+              <input type="number" id="counsel-timer-sec" value="0" min="0" max="59" step="1">
+            </div>
+            <div class="timer-warn-row" id="counsel-timer-countup-row">
+              <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-weight:500;">
+                <input type="checkbox" id="counsel-timer-countup-after" checked>
+                Continue counting up when countdown ends
+              </label>
+            </div>
+            <div class="timer-btn-row">
+              <button class="btn btn-primary" id="counsel-timer-start-btn">Start</button>
+              <button class="btn btn-secondary" id="counsel-timer-reset-btn">Reset</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- end counsel-mod -->
+
+</div><!-- end #counsel-app -->
+
 <script>
 // ════════════════════════════════════════════════
-//  CONFIG
+//  NAVIGATION
+// ════════════════════════════════════════════════
+function showHomeScreen() {
+  document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+  stopTimer();
+  counselStopTimer();
+  document.getElementById('panel-app').classList.add('hidden');
+  document.getElementById('counsel-app').classList.add('hidden');
+  document.getElementById('home-screen').classList.remove('hidden');
+}
+
+let panelDataLoaded = false;
+let panelDataLoading = false;
+
+function showPanelApp() {
+  document.getElementById('home-screen').classList.add('hidden');
+  document.getElementById('counsel-app').classList.add('hidden');
+  document.getElementById('panel-app').classList.remove('hidden');
+  if (!panelDataLoaded && !panelDataLoading) {
+    panelDataLoading = true;
+    loadPanelData();
+  }
+}
+
+function showCounselApp() {
+  document.getElementById('home-screen').classList.add('hidden');
+  document.getElementById('panel-app').classList.add('hidden');
+  document.getElementById('counsel-app').classList.remove('hidden');
+}
+
+// ════════════════════════════════════════════════
+//  SHARED UTILITIES
+// ════════════════════════════════════════════════
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// ════════════════════════════════════════════════
+//  PANEL EXERCISE — CONFIG
 // ════════════════════════════════════════════════
 const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhb7lQIBLc78-V9CtLw53tZ6E9x3OX6lwHEOSz5kastQG2bkH9gYK1ZmrMHqVnkr5HLBrmwtRAxJvZ/pub?output=csv";
 
 // ════════════════════════════════════════════════
-//  STATE
+//  PANEL EXERCISE — STATE
 // ════════════════════════════════════════════════
-let presentationItems = []; // { script, prompt }
-let questions = [];          // { script }
+let presentationItems = [];
+let questions = [];
 
 let groupSize = 3;
-let groups = [];         // array of arrays of names
-let promptAssigned = []; // flat list: { name, prompt, script }
+let groups = [];
+let promptAssigned = [];
 let groupsRandomized = false;
 let promptsAssigned = false;
 
-// Moderator state
-let drawnQuestions = [];    // indices into questions[]
+let drawnQuestions = [];
 let usedQuestionSet = new Set();
 let currentGroupIndex = 0;
 
-// Timer
 let timerInterval = null;
 let timerSeconds = 0;
 let timerRunning = false;
-let timerMode = 'down'; // 'up' | 'down'
+let timerMode = 'down';
 let timerCountdownTotal = 120;
 let timerFlashState = null;
 let timerCountingUpAfterCD = false;
-let timerWarningEntries = [{value:60,unit:'s'},{value:30,unit:'s'}]; // each {value, unit:'s'|'m'}
-let timerFlashedThresholds = new Set(); // seconds values we've already flashed for this run
+let timerWarningEntries = [{value:60,unit:'s'},{value:30,unit:'s'}];
+let timerFlashedThresholds = new Set();
 
 // ════════════════════════════════════════════════
-//  ELEMENT REFS
+//  PANEL EXERCISE — ELEMENT REFS
 // ════════════════════════════════════════════════
 const $loading      = document.getElementById('loading-screen');
 const $error        = document.getElementById('error-screen');
@@ -876,72 +1301,62 @@ const $errorDetail  = document.getElementById('error-detail');
 const $setup        = document.getElementById('setup-screen');
 const $mod          = document.getElementById('mod-screen');
 
-const $namesTextarea   = document.getElementById('names-textarea');
-const $groupSizeInput  = document.getElementById('group-size');
-const $randomizeBtn    = document.getElementById('randomize-btn');
-const $assignPromptsBtn= document.getElementById('assign-prompts-btn');
-const $groupsDisplay   = document.getElementById('groups-display');
-const $warnNoGroups    = document.getElementById('warn-no-groups');
-const $warnNoPrompts   = document.getElementById('warn-no-prompts');
-const $startPanelBtn   = document.getElementById('start-panel-btn');
+const $namesTextarea    = document.getElementById('names-textarea');
+const $groupSizeInput   = document.getElementById('group-size');
+const $randomizeBtn     = document.getElementById('randomize-btn');
+const $assignPromptsBtn = document.getElementById('assign-prompts-btn');
+const $groupsDisplay    = document.getElementById('groups-display');
+const $warnNoGroups     = document.getElementById('warn-no-groups');
+const $warnNoPrompts    = document.getElementById('warn-no-prompts');
+const $startPanelBtn    = document.getElementById('start-panel-btn');
 
-const $modResetBtn     = document.getElementById('mod-reset-btn');
-const $groupPrevBtn    = document.getElementById('group-prev-btn');
-const $groupNextBtn    = document.getElementById('group-next-btn');
-const $groupNavLabel   = document.getElementById('group-nav-label');
-const $openingCards    = document.getElementById('opening-cards');
-const $drawQBtn        = document.getElementById('draw-question-btn');
-const $qaExhausted     = document.getElementById('qa-exhausted');
-const $qaDrawnArea     = document.getElementById('qa-drawn-area');
-const $toggleHistoryBtn= document.getElementById('toggle-history-btn');
-const $qHistoryList    = document.getElementById('q-history-list');
+const $modResetBtn   = document.getElementById('mod-reset-btn');
+const $groupPrevBtn  = document.getElementById('group-prev-btn');
+const $groupNextBtn  = document.getElementById('group-next-btn');
+const $groupNavLabel = document.getElementById('group-nav-label');
+const $openingCards  = document.getElementById('opening-cards');
+const $drawQBtn      = document.getElementById('draw-question-btn');
+const $qaExhausted   = document.getElementById('qa-exhausted');
+const $qaDrawnArea   = document.getElementById('qa-drawn-area');
+const $toggleHistoryBtn = document.getElementById('toggle-history-btn');
+const $qHistoryList  = document.getElementById('q-history-list');
 
-const $timerToggleHeader = document.getElementById('timer-toggle-header');
-const $timerToggleIcon   = document.getElementById('timer-toggle-icon');
-const $timerBody         = document.getElementById('timer-body');
-const $timerDisplay      = document.getElementById('timer-display');
-const $timerStartBtn     = document.getElementById('timer-start-btn');
-const $timerResetBtn     = document.getElementById('timer-reset-btn');
+const $timerToggleHeader    = document.getElementById('timer-toggle-header');
+const $timerToggleIcon      = document.getElementById('timer-toggle-icon');
+const $timerBody            = document.getElementById('timer-body');
+const $timerDisplay         = document.getElementById('timer-display');
+const $timerStartBtn        = document.getElementById('timer-start-btn');
+const $timerResetBtn        = document.getElementById('timer-reset-btn');
 const $timerCountdownInputs = document.getElementById('timer-countdown-inputs');
-const $timerMin          = document.getElementById('timer-min');
-const $timerSec          = document.getElementById('timer-sec');
+const $timerMin             = document.getElementById('timer-min');
+const $timerSec             = document.getElementById('timer-sec');
+const $timerCard            = document.getElementById('timer-card');
 
-// $helpBtn — handled by class selector in bindHelpEvents
-const $helpModal       = document.getElementById('help-modal');
-const $helpModalClose  = document.getElementById('help-modal-close');
-
-// ════════════════════════════════════════════════
-//  INIT
-// ════════════════════════════════════════════════
-window.addEventListener('DOMContentLoaded', async () => {
-  bindSetupEvents();
-  bindModEvents();
-  bindHelpEvents();
-  bindAdvancedEvents();
-  bindKeyboardShortcuts();
-  await loadData();
-});
+const $helpModal      = document.getElementById('help-modal');
+const $helpModalClose = document.getElementById('help-modal-close');
 
 // ════════════════════════════════════════════════
-//  DATA LOADING
+//  PANEL EXERCISE — DATA LOADING
 // ════════════════════════════════════════════════
-async function loadData() {
+async function loadPanelData() {
   try {
     const res = await fetch(SHEET_CSV_URL);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const text = await res.text();
-    parseCSV(text);
+    parsePanelCSV(text);
+    panelDataLoaded = true;
+    panelDataLoading = false;
     showScreen('setup');
   } catch (e) {
+    panelDataLoading = false;
     $loading.style.display = 'none';
     $error.style.display = 'flex';
     $errorDetail.textContent = e.message || String(e);
   }
 }
 
-function parseCSV(text) {
-  const rows = text.trim().split('\n').map(line => parseCSVLine(line));
-  // first row is header
+function parsePanelCSV(text) {
+  const rows = text.trim().split('\n').map(line => parsePanelCSVLine(line));
   for (let i = 1; i < rows.length; i++) {
     const [type, script, prompt] = rows[i];
     if (!type) continue;
@@ -953,7 +1368,7 @@ function parseCSV(text) {
   }
 }
 
-function parseCSVLine(line) {
+function parsePanelCSVLine(line) {
   const result = [];
   let current = '';
   let inQuotes = false;
@@ -974,7 +1389,7 @@ function parseCSVLine(line) {
 }
 
 // ════════════════════════════════════════════════
-//  SCREEN MANAGEMENT
+//  PANEL EXERCISE — SCREEN MANAGEMENT
 // ════════════════════════════════════════════════
 function showScreen(name) {
   $loading.style.display = 'none';
@@ -986,10 +1401,9 @@ function showScreen(name) {
 }
 
 // ════════════════════════════════════════════════
-//  SETUP: NAMES FROM TEXTAREA
+//  PANEL EXERCISE — SETUP EVENTS
 // ════════════════════════════════════════════════
 function getNamesFromTextarea() {
-  // Split on newlines or commas, trim each token, drop blanks
   return $namesTextarea.value
     .split(/[\n,]/)
     .map(n => n.trim())
@@ -1003,17 +1417,8 @@ function bindSetupEvents() {
 }
 
 // ════════════════════════════════════════════════
-//  SETUP: RANDOMIZE GROUPS
+//  PANEL EXERCISE — RANDOMIZE GROUPS
 // ════════════════════════════════════════════════
-function shuffle(arr) {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
 function randomizeGroups() {
   $warnNoGroups.classList.remove('show');
   document.getElementById('warn-start-blocked').classList.remove('show');
@@ -1034,7 +1439,7 @@ function randomizeGroups() {
     return;
   }
 
-  $warnNoGroups.textContent = 'Groups haven\'t been created yet. Create groups first.';
+  $warnNoGroups.textContent = "Groups haven't been created yet. Create groups first.";
 
   const minSize = parseInt((document.getElementById('min-group-size') || {}).value) || 2;
   const shuffled = shuffle(names);
@@ -1052,8 +1457,6 @@ function randomizeGroups() {
     idx += size;
   }
 
-  // Distribute members of any group smaller than minSize across other groups one-by-one
-  // (adding each member to whichever remaining group is currently smallest)
   for (let g = groups.length - 1; g >= 0; g--) {
     if (groups[g].length < minSize && groups.length > 1) {
       const members = groups.splice(g, 1)[0];
@@ -1068,7 +1471,6 @@ function randomizeGroups() {
   groupsRandomized = true;
   promptsAssigned = false;
   promptAssigned = [];
-
   renderGroups();
 }
 
@@ -1088,7 +1490,6 @@ function renderGroups() {
       nameDiv.className = 'group-member-name';
       nameDiv.textContent = name;
       member.appendChild(nameDiv);
-      // If prompts assigned, show prompt
       const pa = promptAssigned.find(p => p.name === name);
       if (pa) {
         const promptDiv = document.createElement('div');
@@ -1104,7 +1505,7 @@ function renderGroups() {
 }
 
 // ════════════════════════════════════════════════
-//  SETUP: ASSIGN PROMPTS
+//  PANEL EXERCISE — ASSIGN PROMPTS
 // ════════════════════════════════════════════════
 function assignPrompts() {
   $warnNoGroups.classList.remove('show');
@@ -1126,7 +1527,6 @@ function assignPrompts() {
 
   promptsAssigned = true;
 
-  // Warn if there are more students than unique prompts
   if (allMembers.length > presentationItems.length) {
     $warnNoPrompts.textContent = `Note: there are only ${presentationItems.length} unique prompts for ${allMembers.length} students — some prompts will be repeated.`;
     $warnNoPrompts.classList.add('show');
@@ -1136,7 +1536,7 @@ function assignPrompts() {
 }
 
 // ════════════════════════════════════════════════
-//  START PANEL
+//  PANEL EXERCISE — START PANEL
 // ════════════════════════════════════════════════
 function startPanel() {
   $warnNoGroups.classList.remove('show');
@@ -1161,10 +1561,9 @@ function startPanel() {
 }
 
 // ════════════════════════════════════════════════
-//  MODERATOR SCREEN: BUILD
+//  PANEL EXERCISE — MODERATOR SCREEN
 // ════════════════════════════════════════════════
 function buildModeratorScreen() {
-  // Reset Q&A state
   drawnQuestions = [];
   usedQuestionSet = new Set();
   $qaDrawnArea.innerHTML = '';
@@ -1174,24 +1573,18 @@ function buildModeratorScreen() {
   $qHistoryList.classList.remove('show');
   $toggleHistoryBtn.textContent = 'View Question History';
 
-  // Opening remarks — group navigation
   currentGroupIndex = 0;
   renderGroupView(currentGroupIndex);
   updateGroupNav();
 
-  // Timer reset
   stopTimer();
   timerSeconds = 0;
   updateTimerDisplay();
   $timerStartBtn.textContent = 'Start';
 }
 
-// ════════════════════════════════════════════════
-//  MODERATOR: RESET
-// ════════════════════════════════════════════════
 function bindModEvents() {
   $modResetBtn.addEventListener('click', () => {
-    // preserve student names & count, clear group/prompt/panel state
     groupsRandomized = false;
     promptsAssigned = false;
     groups = [];
@@ -1203,7 +1596,6 @@ function bindModEvents() {
     showScreen('setup');
   });
 
-  // Group navigation
   $groupPrevBtn.addEventListener('click', () => {
     if (currentGroupIndex > 0) {
       resetTimer();
@@ -1223,23 +1615,19 @@ function bindModEvents() {
     }
   });
 
-  // Draw question
   $drawQBtn.addEventListener('click', drawQuestion);
 
-  // History toggle
   $toggleHistoryBtn.addEventListener('click', () => {
     const open = $qHistoryList.classList.toggle('show');
     $toggleHistoryBtn.textContent = open ? 'Hide Question History' : 'View Question History';
   });
 
-  // Timer toggle
   $timerToggleHeader.addEventListener('click', () => {
     const expanded = $timerBody.classList.toggle('expanded');
     $timerToggleIcon.textContent = expanded ? '▲ Hide' : '▼ Show';
     if (!expanded) resetTimer();
   });
 
-  // Timer mode
   document.querySelectorAll('input[name="timer-mode"]').forEach(radio => {
     radio.addEventListener('change', () => {
       timerMode = radio.value;
@@ -1259,26 +1647,14 @@ function bindModEvents() {
     });
   });
 
-  // View All Questions
   const $viewAllQBtn = document.getElementById('view-all-q-btn');
-  const $allQModal = document.getElementById('all-q-modal');
+  const $allQModal   = document.getElementById('all-q-modal');
   const $allQModalClose = document.getElementById('all-q-modal-close');
-  const $allQList = document.getElementById('all-q-list');
 
-  if ($viewAllQBtn) {
-    $viewAllQBtn.addEventListener('click', () => {
-      renderAllQuestionsModal();
-      $allQModal.classList.add('open');
-    });
-  }
-  if ($allQModalClose) {
-    $allQModalClose.addEventListener('click', () => $allQModal.classList.remove('open'));
-  }
-  if ($allQModal) {
-    $allQModal.addEventListener('click', e => { if (e.target === $allQModal) $allQModal.classList.remove('open'); });
-  }
+  if ($viewAllQBtn) $viewAllQBtn.addEventListener('click', () => { renderAllQuestionsModal(); $allQModal.classList.add('open'); });
+  if ($allQModalClose) $allQModalClose.addEventListener('click', () => $allQModal.classList.remove('open'));
+  if ($allQModal) $allQModal.addEventListener('click', e => { if (e.target === $allQModal) $allQModal.classList.remove('open'); });
 
-  // Reset Questions
   const $resetQBtn = document.getElementById('reset-q-btn');
   if ($resetQBtn) {
     $resetQBtn.addEventListener('click', () => {
@@ -1293,29 +1669,13 @@ function bindModEvents() {
     });
   }
 
-  // Timer warnings: init render + add button
   renderTimerWarnings();
   const $addWarnBtn = document.getElementById('add-warning-btn');
-  if ($addWarnBtn) {
-    $addWarnBtn.addEventListener('click', () => {
-      timerWarningEntries.push({value:30, unit:'s'});
-      renderTimerWarnings();
-    });
-  }
+  if ($addWarnBtn) $addWarnBtn.addEventListener('click', () => { timerWarningEntries.push({value:30,unit:'s'}); renderTimerWarnings(); });
 
-  // Timer start/pause
-  $timerStartBtn.addEventListener('click', () => {
-    if (timerRunning) {
-      pauseTimer();
-    } else {
-      startTimer();
-    }
-  });
-
-  // Timer reset
+  $timerStartBtn.addEventListener('click', () => { if (timerRunning) pauseTimer(); else startTimer(); });
   $timerResetBtn.addEventListener('click', resetTimer);
 
-  // Prevent decimals in timer minute/second inputs
   ['timer-min', 'timer-sec'].forEach(id => {
     const inp = document.getElementById(id);
     if (!inp) return;
@@ -1334,7 +1694,7 @@ function bindModEvents() {
 }
 
 // ════════════════════════════════════════════════
-//  GROUP VIEW
+//  PANEL EXERCISE — GROUP VIEW
 // ════════════════════════════════════════════════
 function renderGroupView(idx) {
   $openingCards.innerHTML = '';
@@ -1344,7 +1704,7 @@ function renderGroupView(idx) {
   }
   const members = groups[idx];
   if (!promptAssigned.length) {
-    $openingCards.innerHTML = '<p style="color:var(--muted);font-size:0.95rem;">No prompts assigned. Return to setup to assign prompts.</p>';
+    $openingCards.innerHTML = '<p style="color:var(--muted);font-size:0.95rem;">No prompts assigned. Return to setup.</p>';
     return;
   }
   members.forEach(name => {
@@ -1367,7 +1727,7 @@ function updateGroupNav() {
 }
 
 // ════════════════════════════════════════════════
-//  Q&A
+//  PANEL EXERCISE — Q&A
 // ════════════════════════════════════════════════
 function drawQuestion() {
   if (usedQuestionSet.size >= questions.length) return;
@@ -1379,7 +1739,6 @@ function drawQuestion() {
   usedQuestionSet.add(idx);
   drawnQuestions.push(idx);
 
-  // Show in main area
   $qaDrawnArea.innerHTML = `
     <div class="qa-drawn-card">
       <div class="qa-drawn-label">Question ${drawnQuestions.length}</div>
@@ -1387,7 +1746,6 @@ function drawQuestion() {
     </div>
   `;
 
-  // Update history
   $qHistoryList.innerHTML = '';
   drawnQuestions.forEach((qi, i) => {
     const item = document.createElement('div');
@@ -1396,7 +1754,6 @@ function drawQuestion() {
     $qHistoryList.appendChild(item);
   });
 
-  // Check exhausted
   if (usedQuestionSet.size >= questions.length) {
     $drawQBtn.disabled = true;
     $qaExhausted.classList.add('show');
@@ -1404,12 +1761,9 @@ function drawQuestion() {
 }
 
 // ════════════════════════════════════════════════
-//  TIMER
+//  PANEL EXERCISE — TIMER
 // ════════════════════════════════════════════════
-const $timerCard = document.getElementById('timer-card');
-
 function getTimerWarnSecondsArray() {
-  // Returns sorted-descending array of threshold values in seconds
   return timerWarningEntries
     .map(e => e.unit === 'm' ? (e.value || 0) * 60 : (e.value || 0))
     .filter(v => v > 0)
@@ -1419,7 +1773,7 @@ function getTimerWarnSecondsArray() {
 function triggerTimerFlash(thenDone) {
   if (!$timerCard) return;
   $timerCard.classList.remove('timer-flash-active', 'timer-flash-done');
-  void $timerCard.offsetWidth; // force reflow to restart animation
+  void $timerCard.offsetWidth;
   $timerCard.classList.add('timer-flash-active');
   if (thenDone) {
     const onEnd = () => {
@@ -1437,12 +1791,12 @@ function updateTimerFlash() {
     timerFlashedThresholds.clear();
     return;
   }
-  if (timerCountingUpAfterCD) return; // keep whatever state was set at zero
+  if (timerCountingUpAfterCD) return;
 
   if (timerSeconds === 0) {
     if (!timerFlashedThresholds.has('zero')) {
       timerFlashedThresholds.add('zero');
-      triggerTimerFlash(true); // flash then stay red
+      triggerTimerFlash(true);
     }
     return;
   }
@@ -1501,10 +1855,10 @@ function startTimer() {
       if (timerSeconds <= 0) {
         timerSeconds = 0;
         updateTimerDisplay();
-        updateTimerFlash(); // must run BEFORE timerCountingUpAfterCD is set
+        updateTimerFlash();
         const countUpAfterEl = document.getElementById('timer-countup-after');
         if (countUpAfterEl && countUpAfterEl.checked) {
-          timerCountingUpAfterCD = true; // flip to count-up mode internally
+          timerCountingUpAfterCD = true;
         } else {
           stopTimer();
           $timerStartBtn.textContent = 'Start';
@@ -1559,65 +1913,90 @@ function updateTimerDisplay() {
 }
 
 // ════════════════════════════════════════════════
-//  HELP MODAL
+//  PANEL EXERCISE — HELP + SETTINGS
 // ════════════════════════════════════════════════
+function openSettings() {
+  const m = document.getElementById('settings-modal');
+  if (m) m.classList.add('open');
+}
+function closeSettings() {
+  const m = document.getElementById('settings-modal');
+  if (m) m.classList.remove('open');
+}
+
 function bindHelpEvents() {
   document.querySelectorAll('.help-btn').forEach(btn => {
     btn.addEventListener('click', () => $helpModal.classList.add('open'));
   });
   $helpModalClose.addEventListener('click', () => $helpModal.classList.remove('open'));
-  $helpModal.addEventListener('click', e => {
-    if (e.target === $helpModal) $helpModal.classList.remove('open');
-  });
+  $helpModal.addEventListener('click', e => { if (e.target === $helpModal) $helpModal.classList.remove('open'); });
 
-  // Settings modal
   const $settingsModal = document.getElementById('settings-modal');
   const $settingsClose = document.getElementById('settings-modal-close');
-  function openSettings() { if ($settingsModal) $settingsModal.classList.add('open'); }
-  function closeSettings() { if ($settingsModal) $settingsModal.classList.remove('open'); }
-  document.querySelectorAll('#settings-btn, #settings-btn-mod').forEach(btn => {
+  document.querySelectorAll('.settings-trigger').forEach(btn => {
     btn.addEventListener('click', openSettings);
   });
   if ($settingsClose) $settingsClose.addEventListener('click', closeSettings);
   if ($settingsModal) $settingsModal.addEventListener('click', e => { if (e.target === $settingsModal) closeSettings(); });
 }
 
+// ════════════════════════════════════════════════
+//  PANEL EXERCISE — KEYBOARD SHORTCUTS
+// ════════════════════════════════════════════════
 function bindKeyboardShortcuts() {
   document.addEventListener('keydown', e => {
-    // Don't fire shortcuts when typing in inputs/textareas
     const tag = e.target.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 
-    // Esc: close any open modal
+    // ── Global shortcuts (fire on every screen) ──
     if (e.key === 'Escape') {
       document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
       return;
     }
+    if (e.key === 's' || e.key === 'S') { openSettings(); return; }
+    if (e.key === 'm' || e.key === 'M') { showHomeScreen(); return; }
 
-    // Don't fire other shortcuts if a modal is open
+    // ── Home screen shortcuts ──
+    const onHome = !document.getElementById('home-screen').classList.contains('hidden');
+    if (e.key === '1' && onHome) { showPanelApp(); return; }
+    if (e.key === '2' && onHome) { showCounselApp(); return; }
+
     if (document.querySelector('.modal-overlay.open')) return;
 
-    const onMod = $mod.classList.contains('active');
+    // ── Counsel-only shortcuts ──
+    const onCounsel = !document.getElementById('counsel-app').classList.contains('hidden');
+    if (onCounsel) {
+      const onCounselMod = document.getElementById('counsel-mod').classList.contains('active');
+      const onCounselSetup = document.getElementById('counsel-setup').classList.contains('active');
+      if (onCounselMod) {
+        if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); counselNextResult(); return; }
+        if (e.key === 'ArrowLeft') { e.preventDefault(); counselPrevResult(); return; }
+        if (e.key === 'r' || e.key === 'R') { counselReset(); return; }
+        if (e.key === 'l' || e.key === 'L') { counselToggleRisks(); return; }
+        if (e.key === 'f' || e.key === 'F') { $counselTimerStartBtn && $counselTimerStartBtn.click(); return; }
+        if (e.key === 'g' || e.key === 'G') { $counselTimerResetBtn && $counselTimerResetBtn.click(); return; }
+        if (e.key === 't' || e.key === 'T') { $counselTimerToggleHeader && $counselTimerToggleHeader.click(); return; }
+      }
+      if (onCounselSetup) {
+        if (e.key === 'q' || e.key === 'Q') { counselQuickFill(); return; }
+        if (e.key === 'Enter') { e.preventDefault(); document.getElementById('btn-draw').click(); return; }
+      }
+      return;
+    }
+
+    // ── Panel-only shortcuts (bail if panel not active) ──
+    if (document.getElementById('panel-app').classList.contains('hidden')) return;
+
+    const onMod   = $mod.classList.contains('active');
     const onSetup = $setup.classList.contains('active');
 
-    // Moderator-screen shortcuts
-    if (e.key === 'ArrowRight' && onMod) {
+    if (e.key === 'ArrowRight' && onMod) { e.preventDefault(); $groupNextBtn.click(); }
+    else if (e.key === 'ArrowLeft' && onMod) { e.preventDefault(); $groupPrevBtn.click(); }
+    else if (e.key === ' ' && onMod) { e.preventDefault(); if (!$drawQBtn.disabled) $drawQBtn.click(); }
+    else if ((e.key === 'r' || e.key === 'R') && onMod) { $modResetBtn.click(); }
+    else if ((e.key === 't' || e.key === 'T') && onMod) { $timerToggleHeader.click(); }
+    else if ((e.key === 'c' || e.key === 'C') && onMod) {
       e.preventDefault();
-      $groupNextBtn.click();
-    } else if (e.key === 'ArrowLeft' && onMod) {
-      e.preventDefault();
-      $groupPrevBtn.click();
-    } else if (e.key === ' ' && onMod) {
-      e.preventDefault();
-      if (!$drawQBtn.disabled) $drawQBtn.click();
-    } else if ((e.key === 'r' || e.key === 'R') && onMod) {
-      $modResetBtn.click();
-    } else if ((e.key === 't' || e.key === 'T') && onMod) {
-      $timerToggleHeader.click();
-    } else if ((e.key === 'c' || e.key === 'C') && onMod) {
-      
-      e.preventDefault();
-      // Toggle the two timer-mode radios (down <-> up)
       const radios = document.querySelectorAll('input[name="timer-mode"]');
       if (radios && radios.length) {
         const checked = document.querySelector('input[name="timer-mode"]:checked');
@@ -1626,38 +2005,33 @@ function bindKeyboardShortcuts() {
         next.checked = true;
         next.dispatchEvent(new Event('change', { bubbles: true }));
       }
-    } else if ((e.key === 'f' || e.key === 'F') && onMod) {
-      $timerStartBtn.click();
-    } else if ((e.key === 'g' || e.key === 'G') && onMod) {
-      $timerResetBtn.click();
     }
+    else if ((e.key === 'f' || e.key === 'F') && onMod) { $timerStartBtn.click(); }
+    else if ((e.key === 'g' || e.key === 'G') && onMod) { $timerResetBtn.click(); }
 
-    // Setup-screen shortcuts
-    if ((e.key === 'q' || e.key === 'Q') && onSetup) {
-      quickFill();
-    } else if ((e.key === 'w' || e.key === 'W') && onSetup) {
-      quickFillAndStart();
-    } else if (e.key === 'Enter' && onSetup) {
-      e.preventDefault();
-      $startPanelBtn.click();
-    } else if ((e.key === 'a' || e.key === 'A') && onSetup) {
-      document.getElementById('advanced-toggle-header').click();
-    }
+    if ((e.key === 'q' || e.key === 'Q') && onSetup) { quickFill(); }
+    else if ((e.key === 'w' || e.key === 'W') && onSetup) { quickFillAndStart(); }
+    else if (e.key === 'Enter' && onSetup) { e.preventDefault(); $startPanelBtn.click(); }
+    else if ((e.key === 'a' || e.key === 'A') && onSetup) { document.getElementById('advanced-toggle-header').click(); }
 
-    // Global shortcuts (both screens)
-    if (e.key === '?') {
-      $helpModal.classList.add('open');
-    } else if (e.key === 's' || e.key === 'S') {
-      const $sm = document.getElementById('settings-modal');
-      if ($sm) $sm.classList.add('open');
-    }
+    if (e.key === '?') { $helpModal.classList.add('open'); }
   });
 }
 
 // ════════════════════════════════════════════════
-//  COLOR SCHEMES
+//  PANEL EXERCISE — COLOR SCHEMES
 // ════════════════════════════════════════════════
 const BUILTIN_SCHEMES = [
+  {
+    name: 'Parchment',
+    vars: {
+      '--bg': '#f0ece4', '--header': '#1c1814', '--header-text': '#ffffff',
+      '--accent': '#8b1a1a', '--accent-hover': '#6e1414',
+      '--card': '#ffffff', '--card-shadow': '0 2px 8px rgba(0,0,0,0.10)',
+      '--text': '#1c1814', '--muted': '#6b6259', '--border': '#d8d0c4',
+      '--btn-secondary-bg': '#e8e2d8', '--gold': '#a07030'
+    }
+  },
   {
     name: 'Classic Blue',
     vars: {
@@ -1665,7 +2039,7 @@ const BUILTIN_SCHEMES = [
       '--accent': '#2563eb', '--accent-hover': '#1d4ed8',
       '--card': '#ffffff', '--card-shadow': '0 2px 8px rgba(0,0,0,0.10)',
       '--text': '#1e2533', '--muted': '#6b7280', '--border': '#e2e6ea',
-      '--btn-secondary-bg': '#e5e7eb'
+      '--btn-secondary-bg': '#e5e7eb', '--gold': '#93c5fd'
     }
   },
   {
@@ -1675,7 +2049,7 @@ const BUILTIN_SCHEMES = [
       '--accent': '#16a34a', '--accent-hover': '#15803d',
       '--card': '#ffffff', '--card-shadow': '0 2px 8px rgba(0,0,0,0.10)',
       '--text': '#1a2b1e', '--muted': '#4d7a5a', '--border': '#c8dece',
-      '--btn-secondary-bg': '#d9f0df'
+      '--btn-secondary-bg': '#d9f0df', '--gold': '#86efac'
     }
   },
   {
@@ -1685,7 +2059,7 @@ const BUILTIN_SCHEMES = [
       '--accent': '#7c3aed', '--accent-hover': '#6d28d9',
       '--card': '#21262d', '--card-shadow': '0 2px 8px rgba(0,0,0,0.45)',
       '--text': '#e6edf3', '--muted': '#8b949e', '--border': '#30363d',
-      '--btn-secondary-bg': '#30363d'
+      '--btn-secondary-bg': '#30363d', '--gold': '#c4b5fd'
     }
   }
 ];
@@ -1698,7 +2072,6 @@ function loadColorSchemes() {
   try { userSaved = JSON.parse(localStorage.getItem(SCHEMES_KEY) || '[]'); } catch(e) {}
   colorSchemes = [...BUILTIN_SCHEMES, ...userSaved];
   renderSchemeDropdown(0);
-  // Sync pickers to default scheme without re-applying vars (already set in :root)
   syncPickersFromScheme(BUILTIN_SCHEMES[0]);
 }
 
@@ -1719,7 +2092,6 @@ function renderSchemeDropdown(selectedIdx) {
 function applyScheme(scheme) {
   const root = document.documentElement;
   Object.entries(scheme.vars).forEach(([k, v]) => root.style.setProperty(k, v));
-  // Auto-contrast for primary button text
   if (scheme.vars['--accent']) {
     const lum = hexLuminance(scheme.vars['--accent']);
     root.style.setProperty('--btn-primary-text', lum > 0.35 ? '#1e2533' : '#ffffff');
@@ -1729,7 +2101,7 @@ function applyScheme(scheme) {
 
 function syncPickersFromScheme(scheme) {
   [['cp-bg','--bg','hex-bg'],['cp-header','--header','hex-header'],['cp-accent','--accent','hex-accent'],
-   ['cp-card','--card','hex-card'],['cp-text','--text','hex-text']].forEach(([id, v, hexId]) => {
+   ['cp-card','--card','hex-card'],['cp-text','--text','hex-text'],['cp-gold','--gold','hex-gold']].forEach(([id, v, hexId]) => {
     const el = document.getElementById(id);
     const hexEl = document.getElementById(hexId);
     if (el && scheme.vars[v]) {
@@ -1740,7 +2112,6 @@ function syncPickersFromScheme(scheme) {
 }
 
 function hexLuminance(hex) {
-  // Returns perceived luminance 0-1 from a #rrggbb hex string
   const r = parseInt(hex.slice(1,3),16)/255;
   const g = parseInt(hex.slice(3,5),16)/255;
   const b = parseInt(hex.slice(5,7),16)/255;
@@ -1752,15 +2123,13 @@ function applyIndividualColor(varName, value) {
   document.documentElement.style.setProperty(varName, value);
   if (varName === '--accent') {
     document.documentElement.style.setProperty('--accent-hover', value);
-    // Auto-contrast: choose white or dark text for primary buttons
     const lum = hexLuminance(value);
-    const btnTextColor = lum > 0.35 ? '#1e2533' : '#ffffff';
-    document.documentElement.style.setProperty('--btn-primary-text', btnTextColor);
+    document.documentElement.style.setProperty('--btn-primary-text', lum > 0.35 ? '#1e2533' : '#ffffff');
   }
 }
 
 // ════════════════════════════════════════════════
-//  QUICK FILL (TESTING)
+//  PANEL EXERCISE — QUICK FILL
 // ════════════════════════════════════════════════
 const FILLER_NAMES = [
   'Alex','Bailey','Cameron','Dakota','Elliot',
@@ -1786,7 +2155,7 @@ function quickFillAndStart() {
 }
 
 // ════════════════════════════════════════════════
-//  ALL QUESTIONS MODAL
+//  PANEL EXERCISE — ALL QUESTIONS MODAL
 // ════════════════════════════════════════════════
 function renderAllQuestionsModal() {
   const $allQList = document.getElementById('all-q-list');
@@ -1805,7 +2174,7 @@ function renderAllQuestionsModal() {
     return;
   }
 
-  unasked.forEach(({ q, i }) => {
+  unasked.forEach(({ q }) => {
     const div = document.createElement('div');
     div.style.cssText = 'padding:10px 0;border-bottom:1px solid var(--border);font-size:0.95rem;line-height:1.55;color:var(--text);';
     div.textContent = q.script;
@@ -1827,10 +2196,9 @@ function renderAllQuestionsModal() {
 }
 
 // ════════════════════════════════════════════════
-//  ADVANCED SECTION EVENTS
+//  PANEL EXERCISE — ADVANCED EVENTS
 // ════════════════════════════════════════════════
 function bindAdvancedEvents() {
-  // Collapsible toggle
   document.getElementById('advanced-toggle-header').addEventListener('click', () => {
     const body = document.getElementById('advanced-body');
     const icon = document.getElementById('advanced-toggle-icon');
@@ -1838,14 +2206,11 @@ function bindAdvancedEvents() {
     icon.textContent = expanded ? '▲ Hide' : '▼ Show';
   });
 
-  // Quick Fill button
   document.getElementById('qf-btn').addEventListener('click', quickFill);
 
-  // Quick Fill + Start button
   const qfStartBtn = document.getElementById('qf-start-btn');
   if (qfStartBtn) qfStartBtn.addEventListener('click', quickFillAndStart);
 
-  // Scheme dropdown (in settings modal)
   const schemeSelect = document.getElementById('scheme-select');
   if (schemeSelect) schemeSelect.addEventListener('change', function() {
     const idx = parseInt(this.value);
@@ -1854,7 +2219,6 @@ function bindAdvancedEvents() {
     if (delBtn) delBtn.style.display = (!isNaN(idx) && idx >= BUILTIN_SCHEMES.length) ? '' : 'none';
   });
 
-  // Individual color pickers + hex inputs (in settings modal)
   document.querySelectorAll('.color-grid input[type="color"]').forEach(input => {
     const hexId = 'hex-' + input.id.replace('cp-', '');
     const hexInput = document.getElementById(hexId);
@@ -1873,7 +2237,6 @@ function bindAdvancedEvents() {
     }
   });
 
-  // Delete scheme button (user-saved only)
   const deleteSchemeBtn = document.getElementById('delete-scheme-btn');
   if (deleteSchemeBtn) deleteSchemeBtn.addEventListener('click', () => {
     const idx = parseInt(document.getElementById('scheme-select').value);
@@ -1886,7 +2249,6 @@ function bindAdvancedEvents() {
     applyScheme(colorSchemes[newIdx]);
   });
 
-  // Save scheme button (in settings modal)
   const saveSchemeBtn = document.getElementById('save-scheme-btn');
   if (saveSchemeBtn) saveSchemeBtn.addEventListener('click', () => {
     const name = prompt('Name this color scheme:');
@@ -1895,7 +2257,7 @@ function bindAdvancedEvents() {
     const cs = getComputedStyle(root);
     const getVar = v => root.style.getPropertyValue(v) || cs.getPropertyValue(v).trim();
     const allVarNames = ['--bg','--header','--header-text','--accent','--accent-hover',
-                         '--card','--card-shadow','--text','--muted','--border','--btn-secondary-bg'];
+                         '--card','--card-shadow','--text','--muted','--border','--btn-secondary-bg','--gold'];
     const vars = {};
     allVarNames.forEach(v => { vars[v] = getVar(v); });
     const newScheme = { name: name.trim(), vars };
@@ -1905,7 +2267,6 @@ function bindAdvancedEvents() {
     renderSchemeDropdown(colorSchemes.length - 1);
   });
 
-  // Clear names button
   const $clearNamesBtn = document.getElementById('clear-names-btn');
   if ($clearNamesBtn) {
     $clearNamesBtn.addEventListener('click', () => {
@@ -1922,15 +2283,359 @@ function bindAdvancedEvents() {
 }
 
 // ════════════════════════════════════════════════
-//  UTILITIES
+//  COUNSEL EXERCISE — STATE
 // ════════════════════════════════════════════════
-function escHtml(str) {
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+let SCENARIOS = [];
+let nameQueue = [];
+let scenarioQueue = [];
+let lastNames = [];
+let counselHistory = [];
+let counselHistoryIndex = -1;
+let counselRosterSize = 0;
+
+function parseCounselCSV(text) {
+  const rows = [];
+  let row = [], field = '', inQuotes = false;
+  const s = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i], next = s[i + 1];
+    if (inQuotes) {
+      if (ch === '"' && next === '"') { field += '"'; i++; }
+      else if (ch === '"') { inQuotes = false; }
+      else { field += ch; }
+    } else {
+      if (ch === '"') { inQuotes = true; }
+      else if (ch === ',') { row.push(field); field = ''; }
+      else if (ch === '\n') { row.push(field); field = ''; rows.push(row); row = []; }
+      else { field += ch; }
+    }
+  }
+  row.push(field);
+  if (row.some(f => f !== '')) rows.push(row);
+
+  if (rows.length < 2) return [];
+
+  const headers = rows[0].map(h => h.trim().toLowerCase());
+  const ti = headers.indexOf('title');
+  const xi = headers.indexOf('text');
+  const ri = headers.findIndex(h => h.includes('risk'));
+
+  return rows.slice(1).map(r => ({
+    title: (r[ti] || '').trim(),
+    text:  (r[xi] || '').trim(),
+    risks: (ri >= 0 ? r[ri] : '').trim()
+  })).filter(s => s.title && s.text);
 }
+
+function parseCounselNames() {
+  return document.getElementById('counsel-names').value
+    .split(/[\n,]+/).map(n => n.trim()).filter(Boolean);
+}
+
+function rosterChanged(names) {
+  if (names.length !== lastNames.length) return true;
+  return names.some((n, i) => n !== lastNames[i]);
+}
+
+function ensureQueues(names) {
+  if (rosterChanged(names)) { lastNames = [...names]; nameQueue = shuffle(names); }
+  if (nameQueue.length === 0) nameQueue = shuffle(names);
+  if (scenarioQueue.length === 0) scenarioQueue = shuffle(SCENARIOS);
+}
+
+async function counselLoadCSV() {
+  const url = document.getElementById('csv-url').value.trim();
+  const status = document.getElementById('csv-status');
+
+  if (!url) { setCounselStatus('Please enter a URL.', 'err'); return; }
+  setCounselStatus('Loading…', '');
+
+  try {
+    const proxy = 'https://corsproxy.io/?' + encodeURIComponent(url);
+    const res = await fetch(proxy);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const text = await res.text();
+    const parsed = parseCounselCSV(text);
+    if (parsed.length === 0) throw new Error('No rows found — check column headers (title, text, top legal risks)');
+
+    SCENARIOS = parsed;
+    scenarioQueue = shuffle(SCENARIOS);
+    nameQueue = [];
+    lastNames = [];
+
+    setCounselStatus(`✓ Loaded ${SCENARIOS.length} scenario${SCENARIOS.length !== 1 ? 's' : ''}`, 'ok');
+  } catch (e) {
+    setCounselStatus('Error: ' + e.message, 'err');
+  }
+}
+
+function setCounselStatus(msg, cls) {
+  const el = document.getElementById('csv-status');
+  el.textContent = msg;
+  el.className = cls;
+}
+
+async function counselStart() {
+  if (SCENARIOS.length === 0) {
+    await counselLoadCSV();
+    if (SCENARIOS.length === 0) return;
+  }
+  const names = parseCounselNames();
+  if (names.length === 0) { alert('Please enter at least one name.'); return; }
+
+  ensureQueues(names);
+  counselRosterSize = names.length;
+  const entry = counselDrawEntry();
+  counselHistory = [entry];
+  counselHistoryIndex = 0;
+
+  counselRenderResult(entry);
+  document.getElementById('counsel-setup').classList.remove('active');
+  document.getElementById('counsel-mod').classList.add('active');
+  updateCounselNav();
+}
+
+function counselDrawEntry() {
+  const name = nameQueue.shift();
+  const scenario = scenarioQueue.shift();
+  return { name, title: scenario.title, text: scenario.text, risks: scenario.risks };
+}
+
+function counselRenderResult(entry) {
+  document.getElementById('out-name').textContent = entry.name;
+  document.getElementById('out-title').textContent = entry.title;
+  document.getElementById('out-scenario').textContent = entry.text;
+
+  const risksDiv = document.getElementById('risks-list');
+  risksDiv.innerHTML = entry.risks
+    ? marked.parse(entry.risks)
+    : '<p>No risks listed.</p>';
+
+  document.getElementById('risks-panel').classList.remove('visible');
+  document.getElementById('btn-reveal').textContent = '▸ Show Priority Legal Issues';
+
+  ['out-name', 'out-title', 'out-scenario'].forEach(id => {
+    const el = document.getElementById(id);
+    el.style.animation = 'none'; el.offsetHeight; el.style.animation = '';
+  });
+}
+
+function counselNextResult() {
+  if (counselHistoryIndex < counselHistory.length - 1) {
+    counselHistoryIndex++;
+  } else {
+    const names = parseCounselNames();
+    ensureQueues(names);
+    counselHistory.push(counselDrawEntry());
+    counselHistoryIndex++;
+  }
+  counselRenderResult(counselHistory[counselHistoryIndex]);
+  updateCounselNav();
+}
+
+function counselPrevResult() {
+  if (counselHistoryIndex > 0) {
+    counselHistoryIndex--;
+    counselRenderResult(counselHistory[counselHistoryIndex]);
+    updateCounselNav();
+  }
+}
+
+function updateCounselNav() {
+  const current = counselHistoryIndex + 1;
+  const total = Math.max(counselRosterSize, counselHistory.length);
+  document.getElementById('counsel-nav-label').textContent = `Result ${current} of ${total}`;
+  document.getElementById('counsel-prev-btn').disabled = counselHistoryIndex === 0;
+  document.getElementById('counsel-next-btn').disabled = false;
+}
+
+function counselToggleRisks() {
+  const panel = document.getElementById('risks-panel');
+  const btn   = document.getElementById('btn-reveal');
+  const showing = panel.classList.toggle('visible');
+  btn.textContent = showing ? '▾ Hide Priority Legal Issues' : '▸ Show Priority Legal Issues';
+}
+
+function counselQuickFill() {
+  const n = Math.min(parseInt(document.getElementById('counsel-qf-count').value) || 6, FILLER_NAMES.length);
+  document.getElementById('counsel-names').value = shuffle(FILLER_NAMES).slice(0, n).sort().join('\n');
+}
+
+function counselReset() {
+  counselStopTimer();
+  counselHistory = [];
+  counselHistoryIndex = -1;
+  nameQueue = [];
+  scenarioQueue = shuffle(SCENARIOS);
+  lastNames = [];
+  document.getElementById('counsel-mod').classList.remove('active');
+  document.getElementById('counsel-setup').classList.add('active');
+  document.getElementById('counsel-names').focus();
+}
+
+// ════════════════════════════════════════════════
+//  COUNSEL EXERCISE — TIMER
+// ════════════════════════════════════════════════
+let counselTimerInterval = null;
+let counselTimerSeconds = 0;
+let counselTimerRunning = false;
+let counselTimerMode = 'down';
+let counselTimerCountdownTotal = 120;
+let counselTimerCountingUpAfterCD = false;
+let counselTimerFlashedThresholds = new Set();
+
+let $counselTimerCard, $counselTimerDisplay, $counselTimerStartBtn, $counselTimerResetBtn,
+    $counselTimerToggleHeader, $counselTimerToggleIcon, $counselTimerBody,
+    $counselTimerCountdownInputs;
+
+function counselUpdateTimerDisplay() {
+  const m = Math.floor(Math.abs(counselTimerSeconds) / 60);
+  const s = Math.abs(counselTimerSeconds) % 60;
+  $counselTimerDisplay.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+function counselTriggerTimerFlash(thenDone) {
+  if (!$counselTimerCard) return;
+  $counselTimerCard.classList.remove('timer-flash-active', 'timer-flash-done');
+  void $counselTimerCard.offsetWidth;
+  $counselTimerCard.classList.add('timer-flash-active');
+  if (thenDone) {
+    const onEnd = () => {
+      $counselTimerCard.removeEventListener('animationend', onEnd);
+      $counselTimerCard.classList.remove('timer-flash-active');
+      $counselTimerCard.classList.add('timer-flash-done');
+    };
+    $counselTimerCard.addEventListener('animationend', onEnd);
+  }
+}
+
+function counselStartTimer() {
+  if (counselTimerMode === 'down' && counselTimerSeconds === 0 && !counselTimerCountingUpAfterCD) {
+    const mins = parseInt(document.getElementById('counsel-timer-min').value) || 0;
+    const secs = parseInt(document.getElementById('counsel-timer-sec').value) || 0;
+    counselTimerCountdownTotal = mins * 60 + secs;
+    counselTimerSeconds = counselTimerCountdownTotal;
+    if (counselTimerSeconds <= 0) return;
+  }
+  counselTimerRunning = true;
+  $counselTimerStartBtn.textContent = 'Pause';
+  counselTimerInterval = setInterval(() => {
+    if (counselTimerMode === 'up' || counselTimerCountingUpAfterCD) {
+      counselTimerSeconds++;
+    } else {
+      counselTimerSeconds--;
+      if (counselTimerSeconds <= 0) {
+        counselTimerSeconds = 0;
+        counselUpdateTimerDisplay();
+        if (!counselTimerFlashedThresholds.has('zero')) {
+          counselTimerFlashedThresholds.add('zero');
+          counselTriggerTimerFlash(true);
+        }
+        const countUpAfterEl = document.getElementById('counsel-timer-countup-after');
+        if (countUpAfterEl && countUpAfterEl.checked) {
+          counselTimerCountingUpAfterCD = true;
+        } else {
+          counselStopTimer();
+          $counselTimerStartBtn.textContent = 'Start';
+          counselTimerRunning = false;
+        }
+        return;
+      }
+    }
+    counselUpdateTimerDisplay();
+  }, 1000);
+  counselUpdateTimerDisplay();
+}
+
+function counselPauseTimer() {
+  clearInterval(counselTimerInterval);
+  counselTimerInterval = null;
+  counselTimerRunning = false;
+  $counselTimerStartBtn.textContent = 'Start';
+}
+
+function counselStopTimer() {
+  clearInterval(counselTimerInterval);
+  counselTimerInterval = null;
+  counselTimerRunning = false;
+  counselTimerCountingUpAfterCD = false;
+}
+
+function counselResetTimer() {
+  counselStopTimer();
+  counselTimerFlashedThresholds.clear();
+  $counselTimerStartBtn.textContent = 'Start';
+  if (counselTimerMode === 'down') {
+    const mins = parseInt(document.getElementById('counsel-timer-min').value) || 0;
+    const secs = parseInt(document.getElementById('counsel-timer-sec').value) || 0;
+    counselTimerSeconds = mins * 60 + secs;
+  } else {
+    counselTimerSeconds = 0;
+  }
+  if ($counselTimerCard) $counselTimerCard.classList.remove('timer-flash-active', 'timer-flash-done');
+  counselUpdateTimerDisplay();
+}
+
+function bindCounselTimerEvents() {
+  $counselTimerCard           = document.getElementById('counsel-timer-card');
+  $counselTimerDisplay        = document.getElementById('counsel-timer-display');
+  $counselTimerStartBtn       = document.getElementById('counsel-timer-start-btn');
+  $counselTimerResetBtn       = document.getElementById('counsel-timer-reset-btn');
+  $counselTimerToggleHeader   = document.getElementById('counsel-timer-toggle-header');
+  $counselTimerToggleIcon     = document.getElementById('counsel-timer-toggle-icon');
+  $counselTimerBody           = document.getElementById('counsel-timer-body');
+  $counselTimerCountdownInputs = document.getElementById('counsel-timer-countdown-inputs');
+
+  $counselTimerToggleHeader.addEventListener('click', () => {
+    const expanded = $counselTimerBody.classList.toggle('expanded');
+    $counselTimerToggleIcon.textContent = expanded ? '▲ Hide' : '▼ Show';
+    if (!expanded) counselResetTimer();
+  });
+
+  document.querySelectorAll('input[name="counsel-timer-mode"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      counselTimerMode = radio.value;
+      const isDown = counselTimerMode === 'down';
+      $counselTimerCountdownInputs.classList.toggle('hidden', !isDown);
+      const countupRow = document.getElementById('counsel-timer-countup-row');
+      if (countupRow) countupRow.classList.toggle('hidden', !isDown);
+      if ($counselTimerCard) $counselTimerCard.classList.remove('timer-flash-active', 'timer-flash-done');
+      counselTimerFlashedThresholds.clear();
+      counselStopTimer();
+      counselTimerSeconds = 0;
+      counselUpdateTimerDisplay();
+      $counselTimerStartBtn.textContent = 'Start';
+      counselTimerRunning = false;
+    });
+  });
+
+  $counselTimerStartBtn.addEventListener('click', () => {
+    if (counselTimerRunning) counselPauseTimer(); else counselStartTimer();
+  });
+  $counselTimerResetBtn.addEventListener('click', counselResetTimer);
+}
+
+// ════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  bindSetupEvents();
+  bindModEvents();
+  bindHelpEvents();
+  bindAdvancedEvents();
+  bindCounselTimerEvents();
+  bindKeyboardShortcuts();
+
+  // Allow pressing Enter in CSV URL field to trigger Start
+  document.getElementById('csv-url').addEventListener('keydown', e => {
+    if (e.key === 'Enter') counselStart();
+  });
+
+  // Bind next/prev nav buttons on counsel mod screen
+  document.getElementById('counsel-next-btn').addEventListener('click', counselNextResult);
+  document.getElementById('counsel-prev-btn').addEventListener('click', counselPrevResult);
+});
 </script>
 </body>
 </html>
