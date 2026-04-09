@@ -123,5 +123,10 @@ An external visualization tool for exploring how word embeddings work — plot w
 
 ## Known Issues / Next Steps
 
+### Next Steps
+- Testing to check shortcuts, timer, resetting (esp when navigating to another page)
+- Separate files?
+
 ### Enhancements
 - Automatically reorder countdown warnings in chronological order
+- Add global settings for source files and student names
