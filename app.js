@@ -1495,17 +1495,6 @@ let plotterData        = [];
 let plotterCamera      = null;
 let plotterUiRevision  = 'init';
 
-function plotterGetTheme() {
-  return localStorage.getItem('plotter-theme') || 'dark';
-}
-
-function plotterApplyTheme(theme) {
-  localStorage.setItem('plotter-theme', theme);
-  const toggle = document.getElementById('plotter-theme-toggle');
-  if (toggle) toggle.checked = theme === 'light';
-  if (plotterData.length > 0) plotterRender(plotterData);
-}
-
 function plotterParseCSV(csvText) {
   const parsed = Papa.parse(csvText, {
     header: true, skipEmptyLines: true,
@@ -1549,16 +1538,16 @@ async function plotterHandleRefresh() {
 }
 
 function plotterThemeColors() {
-  const dark = plotterGetTheme() === 'dark';
+  const get = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
   return {
-    paper:      dark ? '#001122' : '#f0f2f5',
-    plot:       dark ? '#001122' : '#f0f2f5',
-    axisPane:   dark ? '#000C1D' : '#ffffff',
-    font:       dark ? '#8BADC1' : '#444c5a',
-    fontBright: dark ? '#d6e9f8' : '#1a202c',
-    grid:       dark ? '#1e5280' : '#a8b2be',
-    zeroline:   dark ? '#2e6aa0' : '#8a96a4',
-    markerLine: dark ? '#102a44' : '#1557b0',
+    paper:      get('--bg'),
+    plot:       get('--bg'),
+    axisPane:   get('--card'),
+    font:       get('--muted'),
+    fontBright: get('--text'),
+    grid:       get('--border'),
+    zeroline:   get('--muted'),
+    markerLine: get('--border'),
   };
 }
 
@@ -1673,9 +1662,6 @@ function plotterReRender() {
 
 function bindPlotterEvents() {
   document.getElementById('plotter-btn-refresh')?.addEventListener('click', plotterHandleRefresh);
-  document.getElementById('plotter-theme-toggle')?.addEventListener('change', e => {
-    plotterApplyTheme(e.target.checked ? 'light' : 'dark');
-  });
   ['plotter-show-labels','plotter-axis-x','plotter-axis-y','plotter-axis-z'].forEach(id => {
     document.getElementById(id)?.addEventListener('change', plotterReRender);
   });
@@ -1704,7 +1690,6 @@ window.addEventListener('DOMContentLoaded', () => {
   bindPlotterEvents();
 
   loadSettings();
-  plotterApplyTheme(plotterGetTheme());
 
   // Bind next/prev nav buttons on counsel mod screen
   document.getElementById('counsel-next-btn').addEventListener('click', counselNextResult);
