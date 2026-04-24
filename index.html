@@ -483,7 +483,7 @@
 </div><!-- end #counsel-app -->
 
 <!-- ═══════════════════════════════════ PLOTTER APP ═══════════════════════════════════ -->
-<div id="plotter-app" class="hidden app-wrapper dark">
+<div id="plotter-app" class="hidden app-wrapper">
 
   <div class="mod-header-bar" style="flex-shrink:0;">
     <div class="header-left">
@@ -503,22 +503,17 @@
     <!-- ── Side panel ── -->
     <aside id="plotter-panel">
 
-      <div class="plotter-panel-header">
-        <span class="plotter-panel-title">Controls</span>
-        <label class="plotter-theme-toggle" title="Toggle light / dark">
-          <input type="checkbox" id="plotter-theme-toggle">
-          <span class="plotter-toggle-track"><span class="plotter-toggle-thumb"></span></span>
-          <span class="plotter-toggle-label" id="plotter-theme-label">Light</span>
-        </label>
-      </div>
-
       <section class="plotter-section">
-        <button id="plotter-btn-refresh" class="plotter-btn plotter-btn-primary">↻ Refresh</button>
+        <button id="plotter-btn-refresh" class="btn btn-primary btn-sm" style="width:100%;">↻ Refresh</button>
+        <label class="plotter-checkbox-label">
+          <input type="checkbox" id="plotter-theme-toggle">
+          Light chart theme
+        </label>
       </section>
 
       <!-- QR Code placeholder -->
       <section class="plotter-section">
-        <h2>Google Form</h2>
+        <div class="advanced-subtitle">Google Form</div>
         <div id="plotter-qr-placeholder">
           <!-- To add a QR code, replace this div's contents with:
                <img src="your-qr.png" alt="QR code" style="width:100%;border-radius:4px;">
@@ -528,7 +523,7 @@
       </section>
 
       <section class="plotter-section">
-        <h2>Labels</h2>
+        <div class="advanced-subtitle">Labels</div>
         <label class="plotter-checkbox-label">
           <input type="checkbox" id="plotter-show-labels">
           Show point labels
@@ -536,26 +531,26 @@
       </section>
 
       <section class="plotter-section">
-        <h2>Axes</h2>
+        <div class="advanced-subtitle">Axes</div>
         <div class="plotter-input-row">
           <input type="checkbox" id="plotter-axis-x" checked title="Show X axis">
           <label for="plotter-label-x">X</label>
-          <input type="text" id="plotter-label-x" value="Female" class="plotter-axis-input" maxlength="40">
+          <input type="text" id="plotter-label-x" value="Female" maxlength="40">
         </div>
         <div class="plotter-input-row">
           <input type="checkbox" id="plotter-axis-y" title="Show Y axis">
           <label for="plotter-label-y">Y</label>
-          <input type="text" id="plotter-label-y" value="Alive" class="plotter-axis-input" maxlength="40">
+          <input type="text" id="plotter-label-y" value="Alive" maxlength="40">
         </div>
         <div class="plotter-input-row">
           <input type="checkbox" id="plotter-axis-z" title="Show Z axis">
           <label for="plotter-label-z">Z</label>
-          <input type="text" id="plotter-label-z" value="Royal" class="plotter-axis-input" maxlength="40">
+          <input type="text" id="plotter-label-z" value="Royal" maxlength="40">
         </div>
       </section>
 
       <section class="plotter-section">
-        <h2>Status</h2>
+        <div class="advanced-subtitle">Status</div>
         <div id="plotter-status-text" class="plotter-status-text">Ready</div>
         <pre id="plotter-stats-text" class="plotter-stats-text"></pre>
       </section>

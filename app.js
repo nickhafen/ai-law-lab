@@ -1500,14 +1500,9 @@ function plotterGetTheme() {
 }
 
 function plotterApplyTheme(theme) {
-  const app = document.getElementById('plotter-app');
-  app.classList.toggle('dark',  theme === 'dark');
-  app.classList.toggle('light', theme === 'light');
   localStorage.setItem('plotter-theme', theme);
   const toggle = document.getElementById('plotter-theme-toggle');
-  const label  = document.getElementById('plotter-theme-label');
   if (toggle) toggle.checked = theme === 'light';
-  if (label)  label.textContent = theme === 'light' ? 'Dark' : 'Light';
   if (plotterData.length > 0) plotterRender(plotterData);
 }
 
@@ -1561,8 +1556,8 @@ function plotterThemeColors() {
     axisPane:   dark ? '#000C1D' : '#ffffff',
     font:       dark ? '#8BADC1' : '#444c5a',
     fontBright: dark ? '#d6e9f8' : '#1a202c',
-    grid:       dark ? '#102a44' : '#cdd2db',
-    zeroline:   dark ? '#1e3a5f' : '#b0b8c4',
+    grid:       dark ? '#1e5280' : '#a8b2be',
+    zeroline:   dark ? '#2e6aa0' : '#8a96a4',
     markerLine: dark ? '#102a44' : '#1557b0',
   };
 }

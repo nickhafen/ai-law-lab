@@ -758,48 +758,16 @@ input[type="number"] { width: 72px; text-align: center; }
 }
 
 /* ══════════════════════════════════════════════════
-   3D PLOTTER — scoped under #plotter-app
-   Uses its own --plotter-* variables so it stays
-   visually independent from the main app's theme.
+   3D PLOTTER — structural styles only.
+   Colors use the main app's CSS variables so the
+   sidebar automatically follows the active scheme.
    ══════════════════════════════════════════════════ */
-
-#plotter-app.dark {
-  --plotter-bg:       #001122;
-  --plotter-panel:    #000C1D;
-  --plotter-border:   #102a44;
-  --plotter-text:     #8BADC1;
-  --plotter-bright:   #d6e9f8;
-  --plotter-accent:   #4fc1ff;
-  --plotter-acc-hov:  #80d4ff;
-  --plotter-sec:      #102a44;
-  --plotter-sec-hov:  #1e3a5f;
-  --plotter-input-bg: #000C1D;
-  --plotter-shadow:   rgba(0,0,0,.4);
-  --plotter-danger:   #f07178;
-}
-
-#plotter-app.light {
-  --plotter-bg:       #f0f2f5;
-  --plotter-panel:    #ffffff;
-  --plotter-border:   #d0d5dd;
-  --plotter-text:     #444c5a;
-  --plotter-bright:   #1a202c;
-  --plotter-accent:   #1a73e8;
-  --plotter-acc-hov:  #1557b0;
-  --plotter-sec:      #e8eaed;
-  --plotter-sec-hov:  #d2d5da;
-  --plotter-input-bg: #f8fafc;
-  --plotter-shadow:   rgba(0,0,0,.12);
-  --plotter-danger:   #d93025;
-}
 
 #plotter-app {
   display: flex;
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
-  background-color: var(--plotter-bg);
-  transition: background-color .25s;
 }
 
 #plotter-shell {
@@ -812,103 +780,41 @@ input[type="number"] { width: 72px; text-align: center; }
 #plotter-panel {
   width: 220px;
   flex-shrink: 0;
-  background-color: var(--plotter-panel);
-  border-right: 1px solid var(--plotter-border);
+  background-color: var(--card);
+  border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   overflow-y: auto;
   overflow-x: hidden;
-  box-shadow: 2px 0 8px var(--plotter-shadow);
-  transition: background-color .25s, border-color .25s;
+  box-shadow: var(--card-shadow);
 }
-
 #plotter-panel::-webkit-scrollbar { width: 5px; }
 #plotter-panel::-webkit-scrollbar-track { background: transparent; }
-#plotter-panel::-webkit-scrollbar-thumb { background: var(--plotter-border); border-radius: 3px; }
-
-.plotter-panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 11px 14px 10px;
-  border-bottom: 1px solid var(--plotter-border);
-  flex-shrink: 0;
-}
-
-.plotter-panel-title {
-  font-size: .68rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  color: var(--plotter-text);
-  opacity: .55;
-}
+#plotter-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
 .plotter-section {
-  padding: 11px 14px;
-  border-bottom: 1px solid var(--plotter-border);
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  gap: 7px;
-}
-
-.plotter-section h2 {
-  font-size: .68rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  color: var(--plotter-text);
-  opacity: .55;
-  margin-bottom: 1px;
-}
-
-.plotter-btn {
-  width: 100%;
-  padding: 7px 10px;
-  border: none;
-  border-radius: 5px;
-  font-size: .82rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color .15s, opacity .15s;
-  font-family: inherit;
-}
-.plotter-btn:disabled { opacity: .45; cursor: not-allowed; }
-.plotter-btn-primary { background-color: var(--plotter-accent); color: #fff; }
-.plotter-btn-primary:not(:disabled):hover { background-color: var(--plotter-acc-hov); }
-
-#plotter-qr-placeholder {
-  width: 100%;
-}
-
-.plotter-qr-empty {
-  width: 100%;
-  aspect-ratio: 1;
-  border: 2px dashed var(--plotter-border);
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: .72rem;
-  color: var(--plotter-text);
-  opacity: .4;
-  letter-spacing: .06em;
-  text-transform: uppercase;
+  gap: 8px;
 }
 
 .plotter-checkbox-label {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: .83rem;
+  font-size: .88rem;
+  font-weight: 500;
   cursor: pointer;
-  color: var(--plotter-text);
   user-select: none;
+  color: var(--text);
+  margin: 0;
 }
 .plotter-checkbox-label input[type="checkbox"] {
-  width: 14px; height: 14px;
-  accent-color: var(--plotter-accent);
-  cursor: pointer; flex-shrink: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
 .plotter-input-row {
@@ -917,105 +823,63 @@ input[type="number"] { width: 72px; text-align: center; }
   gap: 8px;
 }
 .plotter-input-row > input[type="checkbox"] {
-  width: 14px; height: 14px;
-  accent-color: var(--plotter-accent);
-  cursor: pointer; flex-shrink: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+  flex-shrink: 0;
 }
 .plotter-input-row > label {
-  font-size: .8rem;
+  font-size: .85rem;
   font-weight: 700;
-  width: 12px;
-  color: var(--plotter-bright);
+  width: 14px;
   flex-shrink: 0;
   margin: 0;
 }
-.plotter-axis-input {
+.plotter-input-row > input[type="text"] {
   flex: 1;
   min-width: 0;
+  font-size: .85rem;
   padding: 5px 8px;
-  border-radius: 4px;
-  border: 1px solid var(--plotter-border);
-  background-color: var(--plotter-input-bg);
-  color: var(--plotter-bright);
-  font-size: .8rem;
-  outline: none;
-  transition: border-color .15s;
-  font-family: inherit;
 }
-.plotter-axis-input:focus { border-color: var(--plotter-accent); }
 
 .plotter-status-text {
   font-size: .8rem;
-  color: var(--plotter-text);
-  line-height: 1.45;
+  color: var(--muted);
+  line-height: 1.5;
   word-break: break-word;
 }
-.plotter-status-text.ok      { color: var(--plotter-text); }
 .plotter-status-text.loading { opacity: .7; }
-.plotter-status-text.error   { color: var(--plotter-danger); }
+.plotter-status-text.error   { color: var(--danger); }
 
 .plotter-stats-text {
   font-size: .73rem;
-  color: var(--plotter-text);
+  color: var(--muted);
   opacity: .7;
   line-height: 1.6;
   font-family: 'Consolas', 'Menlo', monospace;
   white-space: pre;
 }
 
-/* theme toggle switch */
-.plotter-theme-toggle {
+#plotter-qr-placeholder { width: 100%; }
+.plotter-qr-empty {
+  width: 100%;
+  aspect-ratio: 1;
+  border: 2px dashed var(--border);
+  border-radius: 6px;
   display: flex;
   align-items: center;
-  gap: 5px;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-.plotter-theme-toggle input { display: none; }
-
-.plotter-toggle-track {
-  position: relative;
-  width: 32px; height: 17px;
-  background-color: var(--plotter-sec);
-  border: 1px solid var(--plotter-border);
-  border-radius: 9px;
-  transition: background-color .2s, border-color .2s;
-  flex-shrink: 0;
-}
-#plotter-app.light .plotter-toggle-track {
-  background-color: var(--plotter-accent);
-  border-color: var(--plotter-accent);
-}
-.plotter-toggle-thumb {
-  position: absolute;
-  width: 13px; height: 13px;
-  background-color: var(--plotter-bright);
-  border-radius: 50%;
-  top: 1px; left: 1px;
-  transition: transform .2s;
-}
-#plotter-app.light .plotter-toggle-thumb {
-  transform: translateX(15px);
-  background-color: #ffffff;
-}
-.plotter-toggle-label {
+  justify-content: center;
   font-size: .72rem;
-  color: var(--plotter-text);
-  white-space: nowrap;
+  color: var(--muted);
+  opacity: .5;
+  letter-spacing: .06em;
+  text-transform: uppercase;
 }
 
-/* plot area */
 #plotter-plot-area {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  background-color: var(--plotter-bg);
-  transition: background-color .25s;
+  background-color: var(--bg);
 }
-
-#plotter-plot {
-  flex: 1;
-  width: 100%;
-  height: 100%;
-}
+#plotter-plot { flex: 1; width: 100%; height: 100%; }
