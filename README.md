@@ -48,7 +48,20 @@ A cold-call exercise where students are drawn at random and assigned an AI produ
 
 ### 3. 3D Word Plotter
 
-An external visualization tool for exploring how word embeddings work — plot words in 3D space to see how numbers capture semantic meaning and relationships between concepts. Opens in a new tab.
+An integrated visualization tool for exploring how word embeddings work — plot words in 3D space to see how numbers capture semantic meaning and relationships between concepts.
+
+**Setup**
+- In a Google Sheet, create a tab with columns `word` (or `name`), `x`, `y`, `z` — values 0.0–1.0. Publish as CSV.
+- Paste the CSV URL into Settings ⚙ under **3D Word Plotter**.
+- Students submit values via a Google Form linked to the sheet; click **Refresh** to pull the latest data.
+
+**Controls**
+- Toggle point labels, show/hide individual axes, and rename axis titles directly in the sidebar.
+- The sidebar also has a QR code placeholder (replace the placeholder `div` contents with an `<img>` tag pointing to your form's QR code).
+- Light/dark theme toggle is independent of the main app's color scheme.
+
+**Future: live in-class participation**
+The current workflow — student fills Google Form → sheet updates → instructor clicks Refresh — works well but requires a manual refresh step. Eventually the goal is for students to visit a page, enter their values, and see the plot update live for the whole class without any form or refresh. See "Live Participation" section below.
 
 ---
 
@@ -121,12 +134,29 @@ An external visualization tool for exploring how word embeddings work — plot w
 
 ---
 
+## Live Participation (Future Direction)
+
+The current 3D Plotter workflow relies on Google Forms → Google Sheets → CSV polling. The long-term goal is a smoother in-class flow: a student opens a URL on their phone, rates a word on three sliders, hits submit, and everyone in the room watches the point appear on the instructor's projected plot — no forms, no manual refresh.
+
+**How this would work**
+
+The most practical approach is a small backend with WebSockets (or Server-Sent Events):
+
+1. **Student submission page** — a lightweight form (word + three sliders) that POSTs directly to the backend.
+2. **Backend** (e.g. a Node.js/Deno server or a serverless function with a WebSocket adapter) — stores submissions in memory or a simple DB, then broadcasts each new point to all connected clients.
+3. **Instructor plotter** — subscribes to the WebSocket feed and appends new points to the plot in real time via `Plotly.extendTraces`.
+
+An alternative that avoids a custom backend entirely is a **Google Apps Script Web App** with a webhook trigger: the form's `onFormSubmit` Apps Script trigger calls a published Apps Script endpoint, which pushes the new row to a Firebase Realtime Database (or similar); the plotter listens to Firebase for changes. This adds complexity but keeps everything inside Google's ecosystem.
+
+A simpler polling approach (no WebSockets) — auto-refresh the CSV every 5–10 seconds — is the easiest to implement and requires no backend change. It introduces a short lag but may be acceptable for a classroom setting.
+
+---
+
 ## Known Issues / Next Steps
 
 ### Next Steps
 - Testing to check shortcuts, timer, resetting (esp when navigating to another page)
-- Separate files?
 
 ### Enhancements
 - Automatically reorder countdown warnings in chronological order
-- Add global settings for source files and student names
+- Add keyboard shortcuts for the 3D Plotter (refresh, theme toggle)
