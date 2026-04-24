@@ -406,6 +406,12 @@
         </div>
       </div>
 
+      <div class="c-card" style="padding:10px 14px;">
+        <span class="field-label">Scenarios</span>
+        <span class="field-hint">Data source URL is configured in Settings ⚙</span>
+        <div id="csv-status" style="font-size:0.85rem;margin-top:6px;"></div>
+      </div>
+
       <div class="c-btn-row">
         <button class="btn-draw" id="btn-draw" onclick="counselStart()">▸ Start</button>
       </div>
@@ -423,6 +429,7 @@
         <button class="header-btn" id="counsel-next-btn" title="Next (→)">›</button>
       </div>
       <div class="header-right">
+        <button class="header-btn" id="counsel-view-all-btn" title="View all scenarios (V)">☰</button>
         <button class="header-btn settings-trigger" title="Appearance settings (S)">⚙</button>
       </div>
     </div>
@@ -481,6 +488,15 @@
   </div><!-- end counsel-mod -->
 
 </div><!-- end #counsel-app -->
+
+<!-- ALL SCENARIOS MODAL -->
+<div class="modal-overlay" id="counsel-all-modal">
+  <div class="modal-box" style="max-width:680px;">
+    <button class="modal-close" id="counsel-all-modal-close">&times;</button>
+    <h2>All Scenarios</h2>
+    <div id="counsel-all-list"></div>
+  </div>
+</div>
 
 <!-- ═══════════════════════════════════ PLOTTER APP ═══════════════════════════════════ -->
 <div id="plotter-app" class="hidden app-wrapper">

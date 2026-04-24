@@ -816,6 +816,7 @@ function bindKeyboardShortcuts() {
         if (e.key === 'ArrowLeft') { e.preventDefault(); counselPrevResult(); return; }
         if (e.key === 'r' || e.key === 'R') { counselReset(); return; }
         if (e.key === 'l' || e.key === 'L') { counselToggleRisks(); return; }
+        if (e.key === 'v' || e.key === 'V') { document.getElementById('counsel-view-all-btn')?.click(); return; }
         if (e.key === 'f' || e.key === 'F') { $counselTimerStartBtn && $counselTimerStartBtn.click(); return; }
         if (e.key === 'g' || e.key === 'G') { $counselTimerResetBtn && $counselTimerResetBtn.click(); return; }
         if (e.key === 't' || e.key === 'T') { $counselTimerToggleHeader && $counselTimerToggleHeader.click(); return; }
@@ -940,6 +941,7 @@ function applyScheme(scheme) {
     root.style.setProperty('--btn-primary-text', lum > 0.35 ? '#1e2533' : '#ffffff');
   }
   syncPickersFromScheme(scheme);
+  if (plotterInitialized) plotterReRender();
 }
 
 function syncPickersFromScheme(scheme) {
@@ -969,6 +971,7 @@ function applyIndividualColor(varName, value) {
     const lum = hexLuminance(value);
     document.documentElement.style.setProperty('--btn-primary-text', lum > 0.35 ? '#1e2533' : '#ffffff');
   }
+  if (plotterInitialized) plotterReRender();
 }
 
 // ════════════════════════════════════════════════
@@ -1154,6 +1157,16 @@ function bindAdvancedEvents() {
 // ════════════════════════════════════════════════
 //  COUNSEL EXERCISE — STATE
 // ════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────────────────
+//  TOGGLE: Show or hide the "Priority Legal Issues" reveal button in the
+//  Product Counsel moderator view.
+//
+//    false  →  button is hidden (default for in-class use)
+//    true   →  button appears and students can reveal the legal risks
+//
+const SHOW_LEGAL_RISKS = false;
+// ─────────────────────────────────────────────────────────────────────────────
+
 let SCENARIOS = [];
 let nameQueue = [];
 let scenarioQueue = [];
@@ -1282,6 +1295,7 @@ function counselRenderResult(entry) {
     : '<p>No risks listed.</p>';
 
   document.getElementById('risks-panel').classList.remove('visible');
+  document.getElementById('btn-reveal').style.display = SHOW_LEGAL_RISKS ? '' : 'none';
   document.getElementById('btn-reveal').textContent = '▸ Show Priority Legal Issues';
 
   ['out-name', 'out-title', 'out-scenario'].forEach(id => {
@@ -1329,6 +1343,34 @@ function counselToggleRisks() {
 function counselQuickFill() {
   const n = Math.min(parseInt(document.getElementById('counsel-qf-count').value) || 6, FILLER_NAMES.length);
   document.getElementById('counsel-names').value = shuffle(FILLER_NAMES).slice(0, n).sort().join('\n');
+}
+
+function renderCounselScenariosModal() {
+  const list = document.getElementById('counsel-all-list');
+  if (!list) return;
+  list.innerHTML = '';
+
+  if (SCENARIOS.length === 0) {
+    list.innerHTML = '<p style="color:var(--muted);font-size:0.95rem;">No scenarios loaded.</p>';
+    return;
+  }
+
+  SCENARIOS.forEach((s, i) => {
+    const item = document.createElement('div');
+    item.style.cssText = 'padding:14px 0;border-bottom:1px solid var(--border);';
+
+    const title = document.createElement('div');
+    title.style.cssText = 'font-weight:600;font-size:0.95rem;color:var(--text);margin-bottom:5px;';
+    title.textContent = `${i + 1}. ${s.title}`;
+
+    const text = document.createElement('div');
+    text.style.cssText = 'font-size:0.88rem;line-height:1.65;color:var(--muted);';
+    text.textContent = s.text;
+
+    item.appendChild(title);
+    item.appendChild(text);
+    list.appendChild(item);
+  });
 }
 
 function counselReset() {
@@ -1545,7 +1587,7 @@ function plotterThemeColors() {
     axisPane:   get('--card'),
     font:       get('--muted'),
     fontBright: get('--text'),
-    grid:       get('--border'),
+    grid:       get('--muted'),
     zeroline:   get('--muted'),
     markerLine: get('--border'),
   };
@@ -1694,4 +1736,12 @@ window.addEventListener('DOMContentLoaded', () => {
   // Bind next/prev nav buttons on counsel mod screen
   document.getElementById('counsel-next-btn').addEventListener('click', counselNextResult);
   document.getElementById('counsel-prev-btn').addEventListener('click', counselPrevResult);
+
+  // Bind View All Scenarios modal
+  const $counselAllModal      = document.getElementById('counsel-all-modal');
+  const $counselAllModalClose = document.getElementById('counsel-all-modal-close');
+  const $counselViewAllBtn    = document.getElementById('counsel-view-all-btn');
+  if ($counselViewAllBtn) $counselViewAllBtn.addEventListener('click', () => { renderCounselScenariosModal(); $counselAllModal.classList.add('open'); });
+  if ($counselAllModalClose) $counselAllModalClose.addEventListener('click', () => $counselAllModal.classList.remove('open'));
+  if ($counselAllModal) $counselAllModal.addEventListener('click', e => { if (e.target === $counselAllModal) $counselAllModal.classList.remove('open'); });
 });
