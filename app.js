@@ -767,9 +767,25 @@ function closeSettings() {
   if (m) m.classList.remove('open');
 }
 
+function renderHelpModal() {
+  const onHome    = !document.getElementById('home-screen').classList.contains('hidden');
+  const onPanel   = !document.getElementById('panel-app').classList.contains('hidden');
+  const onCounsel = !document.getElementById('counsel-app').classList.contains('hidden');
+  const onPanelSetup    = onPanel   && document.getElementById('setup-screen').classList.contains('active');
+  const onPanelMod      = onPanel   && document.getElementById('mod-screen').classList.contains('active');
+  const onCounselSetup  = onCounsel && document.getElementById('counsel-setup').classList.contains('active');
+  const onCounselMod    = onCounsel && document.getElementById('counsel-mod').classList.contains('active');
+  const show = (id, v) => { const el = document.getElementById(id); if (el) el.style.display = v ? '' : 'none'; };
+  show('help-section-home',          onHome);
+  show('help-section-panel-setup',   onPanelSetup);
+  show('help-section-panel-mod',     onPanelMod);
+  show('help-section-counsel-setup', onCounselSetup);
+  show('help-section-counsel-mod',   onCounselMod);
+}
+
 function bindHelpEvents() {
   document.querySelectorAll('.help-btn').forEach(btn => {
-    btn.addEventListener('click', () => $helpModal.classList.add('open'));
+    btn.addEventListener('click', () => { renderHelpModal(); $helpModal.classList.add('open'); });
   });
   $helpModalClose.addEventListener('click', () => $helpModal.classList.remove('open'));
   $helpModal.addEventListener('click', e => { if (e.target === $helpModal) $helpModal.classList.remove('open'); });
@@ -858,7 +874,7 @@ function bindKeyboardShortcuts() {
     else if (e.key === 'Enter' && onSetup) { e.preventDefault(); $startPanelBtn.click(); }
     else if ((e.key === 'a' || e.key === 'A') && onSetup) { document.getElementById('advanced-toggle-header').click(); }
 
-    if (e.key === '?') { $helpModal.classList.add('open'); }
+    if (e.key === '?') { renderHelpModal(); $helpModal.classList.add('open'); }
   });
 }
 

@@ -91,9 +91,81 @@
   </div>
 </div>
 
+<!-- HELP MODAL (global) -->
+<div class="modal-overlay" id="help-modal">
+  <div class="modal-box">
+    <button class="modal-close" id="help-modal-close" aria-label="Close help">&times;</button>
+    <h2>Keyboard Shortcuts</h2>
+
+    <h4>Global</h4>
+    <ul class="shortcut-list">
+      <li><kbd>?</kbd><span>Open Help</span></li>
+      <li><kbd>S</kbd><span>Open Settings</span></li>
+      <li><kbd>M</kbd><span>Go to Home</span></li>
+      <li><kbd>Esc</kbd><span>Close popups</span></li>
+    </ul>
+
+    <div id="help-section-home">
+      <h4>Home</h4>
+      <ul class="shortcut-list">
+        <li><kbd>1</kbd><span>Open AI Regulation Panel</span></li>
+        <li><kbd>2</kbd><span>Open Product Counsel</span></li>
+      </ul>
+    </div>
+
+    <div id="help-section-panel-setup">
+      <h4>Panel — Setup</h4>
+      <ul class="shortcut-list">
+        <li><kbd>Q</kbd><span>Quick Fill</span></li>
+        <li><kbd>W</kbd><span>Quick Fill + Start</span></li>
+        <li><kbd>Enter</kbd><span>Start Panel</span></li>
+        <li><kbd>A</kbd><span>Toggle Advanced</span></li>
+      </ul>
+    </div>
+
+    <div id="help-section-panel-mod">
+      <h4>Panel — Moderator</h4>
+      <ul class="shortcut-list">
+        <li><kbd>← →</kbd><span>Prev / Next panel</span></li>
+        <li><kbd>Space</kbd><span>New question</span></li>
+        <li><kbd>R</kbd><span>Back to Setup</span></li>
+        <li><kbd>T</kbd><span>Toggle Timer</span></li>
+        <li><kbd>C</kbd><span>Count Up / Down</span></li>
+        <li><kbd>F</kbd><span>Start / Pause Timer</span></li>
+        <li><kbd>G</kbd><span>Reset Timer</span></li>
+      </ul>
+    </div>
+
+    <div id="help-section-counsel-setup">
+      <h4>Product Counsel — Setup</h4>
+      <ul class="shortcut-list">
+        <li><kbd>Q</kbd><span>Quick Fill</span></li>
+        <li><kbd>Enter</kbd><span>Start</span></li>
+      </ul>
+    </div>
+
+    <div id="help-section-counsel-mod">
+      <h4>Product Counsel — Moderator</h4>
+      <ul class="shortcut-list">
+        <li><kbd>← →</kbd><span>Prev / Next result</span></li>
+        <li><kbd>V</kbd><span>View all scenarios</span></li>
+        <li><kbd>R</kbd><span>Reset</span></li>
+        <li><kbd>T</kbd><span>Toggle Timer</span></li>
+        <li><kbd>F</kbd><span>Start / Pause Timer</span></li>
+        <li><kbd>G</kbd><span>Reset Timer</span></li>
+      </ul>
+    </div>
+
+    <p class="help-credit">Created by Nick Hafen</p>
+  </div>
+</div>
+
 <!-- ═══════════════════════════════════ HOME SCREEN ═══════════════════════════════════ -->
 <div id="home-screen">
-  <button class="settings-btn-light settings-trigger" title="Appearance settings">⚙</button>
+  <div style="position:absolute;top:16px;right:20px;display:flex;gap:8px;">
+    <button class="settings-btn-light help-btn" title="Keyboard shortcuts (?)">?</button>
+    <button class="settings-btn-light settings-trigger" title="Appearance settings (S)">⚙</button>
+  </div>
   <div class="home-wordmark">AI &amp; Law</div>
   <div class="home-subtitle">Practical Exercise Launcher</div>
   <hr class="home-rule">
@@ -130,55 +202,6 @@
 <!-- ═══════════════════════════════════ PANEL APP ═══════════════════════════════════ -->
 <div id="panel-app" class="hidden app-wrapper">
 
-<!-- HELP MODAL -->
-<div class="modal-overlay" id="help-modal">
-  <div class="modal-box">
-    <button class="modal-close" id="help-modal-close" aria-label="Close help">&times;</button>
-    <h2>Panel: The State of AI Regulation</h2>
-    <h3>Setup</h3>
-    <p>You're a panelist at a Silicon Slopes panel called <b>The State of AI Regulation</b>. The audience is founders, executives, lawyers, and consultants — smart, but not necessarily up to speed on the law in this area. Each panelist will give a 2–3 minute opening on an assigned topic, then the floor opens for audience questions.</p>
-    <h3>Goals</h3>
-    <ul>
-      <li>Practice translating what you know into clear, accessible answers for a non-expert audience</li>
-      <li>Build confidence speaking on a complex topic without overstating your expertise</li>
-      <li>Practice handling questions that are vague, poorly phrased, or outside your wheelhouse</li>
-      <li>Practice being a panelist — listening to others, building on what they say, and knowing when to defer</li>
-    </ul>
-    <h3>Tips</h3>
-    <ul>
-      <li>You don't need to know everything. "That's a great question — my understanding is..." and "I'd want to look more closely at that, but the general principle is..." are legitimate and professional answers.</li>
-      <li>You're not testifying under oath or giving legal advice. A confident, well-reasoned general answer is more valuable to this audience than a hedged, hyper-specific one.</li>
-      <li>2–3 minutes is short. Pick two or three things you actually know well and make them land clearly.</li>
-      <li>Listen to your co-panelists. You can agree, add to, or respectfully push back on what they say — that's what makes it a panel and not three separate presentations.</li>
-    </ul>
-    <h3>Keyboard Shortcuts</h3>
-    <h4>Global</h4>
-    <ul style="list-style:none;padding:0;">
-      <li style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">?</kbd> <span>Open Help</span></li>
-      <li style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">S</kbd> <span>Open Appearance Settings</span></li>
-      <li style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">M</kbd> <span>Go to Home screen</span></li>
-      <li style="display:flex;gap:12px;padding:5px 0;"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">Esc</kbd> <span>Close popups</span></li>
-    </ul>
-    <h4>Setup</h4>
-    <ul style="list-style:none;padding:0;">
-      <li style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">Q</kbd> <span>Quick Fill</span></li>
-      <li style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">W</kbd> <span>Quick Fill + Start</span></li>
-      <li style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">Enter</kbd> <span>Start Panel</span></li>
-      <li style="display:flex;gap:12px;padding:5px 0;"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">A</kbd> <span>Toggle Advanced</span></li>
-    </ul>
-    <h4>Moderator View</h4>
-    <ul style="list-style:none;padding:0;">
-      <li style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">→</kbd> <span>Next Panel</span></li>
-      <li style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">←</kbd> <span>Previous Panel</span></li>
-      <li style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">Space</kbd> <span>New Question</span></li>
-      <li style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">R</kbd> <span>Return to Setup</span></li>
-      <li style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">T</kbd> <span>Toggle Timer panel</span></li>
-      <li style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">C</kbd> <span>Toggle Count Up / Down</span></li>
-      <li style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">F</kbd> <span>Start / Pause Timer</span></li>
-      <li style="display:flex;gap:12px;padding:5px 0;"><kbd style="font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:0.88rem;min-width:28px;text-align:center;">G</kbd> <span>Reset Timer</span></li>
-    </ul>
-  </div>
-</div>
 
 <!-- ALL QUESTIONS MODAL -->
 <div class="modal-overlay" id="all-q-modal">
@@ -389,6 +412,7 @@
         </div>
       </div>
       <div class="header-right">
+        <button class="header-btn help-btn" title="Keyboard shortcuts (?)">?</button>
         <button class="header-btn settings-trigger" title="Appearance settings (S)">⚙</button>
       </div>
     </div>
@@ -433,6 +457,7 @@
       </div>
       <div class="header-right">
         <button class="header-btn" id="counsel-view-all-btn" title="View all scenarios (V)">☰</button>
+        <button class="header-btn help-btn" title="Keyboard shortcuts (?)">?</button>
         <button class="header-btn settings-trigger" title="Appearance settings (S)">⚙</button>
       </div>
     </div>
@@ -513,6 +538,7 @@
       </div>
     </div>
     <div class="header-right">
+      <button class="header-btn help-btn" title="Keyboard shortcuts (?)">?</button>
       <button class="header-btn settings-trigger" title="Appearance settings (S)">⚙</button>
     </div>
   </div>

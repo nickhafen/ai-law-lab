@@ -282,6 +282,12 @@ input[type="number"] { width: 72px; text-align: center; }
 .modal-box ul { padding-left: 20px; }
 .modal-box ul li { font-size: 0.95rem; line-height: 1.65; color: var(--text); margin-bottom: 6px; }
 
+.shortcut-list { list-style: none; padding: 0; margin: 0 0 4px; }
+.shortcut-list li { display: flex; align-items: center; gap: 12px; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 0.9rem; color: var(--text); }
+.shortcut-list li:last-child { border-bottom: none; }
+.shortcut-list kbd { font-family: monospace; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 1px 7px; font-size: 0.82rem; min-width: 44px; text-align: center; white-space: nowrap; flex-shrink: 0; color: var(--text); }
+.help-credit { font-size: 0.78rem; color: var(--muted); text-align: center; margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--border); }
+
 /* ── PANEL EXERCISE STYLES ── */
 
 /* Loading / Error */
