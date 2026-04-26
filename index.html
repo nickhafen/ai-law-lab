@@ -398,7 +398,7 @@
       <div class="c-card">
         <span class="field-label">Roster</span>
         <span class="field-hint">Separate names with commas or new lines</span>
-        <textarea id="counsel-names"></textarea>
+        <textarea id="counsel-names" rows="8"></textarea>
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;">
           <span class="field-hint" style="margin:0;">Quick fill:</span>
           <input type="number" id="counsel-qf-count" value="6" min="1" max="26" style="width:60px;border:1px solid var(--border);border-radius:4px;padding:5px 8px;font-size:0.88rem;background:var(--bg);color:var(--text);outline:none;">
@@ -408,7 +408,7 @@
 
       <div class="c-card" style="padding:10px 14px;">
         <span class="field-label">Scenarios</span>
-        <span class="field-hint">Data source URL is configured in Settings ⚙</span>
+        <button class="field-hint" onclick="openSettings()" style="background:none;border:none;padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:2px;">Data source URL is configured in Settings ⚙</button>
         <div id="csv-status" style="font-size:0.85rem;margin-top:6px;"></div>
       </div>
 

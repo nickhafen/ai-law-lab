@@ -1231,11 +1231,17 @@ async function counselLoadCSV() {
   const url = (urlEl && urlEl.value.trim()) || '';
 
   if (!url) { setCounselStatus('Please enter a URL in Settings (⚙).', 'err'); return; }
+
+  const startBtn = document.getElementById('btn-draw');
+  if (startBtn) startBtn.disabled = true;
   setCounselStatus('Loading…', '');
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
 
   try {
     const proxy = 'https://corsproxy.io/?' + encodeURIComponent(url);
-    const res = await fetch(proxy);
+    const res = await fetch(proxy, { signal: controller.signal });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const text = await res.text();
     const parsed = parseCounselCSV(text);
@@ -1248,7 +1254,11 @@ async function counselLoadCSV() {
 
     setCounselStatus(`✓ Loaded ${SCENARIOS.length} scenario${SCENARIOS.length !== 1 ? 's' : ''}`, 'ok');
   } catch (e) {
-    setCounselStatus('Error: ' + e.message, 'err');
+    const msg = e.name === 'AbortError' ? 'Timed out after 10 s — check the URL in Settings or try again' : e.message;
+    setCounselStatus(`Error: ${msg}`, 'err');
+  } finally {
+    clearTimeout(timeout);
+    if (startBtn) startBtn.disabled = false;
   }
 }
 
