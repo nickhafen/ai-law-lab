@@ -323,7 +323,7 @@ input[type="number"] { width: 72px; text-align: center; }
 .screen { display: none; max-width: 900px; margin: 0 auto; }
 .screen.active { display: block; }
 .counsel-screen { display: none; }
-.counsel-screen.active { display: block; }
+.counsel-screen.active { display: block; max-width: 900px; margin: 0 auto; }
 
 /* Section cards */
 .section-card {
@@ -653,7 +653,7 @@ input[type="number"] { width: 72px; text-align: center; }
 }
 .btn-draw:hover { background: var(--accent-hover); }
 .btn-draw:active { transform: translateY(1px); }
-.btn-draw:disabled { background: #c0b8b0; cursor: not-allowed; }
+.btn-draw:disabled { opacity: 0.5; cursor: not-allowed; }
 
 #counsel-result {
   width: 100%;
