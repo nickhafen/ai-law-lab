@@ -320,10 +320,10 @@ input[type="number"] { width: 72px; text-align: center; }
 .error-hint { font-size: 0.9rem; color: var(--muted); max-width: 480px; line-height: 1.5; }
 
 /* Screens */
-.screen { display: none; max-width: 900px; margin: 0 auto; }
+.screen { display: none; }
 .screen.active { display: block; }
 .counsel-screen { display: none; }
-.counsel-screen.active { display: block; max-width: 900px; margin: 0 auto; }
+.counsel-screen.active { display: block; }
 
 /* Section cards */
 .section-card {
