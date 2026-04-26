@@ -14,7 +14,7 @@
 <!-- SETTINGS MODAL (global) -->
 <div class="modal-overlay" id="settings-modal">
   <div class="modal-box" style="max-width:600px;">
-    <button class="modal-close" id="settings-modal-close">&times;</button>
+    <button class="modal-close" id="settings-modal-close" aria-label="Close settings">&times;</button>
     <h2>Appearance</h2>
     <div class="scheme-row">
       <label>Color scheme</label>
@@ -133,7 +133,7 @@
 <!-- HELP MODAL -->
 <div class="modal-overlay" id="help-modal">
   <div class="modal-box">
-    <button class="modal-close" id="help-modal-close">&times;</button>
+    <button class="modal-close" id="help-modal-close" aria-label="Close help">&times;</button>
     <h2>Panel: The State of AI Regulation</h2>
     <h3>Setup</h3>
     <p>You're a panelist at a Silicon Slopes panel called <b>The State of AI Regulation</b>. The audience is founders, executives, lawyers, and consultants — smart, but not necessarily up to speed on the law in this area. Each panelist will give a 2–3 minute opening on an assigned topic, then the floor opens for audience questions.</p>
@@ -182,7 +182,7 @@
 <!-- ALL QUESTIONS MODAL -->
 <div class="modal-overlay" id="all-q-modal">
   <div class="modal-box" style="max-width:640px;">
-    <button class="modal-close" id="all-q-modal-close">&times;</button>
+    <button class="modal-close" id="all-q-modal-close" aria-label="Close">&times;</button>
     <h2>All Questions</h2>
     <div id="all-q-list"></div>
   </div>
@@ -223,7 +223,7 @@
     </div>
   </div>
 
-  <div style="padding:28px;">
+  <div style="padding:28px 20px;max-width:640px;margin:0 auto;">
 
   <!-- Names -->
   <div class="section-card">
@@ -267,7 +267,7 @@
           <label style="margin:0;font-size:0.95rem;">Panel size</label>
           <input type="number" id="qf-groupsize" value="3" min="2" max="20" style="width:64px;">
           <button class="btn btn-secondary btn-sm" id="qf-btn">⚡ Quick Fill</button>
-          <button class="btn btn-primary btn-sm" id="qf-start-btn" title="Quick Fill then start the panel (W)">⚡ Quick Fill + Start →</button>
+          <button class="btn btn-primary btn-sm" id="qf-start-btn" title="Quick Fill then start the panel (W)">⚡ Quick Fill + Start</button>
         </div>
       </div>
       <div class="advanced-divider"></div>
@@ -283,7 +283,7 @@
 
   <!-- Start Panel -->
   <div style="display:flex;justify-content:flex-end;margin-bottom:28px;">
-    <button class="btn btn-primary" id="start-panel-btn" style="font-size:1.05rem;padding:12px 28px;">Start →</button>
+    <button class="btn btn-primary" id="start-panel-btn" style="font-size:1.05rem;padding:12px 28px;">Start</button>
   </div>
 
   </div>
@@ -413,7 +413,7 @@
       </div>
 
       <div class="c-btn-row">
-        <button class="btn-draw" id="btn-draw" onclick="counselStart()">▸ Start</button>
+        <button class="btn-draw" id="btn-draw" onclick="counselStart()">Start</button>
       </div>
 
     </div>
@@ -492,7 +492,7 @@
 <!-- ALL SCENARIOS MODAL -->
 <div class="modal-overlay" id="counsel-all-modal">
   <div class="modal-box" style="max-width:680px;">
-    <button class="modal-close" id="counsel-all-modal-close">&times;</button>
+    <button class="modal-close" id="counsel-all-modal-close" aria-label="Close">&times;</button>
     <h2>All Scenarios</h2>
     <div id="counsel-all-list"></div>
   </div>
@@ -520,7 +520,7 @@
     <aside id="plotter-panel">
 
       <section class="plotter-section">
-        <button id="plotter-btn-refresh" class="btn btn-primary btn-sm" style="width:100%;">↻ Refresh</button>
+        <button id="plotter-btn-refresh" class="btn btn-primary btn-sm" style="width:100%;" aria-label="Refresh data">↻ Refresh</button>
       </section>
 
       <!-- QR Code placeholder -->
