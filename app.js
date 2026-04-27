@@ -1256,8 +1256,7 @@ async function counselLoadCSV() {
   const timeout = setTimeout(() => controller.abort(), 10000);
 
   try {
-    const proxy = 'https://corsproxy.io/?' + encodeURIComponent(url);
-    const res = await fetch(proxy, { signal: controller.signal });
+    const res = await fetch(url, { signal: controller.signal });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const text = await res.text();
     const parsed = parseCounselCSV(text);
