@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AI &amp; Law · BYU Law</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="stylesheet" href="styles.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
@@ -15,79 +16,105 @@
 <div class="modal-overlay" id="settings-modal">
   <div class="modal-box" style="max-width:600px;">
     <button class="modal-close" id="settings-modal-close" aria-label="Close settings">&times;</button>
-    <h2>Appearance</h2>
-    <div class="scheme-row">
-      <label>Color scheme</label>
-      <select id="scheme-select"></select>
-      <button class="btn btn-secondary btn-sm" id="save-scheme-btn">Save as new theme</button>
-      <button class="btn btn-danger btn-sm" id="delete-scheme-btn" style="display:none;" title="Delete this saved theme">Delete</button>
+
+    <div class="settings-tabs" role="tablist" aria-label="Settings sections">
+      <button class="settings-tab active" data-tab="appearance" role="tab" aria-selected="true">Appearance</button>
+      <button class="settings-tab" data-tab="roster" role="tab" aria-selected="false">Roster</button>
+      <button class="settings-tab" data-tab="data" role="tab" aria-selected="false">Data Sources</button>
     </div>
-    <div class="color-grid">
-      <div class="color-row">
-        <label>Background</label>
-        <input type="color" id="cp-bg" data-var="--bg">
-        <input type="text" class="color-hex-input" id="hex-bg" maxlength="7" placeholder="#f0ece4">
+
+    <!-- ── Tab: Appearance ── -->
+    <div class="settings-tab-panel active" id="stab-appearance" role="tabpanel">
+      <div class="scheme-row">
+        <label>Color scheme</label>
+        <select id="scheme-select"></select>
+        <button class="btn btn-secondary btn-sm" id="save-scheme-btn">Save as new theme</button>
+        <button class="btn btn-danger btn-sm" id="delete-scheme-btn" style="display:none;" title="Delete this saved theme">Delete</button>
       </div>
-      <div class="color-row">
-        <label>Header</label>
-        <input type="color" id="cp-header" data-var="--header">
-        <input type="text" class="color-hex-input" id="hex-header" maxlength="7" placeholder="#1c1814">
-      </div>
-      <div class="color-row">
-        <label>Accent / Buttons</label>
-        <input type="color" id="cp-accent" data-var="--accent">
-        <input type="text" class="color-hex-input" id="hex-accent" maxlength="7" placeholder="#8b1a1a">
-      </div>
-      <div class="color-row">
-        <label>Cards</label>
-        <input type="color" id="cp-card" data-var="--card">
-        <input type="text" class="color-hex-input" id="hex-card" maxlength="7" placeholder="#ffffff">
-      </div>
-      <div class="color-row">
-        <label>Body text</label>
-        <input type="color" id="cp-text" data-var="--text">
-        <input type="text" class="color-hex-input" id="hex-text" maxlength="7" placeholder="#1c1814">
-      </div>
-      <div class="color-row">
-        <label>Labels</label>
-        <input type="color" id="cp-gold" data-var="--gold">
-        <input type="text" class="color-hex-input" id="hex-gold" maxlength="7" placeholder="#a07030">
+      <div class="color-grid">
+        <div class="color-row">
+          <label>Background</label>
+          <input type="color" id="cp-bg" data-var="--bg">
+          <input type="text" class="color-hex-input" id="hex-bg" maxlength="7" placeholder="#f0ece4">
+        </div>
+        <div class="color-row">
+          <label>Header</label>
+          <input type="color" id="cp-header" data-var="--header">
+          <input type="text" class="color-hex-input" id="hex-header" maxlength="7" placeholder="#1c1814">
+        </div>
+        <div class="color-row">
+          <label>Accent / Buttons</label>
+          <input type="color" id="cp-accent" data-var="--accent">
+          <input type="text" class="color-hex-input" id="hex-accent" maxlength="7" placeholder="#8b1a1a">
+        </div>
+        <div class="color-row">
+          <label>Cards</label>
+          <input type="color" id="cp-card" data-var="--card">
+          <input type="text" class="color-hex-input" id="hex-card" maxlength="7" placeholder="#ffffff">
+        </div>
+        <div class="color-row">
+          <label>Body text</label>
+          <input type="color" id="cp-text" data-var="--text">
+          <input type="text" class="color-hex-input" id="hex-text" maxlength="7" placeholder="#1c1814">
+        </div>
+        <div class="color-row">
+          <label>Labels</label>
+          <input type="color" id="cp-gold" data-var="--gold">
+          <input type="text" class="color-hex-input" id="hex-gold" maxlength="7" placeholder="#a07030">
+        </div>
       </div>
     </div>
 
-    <!-- ── Class Roster ── -->
-    <hr style="border:none;border-top:1px solid var(--border);margin:22px 0 18px;">
-    <h2>Class Roster</h2>
-    <p style="font-size:0.88rem;color:var(--muted);margin:-8px 0 12px;line-height:1.55;">Names entered here prepopulate the roster in each exercise. One name per line, or comma-separated.</p>
-    <textarea id="settings-roster" rows="6" placeholder="Enter student names…"
-      style="width:100%;border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-size:0.95rem;font-family:var(--font);color:var(--text);background:var(--bg);resize:vertical;outline:none;transition:border-color 0.15s;display:block;"></textarea>
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;">
-      <label style="margin:0;font-size:0.9rem;">Quick fill</label>
-      <input type="number" id="settings-qf-count" value="9" min="1" max="26">
-      <button class="btn btn-secondary btn-sm" id="settings-qf-btn">⚡ Quick Fill</button>
+    <!-- ── Tab: Roster ── -->
+    <div class="settings-tab-panel" id="stab-roster" role="tabpanel">
+      <p style="font-size:0.88rem;color:var(--muted);margin:0 0 12px;line-height:1.55;">Names entered here prepopulate the roster in each exercise. One name per line, or comma-separated.</p>
+      <textarea id="settings-roster" rows="8" placeholder="Enter student names…"
+        style="width:100%;border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-size:0.95rem;font-family:var(--font);color:var(--text);background:var(--bg);resize:vertical;outline:none;transition:border-color 0.15s;display:block;"></textarea>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;">
+        <label style="margin:0;font-size:0.9rem;">Quick fill</label>
+        <input type="number" id="settings-qf-count" value="9" min="1" max="26">
+        <button class="btn btn-secondary btn-sm" id="settings-qf-btn">⚡ Quick Fill</button>
+      </div>
     </div>
 
-    <!-- ── Data Sources ── -->
-    <hr style="border:none;border-top:1px solid var(--border);margin:22px 0 18px;">
-    <h2>Data Sources</h2>
-    <p style="font-size:0.88rem;color:var(--muted);margin:-8px 0 12px;line-height:1.55;">In Google Sheets: <strong>File → Share → Publish to web</strong>, choose <strong>CSV</strong>, copy the link.</p><div style="margin-bottom:16px;">
-      <label style="margin-bottom:6px;">Panel Exercise — Google Sheets CSV URL</label>
-      <p style="font-size:0.82rem;color:var(--muted);margin:0 0 8px;line-height:1.5;">Expected columns: <code>type</code> ("presentation" or "question"), <code>script</code>, <code>prompt</code></p>
-      <input type="text" id="settings-panel-url" style="width:100%;"
-        value="https://docs.google.com/spreadsheets/d/e/2PACX-1vQhb7lQIBLc78-V9CtLw53tZ6E9x3OX6lwHEOSz5kastQG2bkH9gYK1ZmrMHqVnkr5HLBrmwtRAxJvZ/pub?output=csv">
+    <!-- ── Tab: Data Sources ── -->
+    <div class="settings-tab-panel" id="stab-data" role="tabpanel">
+      <p style="font-size:0.88rem;color:var(--muted);margin:0 0 16px;line-height:1.55;">In Google Sheets: <strong>File → Share → Publish to web</strong>, choose <strong>CSV</strong>, copy the link.</p>
+      <div style="margin-bottom:16px;">
+        <label style="margin-bottom:6px;">Panel Exercise — Google Sheets CSV URL</label>
+        <p style="font-size:0.82rem;color:var(--muted);margin:0 0 8px;line-height:1.5;">Expected columns: <code>type</code> ("presentation" or "question"), <code>script</code>, <code>prompt</code></p>
+        <input type="text" id="settings-panel-url" style="width:100%;"
+          value="https://docs.google.com/spreadsheets/d/e/2PACX-1vQhb7lQIBLc78-V9CtLw53tZ6E9x3OX6lwHEOSz5kastQG2bkH9gYK1ZmrMHqVnkr5HLBrmwtRAxJvZ/pub?output=csv">
+      </div>
+      <div style="margin-bottom:16px;">
+        <label style="margin-bottom:6px;">Product Counsel — Google Sheets CSV URL</label>
+        <p style="font-size:0.82rem;color:var(--muted);margin:0 0 8px;line-height:1.5;">Expected columns: <code>title</code>, <code>text</code>, <code>top legal risks</code></p>
+        <input type="text" id="settings-counsel-url" style="width:100%;"
+          value="https://docs.google.com/spreadsheets/d/e/2PACX-1vQQPMiRPx47QcUqn8HWLGkH8nQdS8yKETLV_NzG3Lsf5RGoCZ4rN-6EtZ217Brzb-rPzg1B7MkOFLUP/pub?gid=0&amp;single=true&amp;output=csv">
+      </div>
+      <div style="margin-bottom:16px;">
+        <label style="margin-bottom:6px;">3D Word Plotter — Google Sheets CSV URL</label>
+        <p style="font-size:0.82rem;color:var(--muted);margin:0 0 8px;line-height:1.5;">Expected columns: <code>word</code> (or <code>name</code>), <code>x</code>, <code>y</code>, <code>z</code> — values 0.0–1.0</p>
+        <input type="text" id="settings-plotter-url" style="width:100%;"
+          value="https://docs.google.com/spreadsheets/d/e/2PACX-1vRUA2UWnQ3pn-DUH6y_h9acbKv3SYaDwBcD4mswGofDGx4QicnfTEcFzKi_PHod9VfqUXmCGZa86U4q/pub?gid=892495698&amp;single=true&amp;output=csv">
+      </div>
+      <div style="margin-bottom:16px;">
+        <label style="margin-bottom:6px;">Research — Algorithm Research CSV URL</label>
+        <p style="font-size:0.82rem;color:var(--muted);margin:0 0 8px;line-height:1.5;">Each row will be assigned to one student.</p>
+        <input type="text" id="settings-research-algorithm-url" style="width:100%;" placeholder="Paste Google Sheets CSV URL…">
+      </div>
+      <div style="margin-bottom:16px;">
+        <label style="margin-bottom:6px;">Research — Case Research CSV URL</label>
+        <p style="font-size:0.82rem;color:var(--muted);margin:0 0 8px;line-height:1.5;">Each row will be assigned to one student.</p>
+        <input type="text" id="settings-research-case-url" style="width:100%;" placeholder="Paste Google Sheets CSV URL…">
+      </div>
+      <div>
+        <label style="margin-bottom:6px;">Research — Legislative Research CSV URL</label>
+        <p style="font-size:0.82rem;color:var(--muted);margin:0 0 8px;line-height:1.5;">Each row will be assigned to one student.</p>
+        <input type="text" id="settings-research-legislative-url" style="width:100%;" placeholder="Paste Google Sheets CSV URL…">
+      </div>
     </div>
-    <div style="margin-bottom:16px;">
-      <label style="margin-bottom:6px;">Product Counsel — Google Sheets CSV URL</label>
-      <p style="font-size:0.82rem;color:var(--muted);margin:0 0 8px;line-height:1.5;">Expected columns: <code>title</code>, <code>text</code>, <code>top legal risks</code></p>
-      <input type="text" id="settings-counsel-url" style="width:100%;"
-        value="https://docs.google.com/spreadsheets/d/e/2PACX-1vQQPMiRPx47QcUqn8HWLGkH8nQdS8yKETLV_NzG3Lsf5RGoCZ4rN-6EtZ217Brzb-rPzg1B7MkOFLUP/pub?gid=0&amp;single=true&amp;output=csv">
-    </div>
-    <div>
-      <label style="margin-bottom:6px;">3D Word Plotter — Google Sheets CSV URL</label>
-      <p style="font-size:0.82rem;color:var(--muted);margin:0 0 8px;line-height:1.5;">Expected columns: <code>word</code> (or <code>name</code>), <code>x</code>, <code>y</code>, <code>z</code> — values 0.0–1.0</p>
-      <input type="text" id="settings-plotter-url" style="width:100%;"
-        value="https://docs.google.com/spreadsheets/d/e/2PACX-1vRUA2UWnQ3pn-DUH6y_h9acbKv3SYaDwBcD4mswGofDGx4QicnfTEcFzKi_PHod9VfqUXmCGZa86U4q/pub?gid=892495698&amp;single=true&amp;output=csv">
-    </div>
+
   </div>
 </div>
 
@@ -196,6 +223,12 @@
       <div class="exercise-card-desc">Practice gathering information from a client to understand their AI use and assess risk. Interview a simulated representative of OTC, a fictional company, in preparation for drafting their AI policy.</div>
       <div class="exercise-card-arrow">Open ↗</div>
     </a>
+    <div class="exercise-card" onclick="showResearchApp()">
+      <div class="exercise-card-eyebrow">Research Exercise</div>
+      <div class="exercise-card-title">Research Exercises</div>
+      <div class="exercise-card-desc">Assign students to individual research tasks — algorithm research or case research — drawn from a Google Sheet. Each student receives a unique row.</div>
+      <div class="exercise-card-arrow">Open →</div>
+    </div>
   </div>
 </div>
 
@@ -249,13 +282,19 @@
 
   <div style="padding:28px 20px;max-width:640px;margin:0 auto;">
 
-  <!-- Names -->
+  <!-- Roster -->
   <div class="section-card">
-    <div class="section-title">Names</div>
-    <label for="names-textarea">Enter one name per line, or separate names with commas.</label>
-    <textarea id="names-textarea" placeholder=""></textarea>
-    <div style="margin-top:8px;">
-      <button class="btn btn-secondary btn-sm" id="clear-names-btn">Clear</button>
+    <div class="collapsible-header" id="panel-roster-toggle-header">
+      <div class="section-title" style="margin:0;border:none;padding:0;">Roster</div>
+      <span class="toggle-icon" id="panel-roster-toggle-icon">▼ Show</span>
+    </div>
+    <div class="collapsible-body" id="panel-roster-body">
+      <p style="font-size:0.85rem;color:var(--muted);margin:0 0 12px;line-height:1.55;">Configure the default roster in <button onclick="openSettings()" style="background:none;border:none;padding:0;cursor:pointer;color:var(--muted);text-decoration:underline;text-underline-offset:2px;font-size:inherit;">Settings ⚙</button>, or enter names directly here.</p>
+      <label for="names-textarea" style="font-size:0.85rem;color:var(--muted);margin-bottom:6px;display:block;">One name per line, or comma-separated.</label>
+      <textarea id="names-textarea" placeholder=""></textarea>
+      <div style="margin-top:8px;">
+        <button class="btn btn-secondary btn-sm" id="clear-names-btn">Clear</button>
+      </div>
     </div>
   </div>
 
@@ -266,6 +305,11 @@
       <label style="margin:0;font-size:0.95rem;">Groups of</label>
       <input type="number" id="group-size" value="2" min="1" max="50">
     </div>
+    <div class="stepper-row" style="margin-top:8px;">
+      <label style="margin:0;font-size:0.95rem;">Minimum panel size</label>
+      <input type="number" id="min-group-size" value="2" min="1" max="20">
+    </div>
+    <p class="names-hint">Groups smaller than this will be distributed among other groups.</p>
     <div class="btn-row">
       <button class="btn btn-primary" id="randomize-btn">Create Groups</button>
       <button class="btn btn-outline" id="assign-prompts-btn">Assign Prompts</button>
@@ -296,14 +340,8 @@
           <button class="btn btn-primary btn-sm" id="qf-start-btn" title="Quick Fill then start the panel (W)">⚡ Quick Fill + Start</button>
         </div>
       </div>
-      <div class="advanced-divider"></div>
-      <div class="advanced-subsection">
-        <div class="advanced-subtitle">Minimum Panel Size</div>
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-          <input type="number" id="min-group-size" value="2" min="1" max="20" style="width:64px;">
-          <span class="names-hint" style="margin:0;">Groups smaller than this will be distributed among other groups.</span>
-        </div>
-      </div>
+      
+      
     </div>
   </div>
 
@@ -417,30 +455,42 @@
       </div>
     </div>
 
-    <div class="counsel-content">
-
-      
+    <div style="padding:28px 20px;max-width:640px;margin:0 auto;width:100%;">
 
       <!-- Roster -->
-      <div class="c-card">
-        <span class="field-label">Roster</span>
-        <span class="field-hint">Separate names with commas or new lines</span>
-        <textarea id="counsel-names" rows="8"></textarea>
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;">
-          <span class="field-hint" style="margin:0;">Quick fill:</span>
-          <input type="number" id="counsel-qf-count" value="6" min="1" max="26" style="width:60px;border:1px solid var(--border);border-radius:4px;padding:5px 8px;font-size:0.88rem;background:var(--bg);color:var(--text);outline:none;">
-          <button class="btn-load" style="padding:7px 14px;font-size:0.75rem;" onclick="counselQuickFill()">⚡ Quick Fill</button>
+      <div class="section-card">
+        <div class="collapsible-header" id="counsel-roster-toggle-header">
+          <div class="section-title" style="margin:0;border:none;padding:0;">Roster</div>
+          <span class="toggle-icon" id="counsel-roster-toggle-icon">▼ Show</span>
+        </div>
+        <div class="collapsible-body" id="counsel-roster-body">
+          <p style="font-size:0.85rem;color:var(--muted);margin:0 0 12px;line-height:1.55;">Configure the default roster in <button onclick="openSettings()" style="background:none;border:none;padding:0;cursor:pointer;color:var(--muted);text-decoration:underline;text-underline-offset:2px;font-size:inherit;">Settings ⚙</button>, or enter names directly here.</p>
+          <label for="counsel-names" style="font-size:0.85rem;color:var(--muted);margin-bottom:6px;display:block;">One name per line, or comma-separated.</label>
+          <textarea id="counsel-names" rows="7"></textarea>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;">
+            <label style="margin:0;font-size:0.9rem;">Quick fill</label>
+            <input type="number" id="counsel-qf-count" value="6" min="1" max="26">
+            <button class="btn btn-secondary btn-sm" onclick="counselQuickFill()">⚡ Quick Fill</button>
+          </div>
         </div>
       </div>
 
-      <div class="c-card" style="padding:10px 14px;">
-        <span class="field-label">Scenarios</span>
-        <button class="field-hint" onclick="openSettings()" style="background:none;border:none;padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:2px;">Data source URL is configured in Settings ⚙</button>
-        <div id="csv-status" style="font-size:0.85rem;margin-top:6px;"></div>
+      <!-- Scenarios -->
+      <div class="section-card">
+        <div class="section-title">Scenarios</div>
+        <p style="font-size:0.85rem;color:var(--muted);margin:0 0 12px;line-height:1.55;">Data source URL is configured in <button onclick="openSettings()" style="background:none;border:none;padding:0;cursor:pointer;color:var(--muted);text-decoration:underline;text-underline-offset:2px;font-size:inherit;">Settings ⚙</button></p>
+        <div id="csv-status" style="font-size:0.85rem;margin-bottom:12px;min-height:18px;"></div>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="counsel-assign-btn">Assign Scenarios</button>
+        </div>
+        <div class="inline-warning" id="counsel-warn-no-names">Enter at least one name in the Roster before assigning.</div>
+        <div class="inline-warning" id="counsel-warn-no-scenarios">Scenarios haven't been assigned yet. Assign scenarios before starting.</div>
+        <div id="counsel-scenarios-display"></div>
       </div>
 
-      <div class="c-btn-row">
-        <button class="btn-draw" id="btn-draw" onclick="counselStart()">Start</button>
+      <!-- Start -->
+      <div style="display:flex;justify-content:flex-end;margin-bottom:28px;">
+        <button class="btn btn-primary" id="btn-draw" onclick="counselStart()" style="font-size:1.05rem;padding:12px 28px;">Start</button>
       </div>
 
     </div>
@@ -449,7 +499,7 @@
   <!-- MOD SUB-SCREEN -->
   <div id="counsel-mod" class="counsel-screen">
     <div class="mod-header-bar">
-      <button class="header-btn" onclick="counselReset()" title="Reset / New Session (R)">↩</button>
+      <button class="header-btn" onclick="counselReset()" title="Reset / New Session (R)">←</button>
       <div class="header-nav">
         <button class="header-btn" id="counsel-prev-btn" title="Previous (←)">‹</button>
         <div class="group-nav-label" id="counsel-nav-label">Result 1 of 1</div>
@@ -497,6 +547,14 @@
               <input type="number" id="counsel-timer-min" value="2" min="0" max="99" step="1">
               <span>Seconds:</span>
               <input type="number" id="counsel-timer-sec" value="0" min="0" max="59" step="1">
+            </div>
+            <div id="counsel-timer-decimal-warn" style="display:none;font-size:0.82rem;color:var(--danger);margin-top:-6px;">Decimals aren't allowed — value rounded down.</div>
+            <div id="counsel-timer-warnings-section">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:8px;">
+                <span style="font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);">Warnings</span>
+                <button class="btn btn-secondary btn-sm" id="counsel-add-warning-btn" style="padding:3px 10px;font-size:0.82rem;">+ Add</button>
+              </div>
+              <div id="counsel-timer-warnings-list"></div>
             </div>
             <div class="timer-warn-row" id="counsel-timer-countup-row">
               <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-weight:500;">
@@ -567,8 +625,9 @@
         <div class="advanced-subtitle">Labels</div>
         <label class="plotter-checkbox-label">
           <input type="checkbox" id="plotter-show-labels">
-          Show point labels
+          Persistent labels (may overlap)
         </label>
+        <p class="plotter-hint">Hover any point to reveal its label.</p>
       </section>
 
       <section class="plotter-section">
@@ -605,6 +664,65 @@
 
   </div>
 </div><!-- end #plotter-app -->
+
+<!-- ═══════════════════════════════════ RESEARCH APP ═══════════════════════════════════ -->
+<div id="research-app" class="hidden app-wrapper">
+
+  <div class="mod-header-bar" style="flex-shrink:0;">
+    <div class="header-left">
+      <button class="header-btn" onclick="showHomeScreen()" title="Back to Home">←</button>
+      <div>
+        <div class="header-title">Research Exercises</div>
+        <div class="header-subtitle" id="research-header-subtitle">Select an exercise type</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <button class="header-btn help-btn" title="Keyboard shortcuts (?)">?</button>
+      <button class="header-btn settings-trigger" title="Appearance settings (S)">⚙</button>
+    </div>
+  </div>
+
+  <div class="research-shell">
+
+    <!-- ── Left panel: type selector + instructions ── -->
+    <aside class="research-left">
+      <div class="research-section-label">Exercise Type</div>
+      <div class="research-type-selector">
+        <label class="research-type-option">
+          <input type="radio" name="research-type" value="algorithm" id="research-type-algorithm">
+          <span class="research-type-label">Algorithm Research</span>
+        </label>
+        <label class="research-type-option">
+          <input type="radio" name="research-type" value="case" id="research-type-case">
+          <span class="research-type-label">Case Research</span>
+        </label>
+        <label class="research-type-option">
+          <input type="radio" name="research-type" value="legislative" id="research-type-legislative">
+          <span class="research-type-label">Legislative Research</span>
+        </label>
+      </div>
+
+      <div class="research-instructions-area" id="research-instructions-area">
+        <div class="research-instructions-placeholder" id="research-instructions-placeholder">Select an exercise type to see instructions.</div>
+        <div class="research-instructions-content" id="research-instructions-content" style="display:none;"></div>
+      </div>
+    </aside>
+
+    <!-- ── Right panel: roster + assign ── -->
+    <main class="research-right">
+      <div class="research-section-label">Roster</div>
+      <textarea id="research-names" class="research-names-textarea" placeholder="Enter student names, one per line or comma-separated…" rows="7"></textarea>
+
+      <button class="btn btn-primary research-assign-btn" id="research-assign-btn" onclick="researchAssign()">
+        Assign Rows
+      </button>
+      <div id="research-status" class="research-status"></div>
+
+      <div id="research-results" class="research-results"></div>
+    </main>
+
+  </div>
+</div><!-- end #research-app -->
 
 <script src="app.js"></script>
 </body>
