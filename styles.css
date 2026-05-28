@@ -52,9 +52,6 @@ body {
 }
 
 .settings-btn-light {
-  position: absolute;
-  top: 16px;
-  right: 20px;
   width: 36px; height: 36px;
   border-radius: 7px;
   border: 1px solid var(--border);
@@ -287,6 +284,21 @@ input[type="number"] { width: 72px; text-align: center; }
 .shortcut-list li:last-child { border-bottom: none; }
 .shortcut-list kbd { font-family: monospace; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 1px 7px; font-size: 0.82rem; min-width: 44px; text-align: center; white-space: nowrap; flex-shrink: 0; color: var(--text); }
 .help-credit { font-size: 0.78rem; color: var(--muted); text-align: center; margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--border); }
+
+/* ── SETTINGS MODAL TABS ── */
+.settings-tabs { display: flex; border-bottom: 2px solid var(--border); margin: 0 0 22px; }
+.settings-tab {
+  background: none; border: none; border-bottom: 3px solid transparent; margin-bottom: -2px;
+  padding: 10px 16px; font-size: 0.88rem; font-weight: 600; color: var(--muted);
+  cursor: pointer; transition: color 0.15s; white-space: nowrap; font-family: inherit;
+}
+.settings-tab:hover { color: var(--text); }
+.settings-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.settings-tab-panel { display: none; }
+.settings-tab-panel.active { display: block; }
+
+/* ── PLOTTER HINT TEXT ── */
+.plotter-hint { font-size: 0.8rem; color: var(--muted); margin: 5px 0 0; line-height: 1.4; }
 
 /* ── PANEL EXERCISE STYLES ── */
 
@@ -891,3 +903,176 @@ input[type="number"] { width: 72px; text-align: center; }
   background-color: var(--bg);
 }
 #plotter-plot { flex: 1; width: 100%; height: 100%; }
+
+/* ── RESEARCH EXERCISE ── */
+.research-shell {
+  display: flex;
+  gap: 0;
+  height: calc(100vh - 58px);
+  overflow: hidden;
+}
+
+.research-left {
+  width: 50%;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  padding: 28px 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  background: var(--card);
+}
+
+.research-right {
+  flex: 1;
+  min-width: 0;
+  padding: 28px 32px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.research-section-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 4px;
+}
+
+.research-type-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.research-type-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.research-type-option:has(input:checked) {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+
+.research-type-option input[type="radio"] {
+  accent-color: var(--accent);
+  width: 16px; height: 16px;
+  flex-shrink: 0;
+}
+
+.research-type-label {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.research-instructions-area {
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px 16px;
+  background: var(--bg);
+  font-size: 0.88rem;
+  line-height: 1.65;
+  color: var(--text);
+  min-height: 100px;
+  overflow-y: auto;
+}
+
+.research-instructions-placeholder {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.research-names-textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 0.95rem;
+  font-family: var(--font);
+  color: var(--text);
+  background: var(--bg);
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s;
+  display: block;
+}
+
+.research-names-textarea:focus { border-color: var(--accent); }
+
+.research-assign-btn {
+  align-self: flex-start;
+}
+
+.research-status {
+  font-size: 0.88rem;
+  color: var(--danger);
+  min-height: 1.2em;
+}
+
+.research-results {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.research-result-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  box-shadow: var(--card-shadow);
+}
+
+.research-result-name {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text);
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.research-result-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.research-result-cell {
+  display: flex;
+  gap: 10px;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.research-cell-label {
+  font-weight: 600;
+  color: var(--gold);
+  min-width: 100px;
+  flex-shrink: 0;
+  text-transform: capitalize;
+}
+
+.research-cell-value {
+  color: var(--text);
+}
+
+@media (max-width: 680px) {
+  .research-shell { flex-direction: column; height: auto; overflow: visible; }
+  .research-left { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
+  .research-right { padding: 20px 16px; }
+}

@@ -2,12 +2,13 @@
 //  NAVIGATION
 // ════════════════════════════════════════════════
 function showHomeScreen() {
-  document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
-  stopTimer();
-  counselStopTimer();
+  document.querySelectorAll('.modal-overlay.open').forEach(m => closeModal(m));
+  if (panelTimer) panelTimer.stop();
+  if (counselTimer) counselTimer.stop();
   document.getElementById('panel-app').classList.add('hidden');
   document.getElementById('counsel-app').classList.add('hidden');
   document.getElementById('plotter-app').classList.add('hidden');
+  document.getElementById('research-app').classList.add('hidden');
   document.getElementById('home-screen').classList.remove('hidden');
 }
 
@@ -15,11 +16,22 @@ function showPlotterApp() {
   document.getElementById('home-screen').classList.add('hidden');
   document.getElementById('panel-app').classList.add('hidden');
   document.getElementById('counsel-app').classList.add('hidden');
+  document.getElementById('research-app').classList.add('hidden');
   document.getElementById('plotter-app').classList.remove('hidden');
   if (!plotterInitialized) {
     plotterInitialized = true;
     plotterHandleRefresh();
   }
+}
+
+function showResearchApp() {
+  document.getElementById('home-screen').classList.add('hidden');
+  document.getElementById('panel-app').classList.add('hidden');
+  document.getElementById('counsel-app').classList.add('hidden');
+  document.getElementById('plotter-app').classList.add('hidden');
+  document.getElementById('research-app').classList.remove('hidden');
+  const roster = document.getElementById('settings-roster');
+  if (roster && roster.value.trim()) document.getElementById('research-names').value = roster.value;
 }
 
 let panelDataLoaded = false;
@@ -28,6 +40,7 @@ let panelDataLoading = false;
 function showPanelApp() {
   document.getElementById('home-screen').classList.add('hidden');
   document.getElementById('counsel-app').classList.add('hidden');
+  document.getElementById('research-app').classList.add('hidden');
   document.getElementById('panel-app').classList.remove('hidden');
   const roster = document.getElementById('settings-roster');
   if (roster && roster.value.trim()) $namesTextarea.value = roster.value;
@@ -40,6 +53,7 @@ function showPanelApp() {
 function showCounselApp() {
   document.getElementById('home-screen').classList.add('hidden');
   document.getElementById('panel-app').classList.add('hidden');
+  document.getElementById('research-app').classList.add('hidden');
   document.getElementById('counsel-app').classList.remove('hidden');
   const roster = document.getElementById('settings-roster');
   if (roster && roster.value.trim()) document.getElementById('counsel-names').value = roster.value;
@@ -66,6 +80,272 @@ function escHtml(str) {
 }
 
 // ════════════════════════════════════════════════
+//  MODAL HELPERS + FOCUS TRAP
+// ════════════════════════════════════════════════
+const FOCUSABLE_SEL = [
+  'a[href]', 'button:not([disabled])', 'input:not([disabled])',
+  'select:not([disabled])', 'textarea:not([disabled])', '[tabindex]:not([tabindex="-1"])',
+].join(', ');
+
+let _ftEl = null, _ftHandler = null, _ftTrigger = null;
+
+function openModal(el) {
+  if (!el) return;
+  _ftTrigger = (document.activeElement && document.activeElement !== document.body)
+    ? document.activeElement : null;
+  el.classList.add('open');
+  _ftEl = el;
+  const focusable = Array.from(el.querySelectorAll(FOCUSABLE_SEL))
+    .filter(n => n.offsetParent !== null);
+  if (focusable.length) setTimeout(() => focusable[0].focus(), 10);
+  _ftHandler = (e) => {
+    if (e.key !== 'Tab') return;
+    const all = Array.from(el.querySelectorAll(FOCUSABLE_SEL))
+      .filter(n => n.offsetParent !== null);
+    if (!all.length) return;
+    const first = all[0], last = all[all.length - 1];
+    if (e.shiftKey) {
+      if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+    } else {
+      if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  };
+  el.addEventListener('keydown', _ftHandler);
+}
+
+function closeModal(el) {
+  if (!el) return;
+  el.classList.remove('open');
+  if (_ftEl === el) {
+    if (_ftHandler) el.removeEventListener('keydown', _ftHandler);
+    _ftEl = null; _ftHandler = null;
+    if (_ftTrigger) { try { _ftTrigger.focus(); } catch (_) {} _ftTrigger = null; }
+  }
+}
+
+// ════════════════════════════════════════════════
+//  SHARED TIMER FACTORY
+// ════════════════════════════════════════════════
+function createTimer(ids) {
+  let interval = null;
+  let seconds = 0;
+  let running = false;
+  let mode = 'down';
+  let countdownTotal = 120;
+  let countingUpAfterCD = false;
+  let warningEntries = [{value:60,unit:'s'},{value:30,unit:'s'}];
+  let flashedThresholds = new Set();
+
+  let $card, $display, $startBtn, $resetBtn, $toggleHeader, $toggleIcon, $body,
+      $countdownInputs, $minInput, $secInput;
+
+  function getWarnSecondsArray() {
+    return warningEntries
+      .map(e => e.unit === 'm' ? (e.value || 0) * 60 : (e.value || 0))
+      .filter(v => v > 0)
+      .sort((a, b) => b - a);
+  }
+
+  function triggerFlash(thenDone) {
+    if (!$card) return;
+    $card.classList.remove('timer-flash-active', 'timer-flash-done');
+    void $card.offsetWidth;
+    $card.classList.add('timer-flash-active');
+    if (thenDone) {
+      const onEnd = () => {
+        $card.removeEventListener('animationend', onEnd);
+        $card.classList.remove('timer-flash-active');
+        $card.classList.add('timer-flash-done');
+      };
+      $card.addEventListener('animationend', onEnd);
+    }
+  }
+
+  function updateFlash() {
+    if (!$card || (mode !== 'down' && !countingUpAfterCD)) {
+      if ($card) $card.classList.remove('timer-flash-active', 'timer-flash-done');
+      flashedThresholds.clear();
+      return;
+    }
+    if (countingUpAfterCD) return;
+    if (seconds === 0) {
+      if (!flashedThresholds.has('zero')) { flashedThresholds.add('zero'); triggerFlash(true); }
+      return;
+    }
+    for (const ws of getWarnSecondsArray()) {
+      if (seconds <= ws && !flashedThresholds.has(ws) && countdownTotal > ws) {
+        flashedThresholds.add(ws); triggerFlash(false); break;
+      }
+    }
+  }
+
+  function updateDisplay() {
+    if (!$display) return;
+    const m = Math.floor(Math.abs(seconds) / 60);
+    const s = Math.abs(seconds) % 60;
+    $display.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+  }
+
+  function renderWarnings() {
+    const list = ids.warnListId ? document.getElementById(ids.warnListId) : null;
+    if (!list) return;
+    list.innerHTML = '';
+    warningEntries.forEach((entry, i) => {
+      const row = document.createElement('div');
+      row.className = 'warn-entry-row';
+      row.innerHTML = `
+        <input type="number" value="${entry.value}" min="1" max="9999" class="warn-val-input" data-i="${i}">
+        <label><input type="radio" name="wu_${ids.cardId}_${i}" value="s" class="warn-unit-input" data-i="${i}" ${entry.unit==='s'?'checked':''}> s</label>
+        <label><input type="radio" name="wu_${ids.cardId}_${i}" value="m" class="warn-unit-input" data-i="${i}" ${entry.unit==='m'?'checked':''}> min</label>
+        <button class="warn-remove-btn" data-i="${i}" title="Remove">✕</button>
+      `;
+      list.appendChild(row);
+    });
+    list.querySelectorAll('.warn-val-input').forEach(inp => {
+      inp.addEventListener('change', () => { warningEntries[+inp.dataset.i].value = parseInt(inp.value) || 1; });
+    });
+    list.querySelectorAll('.warn-unit-input').forEach(inp => {
+      inp.addEventListener('change', () => { warningEntries[+inp.dataset.i].unit = inp.value; });
+    });
+    list.querySelectorAll('.warn-remove-btn').forEach(btn => {
+      btn.addEventListener('click', () => { warningEntries.splice(+btn.dataset.i, 1); renderWarnings(); });
+    });
+  }
+
+  function start() {
+    if (mode === 'down' && seconds === 0 && !countingUpAfterCD) {
+      const mins = $minInput ? parseInt($minInput.value) || 0 : 0;
+      const secs = $secInput ? parseInt($secInput.value) || 0 : 0;
+      countdownTotal = mins * 60 + secs;
+      seconds = countdownTotal;
+      if (seconds <= 0) return;
+    }
+    running = true;
+    if ($startBtn) $startBtn.textContent = 'Pause';
+    interval = setInterval(() => {
+      if (mode === 'up' || countingUpAfterCD) {
+        seconds++;
+      } else {
+        seconds--;
+        if (seconds <= 0) {
+          seconds = 0;
+          updateDisplay();
+          updateFlash();
+          const countUpAfterEl = ids.countupAfterId ? document.getElementById(ids.countupAfterId) : null;
+          if (countUpAfterEl && countUpAfterEl.checked) {
+            countingUpAfterCD = true;
+          } else {
+            stop();
+            if ($startBtn) $startBtn.textContent = 'Start';
+            running = false;
+          }
+          return;
+        }
+      }
+      updateDisplay();
+      updateFlash();
+    }, 1000);
+    updateDisplay();
+    updateFlash();
+  }
+
+  function pause() {
+    clearInterval(interval); interval = null; running = false;
+    if ($startBtn) $startBtn.textContent = 'Start';
+  }
+
+  function stop() {
+    clearInterval(interval); interval = null; running = false; countingUpAfterCD = false;
+  }
+
+  function reset() {
+    stop();
+    flashedThresholds.clear();
+    if ($startBtn) $startBtn.textContent = 'Start';
+    if (mode === 'down') {
+      const mins = $minInput ? parseInt($minInput.value) || 0 : 0;
+      const secs = $secInput ? parseInt($secInput.value) || 0 : 0;
+      seconds = mins * 60 + secs;
+    } else {
+      seconds = 0;
+    }
+    if ($card) $card.classList.remove('timer-flash-active', 'timer-flash-done');
+    updateDisplay();
+  }
+
+  function bind() {
+    $card            = ids.cardId            ? document.getElementById(ids.cardId) : null;
+    $display         = ids.displayId         ? document.getElementById(ids.displayId) : null;
+    $startBtn        = ids.startBtnId        ? document.getElementById(ids.startBtnId) : null;
+    $resetBtn        = ids.resetBtnId        ? document.getElementById(ids.resetBtnId) : null;
+    $toggleHeader    = ids.toggleHeaderId    ? document.getElementById(ids.toggleHeaderId) : null;
+    $toggleIcon      = ids.toggleIconId      ? document.getElementById(ids.toggleIconId) : null;
+    $body            = ids.bodyId            ? document.getElementById(ids.bodyId) : null;
+    $countdownInputs = ids.countdownInputsId ? document.getElementById(ids.countdownInputsId) : null;
+    $minInput        = ids.minId             ? document.getElementById(ids.minId) : null;
+    $secInput        = ids.secId             ? document.getElementById(ids.secId) : null;
+
+    if ($toggleHeader) {
+      $toggleHeader.addEventListener('click', () => {
+        const expanded = $body.classList.toggle('expanded');
+        if ($toggleIcon) $toggleIcon.textContent = expanded ? '▲ Hide' : '▼ Show';
+        if (!expanded) reset();
+      });
+    }
+
+    document.querySelectorAll(`input[name="${ids.modeRadioName}"]`).forEach(radio => {
+      radio.addEventListener('change', () => {
+        mode = radio.value;
+        const isDown = mode === 'down';
+        if ($countdownInputs) $countdownInputs.classList.toggle('hidden', !isDown);
+        const warnSection = ids.warnSectionId ? document.getElementById(ids.warnSectionId) : null;
+        if (warnSection) warnSection.classList.toggle('hidden', !isDown);
+        const countupRow = ids.countupRowId ? document.getElementById(ids.countupRowId) : null;
+        if (countupRow) countupRow.classList.toggle('hidden', !isDown);
+        if ($card) $card.classList.remove('timer-flash-active', 'timer-flash-done');
+        flashedThresholds.clear();
+        stop(); seconds = 0; updateDisplay();
+        if ($startBtn) $startBtn.textContent = 'Start';
+        running = false;
+      });
+    });
+
+    if ($startBtn) $startBtn.addEventListener('click', () => { if (running) pause(); else start(); });
+    if ($resetBtn) $resetBtn.addEventListener('click', reset);
+
+    [ids.minId, ids.secId].forEach(inputId => {
+      if (!inputId) return;
+      const inp = document.getElementById(inputId);
+      if (!inp) return;
+      inp.addEventListener('input', () => {
+        if (inp.value !== '' && inp.value.includes('.')) {
+          inp.value = Math.floor(parseFloat(inp.value));
+          const warn = ids.decimalWarnId ? document.getElementById(ids.decimalWarnId) : null;
+          if (warn) {
+            warn.style.display = '';
+            clearTimeout(inp._decWarnTimer);
+            inp._decWarnTimer = setTimeout(() => { warn.style.display = 'none'; }, 2500);
+          }
+        }
+      });
+    });
+
+    const addWarnBtn = ids.addWarnBtnId ? document.getElementById(ids.addWarnBtnId) : null;
+    if (addWarnBtn) addWarnBtn.addEventListener('click', () => { warningEntries.push({value:30,unit:'s'}); renderWarnings(); });
+
+    renderWarnings();
+    updateDisplay();
+  }
+
+  return {
+    start, pause, stop, reset, bind,
+    get $startBtn()    { return $startBtn; },
+    get $resetBtn()    { return $resetBtn; },
+    get $toggleHeader(){ return $toggleHeader; },
+  };
+}
+
+// ════════════════════════════════════════════════
 //  INSTRUCTOR SETTINGS
 // ════════════════════════════════════════════════
 const SETTINGS_KEY = 'panel-instructor-settings';
@@ -73,25 +353,34 @@ const SETTINGS_KEY = 'panel-instructor-settings';
 function loadSettings() {
   let s = {};
   try { s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'); } catch(e) {}
-  const roster      = document.getElementById('settings-roster');
-  const panelUrl    = document.getElementById('settings-panel-url');
-  const counselUrl  = document.getElementById('settings-counsel-url');
-  const plotterUrl  = document.getElementById('settings-plotter-url');
-  const qfCount     = document.getElementById('settings-qf-count');
-  if (roster     && s.roster     !== undefined) roster.value     = s.roster;
-  if (panelUrl   && s.panelUrl)                 panelUrl.value   = s.panelUrl;
-  if (counselUrl && s.counselUrl)               counselUrl.value = s.counselUrl;
-  if (plotterUrl && s.plotterUrl)               plotterUrl.value = s.plotterUrl;
-  if (qfCount    && s.qfCount    !== undefined) qfCount.value    = s.qfCount;
+  const roster               = document.getElementById('settings-roster');
+  const panelUrl             = document.getElementById('settings-panel-url');
+  const counselUrl           = document.getElementById('settings-counsel-url');
+  const plotterUrl           = document.getElementById('settings-plotter-url');
+  const qfCount              = document.getElementById('settings-qf-count');
+  const researchAlgorithmUrl   = document.getElementById('settings-research-algorithm-url');
+  const researchCaseUrl        = document.getElementById('settings-research-case-url');
+  const researchLegislativeUrl = document.getElementById('settings-research-legislative-url');
+  if (roster                 && s.roster                 !== undefined) roster.value                 = s.roster;
+  if (panelUrl               && s.panelUrl)                             panelUrl.value               = s.panelUrl;
+  if (counselUrl             && s.counselUrl)                           counselUrl.value             = s.counselUrl;
+  if (plotterUrl             && s.plotterUrl)                           plotterUrl.value             = s.plotterUrl;
+  if (qfCount                && s.qfCount                !== undefined) qfCount.value                = s.qfCount;
+  if (researchAlgorithmUrl   && s.researchAlgorithmUrl)                 researchAlgorithmUrl.value   = s.researchAlgorithmUrl;
+  if (researchCaseUrl        && s.researchCaseUrl)                      researchCaseUrl.value        = s.researchCaseUrl;
+  if (researchLegislativeUrl && s.researchLegislativeUrl)               researchLegislativeUrl.value = s.researchLegislativeUrl;
 }
 
 function saveSettings() {
   const s = {
-    roster:     document.getElementById('settings-roster')?.value     ?? '',
-    panelUrl:   document.getElementById('settings-panel-url')?.value  ?? SHEET_CSV_URL,
-    counselUrl: document.getElementById('settings-counsel-url')?.value ?? '',
-    plotterUrl: document.getElementById('settings-plotter-url')?.value ?? PLOTTER_CSV_URL,
-    qfCount:    document.getElementById('settings-qf-count')?.value   ?? '9'
+    roster:               document.getElementById('settings-roster')?.value                   ?? '',
+    panelUrl:             document.getElementById('settings-panel-url')?.value                ?? SHEET_CSV_URL,
+    counselUrl:           document.getElementById('settings-counsel-url')?.value              ?? '',
+    plotterUrl:           document.getElementById('settings-plotter-url')?.value              ?? PLOTTER_CSV_URL,
+    qfCount:              document.getElementById('settings-qf-count')?.value                 ?? '9',
+    researchAlgorithmUrl:    document.getElementById('settings-research-algorithm-url')?.value    ?? '',
+    researchCaseUrl:         document.getElementById('settings-research-case-url')?.value         ?? '',
+    researchLegislativeUrl:  document.getElementById('settings-research-legislative-url')?.value  ?? '',
   };
   try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch(e) {}
 }
@@ -123,15 +412,7 @@ let drawnQuestions = [];
 let usedQuestionSet = new Set();
 let currentGroupIndex = 0;
 
-let timerInterval = null;
-let timerSeconds = 0;
-let timerRunning = false;
-let timerMode = 'down';
-let timerCountdownTotal = 120;
-let timerFlashState = null;
-let timerCountingUpAfterCD = false;
-let timerWarningEntries = [{value:60,unit:'s'},{value:30,unit:'s'}];
-let timerFlashedThresholds = new Set();
+let panelTimer;
 
 // ════════════════════════════════════════════════
 //  PANEL EXERCISE — ELEMENT REFS
@@ -161,17 +442,6 @@ const $qaExhausted   = document.getElementById('qa-exhausted');
 const $qaDrawnArea   = document.getElementById('qa-drawn-area');
 const $toggleHistoryBtn = document.getElementById('toggle-history-btn');
 const $qHistoryList  = document.getElementById('q-history-list');
-
-const $timerToggleHeader    = document.getElementById('timer-toggle-header');
-const $timerToggleIcon      = document.getElementById('timer-toggle-icon');
-const $timerBody            = document.getElementById('timer-body');
-const $timerDisplay         = document.getElementById('timer-display');
-const $timerStartBtn        = document.getElementById('timer-start-btn');
-const $timerResetBtn        = document.getElementById('timer-reset-btn');
-const $timerCountdownInputs = document.getElementById('timer-countdown-inputs');
-const $timerMin             = document.getElementById('timer-min');
-const $timerSec             = document.getElementById('timer-sec');
-const $timerCard            = document.getElementById('timer-card');
 
 const $helpModal      = document.getElementById('help-modal');
 const $helpModalClose = document.getElementById('help-modal-close');
@@ -398,7 +668,6 @@ function startPanel() {
     return;
   }
 
-  resetTimer();
   buildModeratorScreen();
   showScreen('mod');
 }
@@ -420,10 +689,7 @@ function buildModeratorScreen() {
   renderGroupView(currentGroupIndex);
   updateGroupNav();
 
-  stopTimer();
-  timerSeconds = 0;
-  updateTimerDisplay();
-  $timerStartBtn.textContent = 'Start';
+  panelTimer.reset();
 }
 
 function bindModEvents() {
@@ -435,13 +701,13 @@ function bindModEvents() {
     $groupsDisplay.innerHTML = '';
     $warnNoGroups.classList.remove('show');
     $warnNoPrompts.classList.remove('show');
-    stopTimer();
+    panelTimer.stop();
     showScreen('setup');
   });
 
   $groupPrevBtn.addEventListener('click', () => {
     if (currentGroupIndex > 0) {
-      resetTimer();
+      panelTimer.reset();
       $qaDrawnArea.innerHTML = '';
       currentGroupIndex--;
       renderGroupView(currentGroupIndex);
@@ -450,7 +716,7 @@ function bindModEvents() {
   });
   $groupNextBtn.addEventListener('click', () => {
     if (currentGroupIndex < groups.length - 1) {
-      resetTimer();
+      panelTimer.reset();
       $qaDrawnArea.innerHTML = '';
       currentGroupIndex++;
       renderGroupView(currentGroupIndex);
@@ -465,38 +731,13 @@ function bindModEvents() {
     $toggleHistoryBtn.textContent = open ? 'Hide Question History' : 'View Question History';
   });
 
-  $timerToggleHeader.addEventListener('click', () => {
-    const expanded = $timerBody.classList.toggle('expanded');
-    $timerToggleIcon.textContent = expanded ? '▲ Hide' : '▼ Show';
-    if (!expanded) resetTimer();
-  });
-
-  document.querySelectorAll('input[name="timer-mode"]').forEach(radio => {
-    radio.addEventListener('change', () => {
-      timerMode = radio.value;
-      const isDown = timerMode === 'down';
-      $timerCountdownInputs.classList.toggle('hidden', !isDown);
-      const warnSection = document.getElementById('timer-warnings-section');
-      if (warnSection) warnSection.classList.toggle('hidden', !isDown);
-      const countupRow = document.getElementById('timer-countup-row');
-      if (countupRow) countupRow.classList.toggle('hidden', !isDown);
-      if ($timerCard) { $timerCard.classList.remove('timer-flash-active','timer-flash-done'); }
-      timerFlashedThresholds.clear();
-      stopTimer();
-      timerSeconds = 0;
-      updateTimerDisplay();
-      $timerStartBtn.textContent = 'Start';
-      timerRunning = false;
-    });
-  });
-
   const $viewAllQBtn = document.getElementById('view-all-q-btn');
   const $allQModal   = document.getElementById('all-q-modal');
   const $allQModalClose = document.getElementById('all-q-modal-close');
 
-  if ($viewAllQBtn) $viewAllQBtn.addEventListener('click', () => { renderAllQuestionsModal(); $allQModal.classList.add('open'); });
-  if ($allQModalClose) $allQModalClose.addEventListener('click', () => $allQModal.classList.remove('open'));
-  if ($allQModal) $allQModal.addEventListener('click', e => { if (e.target === $allQModal) $allQModal.classList.remove('open'); });
+  if ($viewAllQBtn) $viewAllQBtn.addEventListener('click', () => { renderAllQuestionsModal(); openModal($allQModal); });
+  if ($allQModalClose) $allQModalClose.addEventListener('click', () => closeModal($allQModal));
+  if ($allQModal) $allQModal.addEventListener('click', e => { if (e.target === $allQModal) closeModal($allQModal); });
 
   const $resetQBtn = document.getElementById('reset-q-btn');
   if ($resetQBtn) {
@@ -512,28 +753,6 @@ function bindModEvents() {
     });
   }
 
-  renderTimerWarnings();
-  const $addWarnBtn = document.getElementById('add-warning-btn');
-  if ($addWarnBtn) $addWarnBtn.addEventListener('click', () => { timerWarningEntries.push({value:30,unit:'s'}); renderTimerWarnings(); });
-
-  $timerStartBtn.addEventListener('click', () => { if (timerRunning) pauseTimer(); else startTimer(); });
-  $timerResetBtn.addEventListener('click', resetTimer);
-
-  ['timer-min', 'timer-sec'].forEach(id => {
-    const inp = document.getElementById(id);
-    if (!inp) return;
-    inp.addEventListener('input', () => {
-      if (inp.value !== '' && inp.value.includes('.')) {
-        inp.value = Math.floor(parseFloat(inp.value));
-        const warn = document.getElementById('timer-decimal-warn');
-        if (warn) {
-          warn.style.display = '';
-          clearTimeout(inp._decWarnTimer);
-          inp._decWarnTimer = setTimeout(() => { warn.style.display = 'none'; }, 2500);
-        }
-      }
-    });
-  });
 }
 
 // ════════════════════════════════════════════════
@@ -604,168 +823,10 @@ function drawQuestion() {
 }
 
 // ════════════════════════════════════════════════
-//  PANEL EXERCISE — TIMER
-// ════════════════════════════════════════════════
-function getTimerWarnSecondsArray() {
-  return timerWarningEntries
-    .map(e => e.unit === 'm' ? (e.value || 0) * 60 : (e.value || 0))
-    .filter(v => v > 0)
-    .sort((a, b) => b - a);
-}
-
-function triggerTimerFlash(thenDone) {
-  if (!$timerCard) return;
-  $timerCard.classList.remove('timer-flash-active', 'timer-flash-done');
-  void $timerCard.offsetWidth;
-  $timerCard.classList.add('timer-flash-active');
-  if (thenDone) {
-    const onEnd = () => {
-      $timerCard.removeEventListener('animationend', onEnd);
-      $timerCard.classList.remove('timer-flash-active');
-      $timerCard.classList.add('timer-flash-done');
-    };
-    $timerCard.addEventListener('animationend', onEnd);
-  }
-}
-
-function updateTimerFlash() {
-  if (!$timerCard || (timerMode !== 'down' && !timerCountingUpAfterCD)) {
-    if ($timerCard) $timerCard.classList.remove('timer-flash-active', 'timer-flash-done');
-    timerFlashedThresholds.clear();
-    return;
-  }
-  if (timerCountingUpAfterCD) return;
-
-  if (timerSeconds === 0) {
-    if (!timerFlashedThresholds.has('zero')) {
-      timerFlashedThresholds.add('zero');
-      triggerTimerFlash(true);
-    }
-    return;
-  }
-
-  const thresholds = getTimerWarnSecondsArray();
-  for (const ws of thresholds) {
-    if (timerSeconds <= ws && !timerFlashedThresholds.has(ws) && timerCountdownTotal > ws) {
-      timerFlashedThresholds.add(ws);
-      triggerTimerFlash(false);
-      break;
-    }
-  }
-}
-
-function renderTimerWarnings() {
-  const list = document.getElementById('timer-warnings-list');
-  if (!list) return;
-  list.innerHTML = '';
-  timerWarningEntries.forEach((entry, i) => {
-    const row = document.createElement('div');
-    row.className = 'warn-entry-row';
-    row.innerHTML = `
-      <input type="number" value="${entry.value}" min="1" max="9999" class="warn-val-input" data-i="${i}">
-      <label><input type="radio" name="wu${i}" value="s" class="warn-unit-input" data-i="${i}" ${entry.unit==='s'?'checked':''}> s</label>
-      <label><input type="radio" name="wu${i}" value="m" class="warn-unit-input" data-i="${i}" ${entry.unit==='m'?'checked':''}> min</label>
-      <button class="warn-remove-btn" data-i="${i}" title="Remove">✕</button>
-    `;
-    list.appendChild(row);
-  });
-  list.querySelectorAll('.warn-val-input').forEach(inp => {
-    inp.addEventListener('change', () => { timerWarningEntries[+inp.dataset.i].value = parseInt(inp.value) || 1; });
-  });
-  list.querySelectorAll('.warn-unit-input').forEach(inp => {
-    inp.addEventListener('change', () => { timerWarningEntries[+inp.dataset.i].unit = inp.value; });
-  });
-  list.querySelectorAll('.warn-remove-btn').forEach(btn => {
-    btn.addEventListener('click', () => { timerWarningEntries.splice(+btn.dataset.i, 1); renderTimerWarnings(); });
-  });
-}
-
-function startTimer() {
-  if (timerMode === 'down' && timerSeconds === 0 && !timerCountingUpAfterCD) {
-    const mins = parseInt($timerMin.value) || 0;
-    const secs = parseInt($timerSec.value) || 0;
-    timerCountdownTotal = mins * 60 + secs;
-    timerSeconds = timerCountdownTotal;
-    if (timerSeconds <= 0) return;
-  }
-  timerRunning = true;
-  $timerStartBtn.textContent = 'Pause';
-  timerInterval = setInterval(() => {
-    if (timerMode === 'up' || timerCountingUpAfterCD) {
-      timerSeconds++;
-    } else {
-      timerSeconds--;
-      if (timerSeconds <= 0) {
-        timerSeconds = 0;
-        updateTimerDisplay();
-        updateTimerFlash();
-        const countUpAfterEl = document.getElementById('timer-countup-after');
-        if (countUpAfterEl && countUpAfterEl.checked) {
-          timerCountingUpAfterCD = true;
-        } else {
-          stopTimer();
-          $timerStartBtn.textContent = 'Start';
-          timerRunning = false;
-        }
-        return;
-      }
-    }
-    updateTimerDisplay();
-    updateTimerFlash();
-  }, 1000);
-  updateTimerDisplay();
-  updateTimerFlash();
-}
-
-function pauseTimer() {
-  clearInterval(timerInterval);
-  timerInterval = null;
-  timerRunning = false;
-  $timerStartBtn.textContent = 'Start';
-}
-
-function stopTimer() {
-  clearInterval(timerInterval);
-  timerInterval = null;
-  timerRunning = false;
-  timerCountingUpAfterCD = false;
-}
-
-function resetTimer() {
-  stopTimer();
-  timerRunning = false;
-  timerCountingUpAfterCD = false;
-  timerFlashState = null;
-  timerFlashedThresholds.clear();
-  $timerStartBtn.textContent = 'Start';
-  if (timerMode === 'down') {
-    const mins = parseInt($timerMin.value) || 0;
-    const secs = parseInt($timerSec.value) || 0;
-    timerSeconds = mins * 60 + secs;
-  } else {
-    timerSeconds = 0;
-  }
-  if ($timerCard) $timerCard.classList.remove('timer-flash-active', 'timer-flash-done');
-  updateTimerDisplay();
-}
-
-function updateTimerDisplay() {
-  const m = Math.floor(Math.abs(timerSeconds) / 60);
-  const s = Math.abs(timerSeconds) % 60;
-  $timerDisplay.textContent = `${m}:${s.toString().padStart(2, '0')}`;
-}
-
-// ════════════════════════════════════════════════
 //  PANEL EXERCISE — HELP + SETTINGS
 // ════════════════════════════════════════════════
-function openSettings() {
-  const m = document.getElementById('settings-modal');
-  if (m) m.classList.add('open');
-}
-function closeSettings() {
-  const m = document.getElementById('settings-modal');
-  if (m) m.classList.remove('open');
-}
+function openSettings() { openModal(document.getElementById('settings-modal')); }
+function closeSettings() { closeModal(document.getElementById('settings-modal')); }
 
 function renderHelpModal() {
   const onHome    = !document.getElementById('home-screen').classList.contains('hidden');
@@ -785,10 +846,10 @@ function renderHelpModal() {
 
 function bindHelpEvents() {
   document.querySelectorAll('.help-btn').forEach(btn => {
-    btn.addEventListener('click', () => { renderHelpModal(); $helpModal.classList.add('open'); });
+    btn.addEventListener('click', () => { renderHelpModal(); openModal($helpModal); });
   });
-  $helpModalClose.addEventListener('click', () => $helpModal.classList.remove('open'));
-  $helpModal.addEventListener('click', e => { if (e.target === $helpModal) $helpModal.classList.remove('open'); });
+  $helpModalClose.addEventListener('click', () => closeModal($helpModal));
+  $helpModal.addEventListener('click', e => { if (e.target === $helpModal) closeModal($helpModal); });
 
   const $settingsModal = document.getElementById('settings-modal');
   const $settingsClose = document.getElementById('settings-modal-close');
@@ -804,14 +865,16 @@ function bindHelpEvents() {
 // ════════════════════════════════════════════════
 function bindKeyboardShortcuts() {
   document.addEventListener('keydown', e => {
+    // Escape closes the topmost open modal and restores focus — fires even from inputs
+    if (e.key === 'Escape') {
+      const open = document.querySelector('.modal-overlay.open');
+      if (open) { closeModal(open); return; }
+    }
+
     const tag = e.target.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 
     // ── Global shortcuts (fire on every screen) ──
-    if (e.key === 'Escape') {
-      document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
-      return;
-    }
     if (e.key === 's' || e.key === 'S') { openSettings(); return; }
     if (e.key === 'm' || e.key === 'M') { showHomeScreen(); return; }
 
@@ -833,9 +896,9 @@ function bindKeyboardShortcuts() {
         if (e.key === 'r' || e.key === 'R') { counselReset(); return; }
         if (e.key === 'l' || e.key === 'L') { counselToggleRisks(); return; }
         if (e.key === 'v' || e.key === 'V') { document.getElementById('counsel-view-all-btn')?.click(); return; }
-        if (e.key === 'f' || e.key === 'F') { $counselTimerStartBtn && $counselTimerStartBtn.click(); return; }
-        if (e.key === 'g' || e.key === 'G') { $counselTimerResetBtn && $counselTimerResetBtn.click(); return; }
-        if (e.key === 't' || e.key === 'T') { $counselTimerToggleHeader && $counselTimerToggleHeader.click(); return; }
+        if (e.key === 'f' || e.key === 'F') { counselTimer.$startBtn?.click(); return; }
+        if (e.key === 'g' || e.key === 'G') { counselTimer.$resetBtn?.click(); return; }
+        if (e.key === 't' || e.key === 'T') { counselTimer.$toggleHeader?.click(); return; }
       }
       if (onCounselSetup) {
         if (e.key === 'q' || e.key === 'Q') { counselQuickFill(); return; }
@@ -854,7 +917,7 @@ function bindKeyboardShortcuts() {
     else if (e.key === 'ArrowLeft' && onMod) { e.preventDefault(); $groupPrevBtn.click(); }
     else if (e.key === ' ' && onMod) { e.preventDefault(); if (!$drawQBtn.disabled) $drawQBtn.click(); }
     else if ((e.key === 'r' || e.key === 'R') && onMod) { $modResetBtn.click(); }
-    else if ((e.key === 't' || e.key === 'T') && onMod) { $timerToggleHeader.click(); }
+    else if ((e.key === 't' || e.key === 'T') && onMod) { panelTimer.$toggleHeader?.click(); }
     else if ((e.key === 'c' || e.key === 'C') && onMod) {
       e.preventDefault();
       const radios = document.querySelectorAll('input[name="timer-mode"]');
@@ -866,15 +929,15 @@ function bindKeyboardShortcuts() {
         next.dispatchEvent(new Event('change', { bubbles: true }));
       }
     }
-    else if ((e.key === 'f' || e.key === 'F') && onMod) { $timerStartBtn.click(); }
-    else if ((e.key === 'g' || e.key === 'G') && onMod) { $timerResetBtn.click(); }
+    else if ((e.key === 'f' || e.key === 'F') && onMod) { panelTimer.$startBtn?.click(); }
+    else if ((e.key === 'g' || e.key === 'G') && onMod) { panelTimer.$resetBtn?.click(); }
 
     if ((e.key === 'q' || e.key === 'Q') && onSetup) { quickFill(); }
     else if ((e.key === 'w' || e.key === 'W') && onSetup) { quickFillAndStart(); }
     else if (e.key === 'Enter' && onSetup) { e.preventDefault(); $startPanelBtn.click(); }
     else if ((e.key === 'a' || e.key === 'A') && onSetup) { document.getElementById('advanced-toggle-header').click(); }
 
-    if (e.key === '?') { renderHelpModal(); $helpModal.classList.add('open'); }
+    if (e.key === '?') { renderHelpModal(); openModal($helpModal); }
   });
 }
 
@@ -1061,9 +1124,37 @@ function renderAllQuestionsModal() {
 //  PANEL EXERCISE — ADVANCED EVENTS
 // ════════════════════════════════════════════════
 function bindAdvancedEvents() {
+  // Settings modal tabs
+  document.querySelectorAll('.settings-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const targetId = 'stab-' + tab.dataset.tab;
+      document.querySelectorAll('.settings-tab').forEach(t => {
+        t.classList.toggle('active', t === tab);
+        t.setAttribute('aria-selected', t === tab ? 'true' : 'false');
+      });
+      document.querySelectorAll('.settings-tab-panel').forEach(panel => {
+        panel.classList.toggle('active', panel.id === targetId);
+      });
+    });
+  });
+
   document.getElementById('advanced-toggle-header').addEventListener('click', () => {
     const body = document.getElementById('advanced-body');
     const icon = document.getElementById('advanced-toggle-icon');
+    const expanded = body.classList.toggle('expanded');
+    icon.textContent = expanded ? '▲ Hide' : '▼ Show';
+  });
+
+  document.getElementById('panel-roster-toggle-header').addEventListener('click', () => {
+    const body = document.getElementById('panel-roster-body');
+    const icon = document.getElementById('panel-roster-toggle-icon');
+    const expanded = body.classList.toggle('expanded');
+    icon.textContent = expanded ? '▲ Hide' : '▼ Show';
+  });
+
+  document.getElementById('counsel-roster-toggle-header').addEventListener('click', () => {
+    const body = document.getElementById('counsel-roster-body');
+    const icon = document.getElementById('counsel-roster-toggle-icon');
     const expanded = body.classList.toggle('expanded');
     icon.textContent = expanded ? '▲ Hide' : '▼ Show';
   });
@@ -1162,6 +1253,15 @@ function bindAdvancedEvents() {
     setCounselStatus('', '');
   });
 
+  const settingsResearchAlgorithmUrl = document.getElementById('settings-research-algorithm-url');
+  if (settingsResearchAlgorithmUrl) settingsResearchAlgorithmUrl.addEventListener('input', saveSettings);
+
+  const settingsResearchCaseUrl = document.getElementById('settings-research-case-url');
+  if (settingsResearchCaseUrl) settingsResearchCaseUrl.addEventListener('input', saveSettings);
+
+  const settingsResearchLegislativeUrl = document.getElementById('settings-research-legislative-url');
+  if (settingsResearchLegislativeUrl) settingsResearchLegislativeUrl.addEventListener('input', saveSettings);
+
   const settingsQfBtn = document.getElementById('settings-qf-btn');
   if (settingsQfBtn) settingsQfBtn.addEventListener('click', settingsQuickFill);
 
@@ -1190,6 +1290,8 @@ let lastNames = [];
 let counselHistory = [];
 let counselHistoryIndex = -1;
 let counselRosterSize = 0;
+let counselScenarioAssignments = [];
+let counselScenariosAssigned = false;
 
 function parseCounselCSV(text) {
   const rows = [];
@@ -1283,15 +1385,62 @@ function setCounselStatus(msg, cls) {
   el.className = cls;
 }
 
-async function counselStart() {
+async function counselAssignScenarios() {
+  const $warnNames     = document.getElementById('counsel-warn-no-names');
+  const $warnScenarios = document.getElementById('counsel-warn-no-scenarios');
+  $warnNames.classList.remove('show');
+  $warnScenarios.classList.remove('show');
+
+  const names = parseCounselNames();
+  if (!names.length) { $warnNames.classList.add('show'); return; }
+
   if (SCENARIOS.length === 0) {
     await counselLoadCSV();
     if (SCENARIOS.length === 0) return;
   }
+
+  const shuffled = shuffle(SCENARIOS);
+  counselScenarioAssignments = names.map((name, i) => ({
+    name,
+    scenario: shuffled[i % shuffled.length],
+  }));
+  counselScenariosAssigned = true;
+  renderCounselAssignments();
+}
+
+function renderCounselAssignments() {
+  const display = document.getElementById('counsel-scenarios-display');
+  if (!display) return;
+  display.innerHTML = '';
+  if (!counselScenarioAssignments.length) return;
+
+  display.style.marginTop = '18px';
+  counselScenarioAssignments.forEach(({ name, scenario }) => {
+    const row = document.createElement('div');
+    row.className = 'group-member';
+    row.innerHTML = `<div class="group-member-name">${escHtml(name)}</div>
+                     <div class="group-member-prompt">${escHtml(scenario.title)}</div>`;
+    display.appendChild(row);
+  });
+}
+
+async function counselStart() {
   const names = parseCounselNames();
   if (names.length === 0) { alert('Please enter at least one name.'); return; }
 
-  ensureQueues(names);
+  if (counselScenariosAssigned && counselScenarioAssignments.length) {
+    nameQueue     = counselScenarioAssignments.map(a => a.name);
+    scenarioQueue = counselScenarioAssignments.map(a => a.scenario);
+    lastNames     = [...nameQueue];
+  } else {
+    const $warn = document.getElementById('counsel-warn-no-scenarios');
+    if ($warn) $warn.classList.add('show');
+    if (SCENARIOS.length === 0) {
+      await counselLoadCSV();
+      if (SCENARIOS.length === 0) return;
+    }
+    ensureQueues(names);
+  }
   counselRosterSize = names.length;
   const entry = counselDrawEntry();
   counselHistory = [entry];
@@ -1399,12 +1548,18 @@ function renderCounselScenariosModal() {
 }
 
 function counselReset() {
-  counselStopTimer();
+  counselTimer.stop();
   counselHistory = [];
   counselHistoryIndex = -1;
   nameQueue = [];
   scenarioQueue = shuffle(SCENARIOS);
   lastNames = [];
+  counselScenarioAssignments = [];
+  counselScenariosAssigned = false;
+  const display = document.getElementById('counsel-scenarios-display');
+  if (display) display.innerHTML = '';
+  document.getElementById('counsel-warn-no-scenarios')?.classList.remove('show');
+  document.getElementById('counsel-warn-no-names')?.classList.remove('show');
   document.getElementById('counsel-mod').classList.remove('active');
   document.getElementById('counsel-setup').classList.add('active');
   document.getElementById('counsel-names').focus();
@@ -1413,144 +1568,7 @@ function counselReset() {
 // ════════════════════════════════════════════════
 //  COUNSEL EXERCISE — TIMER
 // ════════════════════════════════════════════════
-let counselTimerInterval = null;
-let counselTimerSeconds = 0;
-let counselTimerRunning = false;
-let counselTimerMode = 'down';
-let counselTimerCountdownTotal = 120;
-let counselTimerCountingUpAfterCD = false;
-let counselTimerFlashedThresholds = new Set();
-
-let $counselTimerCard, $counselTimerDisplay, $counselTimerStartBtn, $counselTimerResetBtn,
-    $counselTimerToggleHeader, $counselTimerToggleIcon, $counselTimerBody,
-    $counselTimerCountdownInputs;
-
-function counselUpdateTimerDisplay() {
-  const m = Math.floor(Math.abs(counselTimerSeconds) / 60);
-  const s = Math.abs(counselTimerSeconds) % 60;
-  $counselTimerDisplay.textContent = `${m}:${s.toString().padStart(2, '0')}`;
-}
-
-function counselTriggerTimerFlash(thenDone) {
-  if (!$counselTimerCard) return;
-  $counselTimerCard.classList.remove('timer-flash-active', 'timer-flash-done');
-  void $counselTimerCard.offsetWidth;
-  $counselTimerCard.classList.add('timer-flash-active');
-  if (thenDone) {
-    const onEnd = () => {
-      $counselTimerCard.removeEventListener('animationend', onEnd);
-      $counselTimerCard.classList.remove('timer-flash-active');
-      $counselTimerCard.classList.add('timer-flash-done');
-    };
-    $counselTimerCard.addEventListener('animationend', onEnd);
-  }
-}
-
-function counselStartTimer() {
-  if (counselTimerMode === 'down' && counselTimerSeconds === 0 && !counselTimerCountingUpAfterCD) {
-    const mins = parseInt(document.getElementById('counsel-timer-min').value) || 0;
-    const secs = parseInt(document.getElementById('counsel-timer-sec').value) || 0;
-    counselTimerCountdownTotal = mins * 60 + secs;
-    counselTimerSeconds = counselTimerCountdownTotal;
-    if (counselTimerSeconds <= 0) return;
-  }
-  counselTimerRunning = true;
-  $counselTimerStartBtn.textContent = 'Pause';
-  counselTimerInterval = setInterval(() => {
-    if (counselTimerMode === 'up' || counselTimerCountingUpAfterCD) {
-      counselTimerSeconds++;
-    } else {
-      counselTimerSeconds--;
-      if (counselTimerSeconds <= 0) {
-        counselTimerSeconds = 0;
-        counselUpdateTimerDisplay();
-        if (!counselTimerFlashedThresholds.has('zero')) {
-          counselTimerFlashedThresholds.add('zero');
-          counselTriggerTimerFlash(true);
-        }
-        const countUpAfterEl = document.getElementById('counsel-timer-countup-after');
-        if (countUpAfterEl && countUpAfterEl.checked) {
-          counselTimerCountingUpAfterCD = true;
-        } else {
-          counselStopTimer();
-          $counselTimerStartBtn.textContent = 'Start';
-          counselTimerRunning = false;
-        }
-        return;
-      }
-    }
-    counselUpdateTimerDisplay();
-  }, 1000);
-  counselUpdateTimerDisplay();
-}
-
-function counselPauseTimer() {
-  clearInterval(counselTimerInterval);
-  counselTimerInterval = null;
-  counselTimerRunning = false;
-  $counselTimerStartBtn.textContent = 'Start';
-}
-
-function counselStopTimer() {
-  clearInterval(counselTimerInterval);
-  counselTimerInterval = null;
-  counselTimerRunning = false;
-  counselTimerCountingUpAfterCD = false;
-}
-
-function counselResetTimer() {
-  counselStopTimer();
-  counselTimerFlashedThresholds.clear();
-  $counselTimerStartBtn.textContent = 'Start';
-  if (counselTimerMode === 'down') {
-    const mins = parseInt(document.getElementById('counsel-timer-min').value) || 0;
-    const secs = parseInt(document.getElementById('counsel-timer-sec').value) || 0;
-    counselTimerSeconds = mins * 60 + secs;
-  } else {
-    counselTimerSeconds = 0;
-  }
-  if ($counselTimerCard) $counselTimerCard.classList.remove('timer-flash-active', 'timer-flash-done');
-  counselUpdateTimerDisplay();
-}
-
-function bindCounselTimerEvents() {
-  $counselTimerCard           = document.getElementById('counsel-timer-card');
-  $counselTimerDisplay        = document.getElementById('counsel-timer-display');
-  $counselTimerStartBtn       = document.getElementById('counsel-timer-start-btn');
-  $counselTimerResetBtn       = document.getElementById('counsel-timer-reset-btn');
-  $counselTimerToggleHeader   = document.getElementById('counsel-timer-toggle-header');
-  $counselTimerToggleIcon     = document.getElementById('counsel-timer-toggle-icon');
-  $counselTimerBody           = document.getElementById('counsel-timer-body');
-  $counselTimerCountdownInputs = document.getElementById('counsel-timer-countdown-inputs');
-
-  $counselTimerToggleHeader.addEventListener('click', () => {
-    const expanded = $counselTimerBody.classList.toggle('expanded');
-    $counselTimerToggleIcon.textContent = expanded ? '▲ Hide' : '▼ Show';
-    if (!expanded) counselResetTimer();
-  });
-
-  document.querySelectorAll('input[name="counsel-timer-mode"]').forEach(radio => {
-    radio.addEventListener('change', () => {
-      counselTimerMode = radio.value;
-      const isDown = counselTimerMode === 'down';
-      $counselTimerCountdownInputs.classList.toggle('hidden', !isDown);
-      const countupRow = document.getElementById('counsel-timer-countup-row');
-      if (countupRow) countupRow.classList.toggle('hidden', !isDown);
-      if ($counselTimerCard) $counselTimerCard.classList.remove('timer-flash-active', 'timer-flash-done');
-      counselTimerFlashedThresholds.clear();
-      counselStopTimer();
-      counselTimerSeconds = 0;
-      counselUpdateTimerDisplay();
-      $counselTimerStartBtn.textContent = 'Start';
-      counselTimerRunning = false;
-    });
-  });
-
-  $counselTimerStartBtn.addEventListener('click', () => {
-    if (counselTimerRunning) counselPauseTimer(); else counselStartTimer();
-  });
-  $counselTimerResetBtn.addEventListener('click', counselResetTimer);
-}
+let counselTimer;
 
 // ════════════════════════════════════════════════
 //  3D PLOTTER
@@ -1745,16 +1763,170 @@ function bindPlotterEvents() {
 }
 
 // ════════════════════════════════════════════════
+//  RESEARCH EXERCISE
+// ════════════════════════════════════════════════
+const RESEARCH_INSTRUCTIONS = {
+  algorithm: '',
+  case: '',
+  legislative: '',
+};
+
+function researchSelectedType() {
+  const checked = document.querySelector('input[name="research-type"]:checked');
+  return checked ? checked.value : null;
+}
+
+function researchUpdateTypeUI() {
+  const type = researchSelectedType();
+  const subtitle = document.getElementById('research-header-subtitle');
+  const placeholder = document.getElementById('research-instructions-placeholder');
+  const content = document.getElementById('research-instructions-content');
+  const assignBtn = document.getElementById('research-assign-btn');
+
+  if (!type) {
+    if (subtitle) subtitle.textContent = 'Select an exercise type';
+    if (placeholder) placeholder.style.display = '';
+    if (content) content.style.display = 'none';
+    if (assignBtn) assignBtn.disabled = true;
+    return;
+  }
+
+  const labels = { algorithm: 'Algorithm Research', case: 'Case Research', legislative: 'Legislative Research' };
+  if (subtitle) subtitle.textContent = labels[type];
+
+  const instructions = RESEARCH_INSTRUCTIONS[type];
+  if (instructions) {
+    if (placeholder) placeholder.style.display = 'none';
+    if (content) { content.style.display = ''; content.innerHTML = marked.parse(instructions); }
+  } else {
+    if (placeholder) { placeholder.style.display = ''; placeholder.textContent = 'Instructions will appear here.'; }
+    if (content) content.style.display = 'none';
+  }
+
+  if (assignBtn) assignBtn.disabled = false;
+  document.getElementById('research-results').innerHTML = '';
+  document.getElementById('research-status').textContent = '';
+}
+
+function researchParseNames(raw) {
+  return raw.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
+}
+
+async function researchAssign() {
+  const type = researchSelectedType();
+  if (!type) {
+    document.getElementById('research-status').textContent = 'Please select an exercise type first.';
+    return;
+  }
+
+  const names = researchParseNames(document.getElementById('research-names').value);
+  if (!names.length) {
+    document.getElementById('research-status').textContent = 'Enter at least one student name.';
+    return;
+  }
+
+  const urlId = type === 'algorithm' ? 'settings-research-algorithm-url'
+              : type === 'case'      ? 'settings-research-case-url'
+              :                        'settings-research-legislative-url';
+  const url = document.getElementById(urlId)?.value?.trim();
+  if (!url) {
+    document.getElementById('research-status').textContent = 'No CSV URL configured. Add one in Settings ⚙.';
+    return;
+  }
+
+  const statusEl = document.getElementById('research-status');
+  const resultsEl = document.getElementById('research-results');
+  const assignBtn = document.getElementById('research-assign-btn');
+  statusEl.textContent = 'Loading…';
+  resultsEl.innerHTML = '';
+  assignBtn.disabled = true;
+
+  try {
+    const rows = await new Promise((resolve, reject) => {
+      Papa.parse(url, {
+        download: true,
+        header: true,
+        skipEmptyLines: true,
+        complete: r => resolve(r.data),
+        error: e => reject(e),
+      });
+    });
+
+    if (!rows.length) {
+      statusEl.textContent = 'The sheet appears to be empty.';
+      assignBtn.disabled = false;
+      return;
+    }
+
+    const shuffledRows = shuffle(rows);
+    const headers = Object.keys(rows[0]);
+
+    const assignments = names.map((name, i) => ({
+      name,
+      row: shuffledRows[i % shuffledRows.length],
+    }));
+
+    statusEl.textContent = '';
+    resultsEl.innerHTML = assignments.map(({ name, row }) => `
+      <div class="research-result-card">
+        <div class="research-result-name">${escHtml(name)}</div>
+        <div class="research-result-row">
+          ${headers.map(h => row[h] ? `<div class="research-result-cell"><span class="research-cell-label">${escHtml(h)}</span><span class="research-cell-value">${escHtml(row[h])}</span></div>` : '').join('')}
+        </div>
+      </div>
+    `).join('');
+  } catch (err) {
+    statusEl.textContent = 'Could not load the sheet. Make sure the URL is published as CSV.';
+  }
+
+  assignBtn.disabled = false;
+}
+
+function bindResearchEvents() {
+  document.querySelectorAll('input[name="research-type"]').forEach(radio => {
+    radio.addEventListener('change', researchUpdateTypeUI);
+  });
+  researchUpdateTypeUI();
+}
+
+// ════════════════════════════════════════════════
 //  INIT
 // ════════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', () => {
+  panelTimer = createTimer({
+    cardId: 'timer-card', displayId: 'timer-display',
+    startBtnId: 'timer-start-btn', resetBtnId: 'timer-reset-btn',
+    toggleHeaderId: 'timer-toggle-header', toggleIconId: 'timer-toggle-icon',
+    bodyId: 'timer-body', countdownInputsId: 'timer-countdown-inputs',
+    minId: 'timer-min', secId: 'timer-sec',
+    warnSectionId: 'timer-warnings-section', warnListId: 'timer-warnings-list',
+    addWarnBtnId: 'add-warning-btn', countupRowId: 'timer-countup-row',
+    countupAfterId: 'timer-countup-after', decimalWarnId: 'timer-decimal-warn',
+    modeRadioName: 'timer-mode',
+  });
+  counselTimer = createTimer({
+    cardId: 'counsel-timer-card', displayId: 'counsel-timer-display',
+    startBtnId: 'counsel-timer-start-btn', resetBtnId: 'counsel-timer-reset-btn',
+    toggleHeaderId: 'counsel-timer-toggle-header', toggleIconId: 'counsel-timer-toggle-icon',
+    bodyId: 'counsel-timer-body', countdownInputsId: 'counsel-timer-countdown-inputs',
+    minId: 'counsel-timer-min', secId: 'counsel-timer-sec',
+    warnSectionId: 'counsel-timer-warnings-section', warnListId: 'counsel-timer-warnings-list',
+    addWarnBtnId: 'counsel-add-warning-btn', countupRowId: 'counsel-timer-countup-row',
+    countupAfterId: 'counsel-timer-countup-after', decimalWarnId: 'counsel-timer-decimal-warn',
+    modeRadioName: 'counsel-timer-mode',
+  });
+
   bindSetupEvents();
   bindModEvents();
+  panelTimer.bind();
+  counselTimer.bind();
   bindHelpEvents();
   bindAdvancedEvents();
-  bindCounselTimerEvents();
   bindKeyboardShortcuts();
   bindPlotterEvents();
+  bindResearchEvents();
+
+  document.getElementById('counsel-assign-btn')?.addEventListener('click', counselAssignScenarios);
 
   loadSettings();
 
@@ -1766,7 +1938,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const $counselAllModal      = document.getElementById('counsel-all-modal');
   const $counselAllModalClose = document.getElementById('counsel-all-modal-close');
   const $counselViewAllBtn    = document.getElementById('counsel-view-all-btn');
-  if ($counselViewAllBtn) $counselViewAllBtn.addEventListener('click', () => { renderCounselScenariosModal(); $counselAllModal.classList.add('open'); });
-  if ($counselAllModalClose) $counselAllModalClose.addEventListener('click', () => $counselAllModal.classList.remove('open'));
-  if ($counselAllModal) $counselAllModal.addEventListener('click', e => { if (e.target === $counselAllModal) $counselAllModal.classList.remove('open'); });
+  if ($counselViewAllBtn) $counselViewAllBtn.addEventListener('click', () => { renderCounselScenariosModal(); openModal($counselAllModal); });
+  if ($counselAllModalClose) $counselAllModalClose.addEventListener('click', () => closeModal($counselAllModal));
+  if ($counselAllModal) $counselAllModal.addEventListener('click', e => { if (e.target === $counselAllModal) closeModal($counselAllModal); });
 });
