@@ -7,8 +7,11 @@
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="stylesheet" href="styles.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 </head>
 <body>
 
@@ -607,18 +610,20 @@
     <aside id="plotter-panel">
 
       <section class="plotter-section">
-        <button id="plotter-btn-refresh" class="btn btn-primary btn-sm" style="width:100%;" aria-label="Refresh data">↻ Refresh</button>
+        <div class="advanced-subtitle">Live Feed</div>
+        <div id="plotter-live-indicator" style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <span id="plotter-live-dot" style="width:10px;height:10px;border-radius:50%;background:var(--muted);flex-shrink:0;"></span>
+          <span id="plotter-live-label" style="font-size:0.82rem;color:var(--muted);">Connecting…</span>
+        </div>
+        <button id="plotter-btn-clear" class="btn btn-sm" style="width:100%;background:transparent;border:1px solid var(--border);color:var(--muted);" aria-label="Clear all submissions">✕ Clear all submissions</button>
       </section>
 
-      <!-- QR Code placeholder -->
+      <!-- Student QR / link -->
       <section class="plotter-section">
-        <div class="advanced-subtitle">Google Form</div>
-        <div id="plotter-qr-placeholder">
-          <!-- To add a QR code, replace this div's contents with:
-               <img src="your-qr.png" alt="QR code" style="width:100%;border-radius:4px;">
-          -->
-          <div class="plotter-qr-empty">QR code</div>
-        </div>
+        <div class="advanced-subtitle">Student Submit Link</div>
+        <img id="plotter-qr-img" src="" alt="QR code" style="width:100%;border-radius:6px;display:none;">
+        <div id="plotter-qr-loading" style="font-size:0.8rem;color:var(--muted);">Generating…</div>
+        <button id="plotter-btn-copy-link" class="btn btn-sm" style="width:100%;margin-top:6px;background:transparent;border:1px solid var(--border);color:var(--muted);">Copy student link</button>
       </section>
 
       <section class="plotter-section">
@@ -723,6 +728,73 @@
 
   </div>
 </div><!-- end #research-app -->
+
+<!-- ══════════════════ STUDENT SUBMIT VIEW ══════════════════ -->
+<div id="plotter-submit-view" class="hidden" style="
+  position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  background:var(--bg);z-index:9999;padding:24px;box-sizing:border-box;">
+  <div style="width:100%;max-width:420px;">
+    <div style="text-align:center;margin-bottom:28px;">
+      <div style="font-size:1.4rem;font-weight:700;color:var(--text);margin-bottom:4px;">Word Plotter</div>
+      <div style="font-size:0.9rem;color:var(--muted);">Enter your ratings and submit</div>
+    </div>
+
+    <div id="plotter-submit-success" class="hidden" style="
+      background:var(--card);border:1px solid var(--border);border-radius:10px;
+      padding:32px 24px;text-align:center;">
+      <div style="font-size:2rem;margin-bottom:12px;">✓</div>
+      <div style="font-weight:600;color:var(--text);margin-bottom:6px;">Submitted!</div>
+      <div style="font-size:0.88rem;color:var(--muted);margin-bottom:20px;" id="plotter-submit-confirm-text"></div>
+      <button id="plotter-submit-another" class="btn btn-primary btn-sm">Submit another word</button>
+    </div>
+
+    <form id="plotter-submit-form" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;display:flex;flex-direction:column;gap:18px;">
+
+      <div>
+        <label style="display:block;font-size:0.85rem;font-weight:600;color:var(--muted);margin-bottom:6px;">Your name</label>
+        <input id="submit-field-student" type="text" autocomplete="name" placeholder="First Last"
+          style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:1rem;">
+      </div>
+
+      <div>
+        <label style="display:block;font-size:0.85rem;font-weight:600;color:var(--muted);margin-bottom:6px;">Word</label>
+        <input id="submit-field-word" type="text" placeholder="e.g. Justice"
+          style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:1rem;">
+      </div>
+
+      <div>
+        <label style="display:block;font-size:0.85rem;font-weight:600;color:var(--muted);margin-bottom:4px;">
+          <span id="submit-label-x">X axis</span>
+          <span id="submit-val-x" style="float:right;font-weight:400;color:var(--text);">0.5</span>
+        </label>
+        <input id="submit-field-x" type="range" min="0" max="1" step="0.1" value="0.5"
+          style="width:100%;accent-color:var(--accent);">
+      </div>
+
+      <div>
+        <label style="display:block;font-size:0.85rem;font-weight:600;color:var(--muted);margin-bottom:4px;">
+          <span id="submit-label-y">Y axis</span>
+          <span id="submit-val-y" style="float:right;font-weight:400;color:var(--text);">0.5</span>
+        </label>
+        <input id="submit-field-y" type="range" min="0" max="1" step="0.1" value="0.5"
+          style="width:100%;accent-color:var(--accent);">
+      </div>
+
+      <div>
+        <label style="display:block;font-size:0.85rem;font-weight:600;color:var(--muted);margin-bottom:4px;">
+          <span id="submit-label-z">Z axis</span>
+          <span id="submit-val-z" style="float:right;font-weight:400;color:var(--text);">0.5</span>
+        </label>
+        <input id="submit-field-z" type="range" min="0" max="1" step="0.1" value="0.5"
+          style="width:100%;accent-color:var(--accent);">
+      </div>
+
+      <div id="plotter-submit-error" class="hidden" style="font-size:0.85rem;color:#f87171;padding:8px 12px;background:rgba(248,113,113,0.1);border-radius:6px;"></div>
+
+      <button type="submit" id="plotter-submit-btn" class="btn btn-primary" style="width:100%;padding:12px;">Submit</button>
+    </form>
+  </div>
+</div>
 
 <script src="app.js"></script>
 </body>

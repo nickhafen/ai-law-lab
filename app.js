@@ -20,7 +20,8 @@ function showPlotterApp() {
   document.getElementById('plotter-app').classList.remove('hidden');
   if (!plotterInitialized) {
     plotterInitialized = true;
-    plotterHandleRefresh();
+    plotterStartListener();
+    plotterBuildQR();
   }
 }
 
@@ -376,7 +377,7 @@ function saveSettings() {
     roster:               document.getElementById('settings-roster')?.value                   ?? '',
     panelUrl:             document.getElementById('settings-panel-url')?.value                ?? SHEET_CSV_URL,
     counselUrl:           document.getElementById('settings-counsel-url')?.value              ?? '',
-    plotterUrl:           document.getElementById('settings-plotter-url')?.value              ?? PLOTTER_CSV_URL,
+    plotterUrl:           document.getElementById('settings-plotter-url')?.value              ?? '',
     qfCount:              document.getElementById('settings-qf-count')?.value                 ?? '9',
     researchAlgorithmUrl:    document.getElementById('settings-research-algorithm-url')?.value    ?? '',
     researchCaseUrl:         document.getElementById('settings-research-case-url')?.value         ?? '',
@@ -883,6 +884,8 @@ function bindKeyboardShortcuts() {
     if (e.key === '1' && onHome) { showPanelApp(); return; }
     if (e.key === '2' && onHome) { showCounselApp(); return; }
 
+    if (e.key === '?') { renderHelpModal(); openModal($helpModal); return; }
+
     if (document.querySelector('.modal-overlay.open')) return;
 
     // ── Counsel-only shortcuts ──
@@ -937,7 +940,6 @@ function bindKeyboardShortcuts() {
     else if (e.key === 'Enter' && onSetup) { e.preventDefault(); $startPanelBtn.click(); }
     else if ((e.key === 'a' || e.key === 'A') && onSetup) { document.getElementById('advanced-toggle-header').click(); }
 
-    if (e.key === '?') { renderHelpModal(); openModal($helpModal); }
   });
 }
 
@@ -1267,7 +1269,7 @@ function bindAdvancedEvents() {
 
   const settingsQfCount = document.getElementById('settings-qf-count');
   if (settingsQfCount) settingsQfCount.addEventListener('input', saveSettings);
-  // Note: settings-plotter-url binding is in bindPlotterEvents()
+  // Note: plotter data now comes from Firebase (not a CSV URL)
 }
 
 // ════════════════════════════════════════════════
@@ -1465,7 +1467,7 @@ function counselRenderResult(entry) {
 
   const risksDiv = document.getElementById('risks-list');
   risksDiv.innerHTML = entry.risks
-    ? marked.parse(entry.risks)
+    ? DOMPurify.sanitize(marked.parse(entry.risks))
     : '<p>No risks listed.</p>';
 
   document.getElementById('risks-panel').classList.remove('visible');
@@ -1573,53 +1575,75 @@ let counselTimer;
 // ════════════════════════════════════════════════
 //  3D PLOTTER
 // ════════════════════════════════════════════════
-const PLOTTER_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRUA2UWnQ3pn-DUH6y_h9acbKv3SYaDwBcD4mswGofDGx4QicnfTEcFzKi_PHod9VfqUXmCGZa86U4q/pub?gid=892495698&single=true&output=csv';
+
+// ── Firebase config ──────────────────────────────
+const FIREBASE_CONFIG = {
+  apiKey:            'AIzaSyB7YIYmoH58UDQog_G7R9tlDvIMotuGtmM',
+  authDomain:        'ai-law-lab.firebaseapp.com',
+  databaseURL:       'https://ai-law-lab-default-rtdb.firebaseio.com',
+  projectId:         'ai-law-lab',
+  storageBucket:     'ai-law-lab.firebasestorage.app',
+  messagingSenderId: '766455788338',
+  appId:             '1:766455788338:web:82fdc54aff559b25c75d2b',
+};
+const _fbApp = firebase.initializeApp(FIREBASE_CONFIG);
+const _fbDB  = firebase.database();
 
 let plotterInitialized = false;
 let plotterData        = [];
 let plotterCamera      = null;
 let plotterUiRevision  = 'init';
+let _plotterListener   = null;   // keeps track of the active onValue listener
 
-function plotterParseCSV(csvText) {
-  const parsed = Papa.parse(csvText, {
-    header: true, skipEmptyLines: true,
-    transformHeader: h => h.trim().toLowerCase(),
-  });
-  const valid = []; let invalidCount = 0;
-  for (const row of parsed.data) {
-    const name = String(row['word'] ?? row['name'] ?? '').trim() || '(unnamed)';
-    const x = parseFloat(row['x'] ?? row['X']);
-    const y = parseFloat(row['y'] ?? row['Y']);
-    const z = parseFloat(row['z'] ?? row['Z']);
-    if (isNaN(x) || isNaN(y) || isNaN(z)) { invalidCount++; continue; }
-    if (x < -1 || x > 1 || y < -1 || y > 1 || z < -1 || z > 1) { invalidCount++; continue; }
-    const snap = v => Math.round(v * 10) / 10;
-    valid.push({ name, x: snap(x), y: snap(y), z: snap(z) });
-  }
-  return { valid, totalRows: parsed.data.length, invalidCount };
+// ── Helpers ──────────────────────────────────────
+function plotterSnap(v) { return Math.round(v * 10) / 10; }
+
+function plotterSetLive(connected) {
+  const dot   = document.getElementById('plotter-live-dot');
+  const label = document.getElementById('plotter-live-label');
+  if (dot)   dot.style.background   = connected ? '#22c55e' : '#f87171';
+  if (label) label.textContent      = connected ? 'Live' : 'Disconnected';
+  if (label) label.style.color      = connected ? '#22c55e' : '#f87171';
 }
 
-async function plotterHandleRefresh() {
-  const btn = document.getElementById('plotter-btn-refresh');
-  if (btn) btn.disabled = true;
-  plotterSetStatus('loading', 'Fetching data…');
-  plotterClearStats();
+// ── Firebase listener (instructor view) ──────────
+function plotterStartListener() {
+  if (_plotterListener) return;           // already attached
+  plotterSetStatus('loading', 'Connecting…');
+
+  const ref = _fbDB.ref('plotter');
+  _plotterListener = ref.on('value', snapshot => {
+    plotterSetLive(true);
+    const raw = snapshot.val() || {};
+    const points = Object.values(raw).map(r => ({
+      name: String(r.word ?? r.name ?? '').trim() || '(unnamed)',
+      x: plotterSnap(Number(r.x)),
+      y: plotterSnap(Number(r.y)),
+      z: plotterSnap(Number(r.z)),
+    })).filter(p =>
+      !isNaN(p.x) && !isNaN(p.y) && !isNaN(p.z) &&
+      p.x >= 0 && p.x <= 1 && p.y >= 0 && p.y <= 1 && p.z >= 0 && p.z <= 1
+    );
+    plotterData = points;
+    plotterSetStats(`Submissions : ${Object.keys(raw).length}\nValid points : ${points.length}`);
+    plotterSetStatus('ok', points.length === 0 ? 'No submissions yet.' : `Showing ${points.length} point${points.length !== 1 ? 's' : ''}.`);
+    plotterRender(points);
+  }, err => {
+    plotterSetLive(false);
+    plotterSetStatus('error', `Firebase error: ${err.message}`);
+  });
+
+  // connectivity indicator
+  _fbDB.ref('.info/connected').on('value', snap => plotterSetLive(!!snap.val()));
+}
+
+async function plotterHandleClear() {
+  if (!confirm('Delete all submissions from Firebase? This cannot be undone.')) return;
   try {
-    const urlEl = document.getElementById('settings-plotter-url');
-    const url = (urlEl && urlEl.value.trim()) || PLOTTER_CSV_URL;
-    const res = await fetch(url, { cache: 'no-store' });
-    if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
-    const text = await res.text();
-    const { valid, totalRows, invalidCount } = plotterParseCSV(text);
-    plotterData = valid;
-    plotterSetStats(`Rows fetched : ${totalRows}\nValid points : ${valid.length}\nInvalid/skip : ${invalidCount}`);
-    plotterSetStatus('ok', valid.length === 0 ? 'No valid data yet.' : `Showing ${valid.length} point${valid.length !== 1 ? 's' : ''}.`);
-    plotterRender(valid);
+    await _fbDB.ref('plotter').remove();
   } catch (err) {
-    plotterSetStatus('error', `Fetch failed: ${err.message}\n\nMake sure the Google Sheet is published to the web as CSV.`);
-    plotterClearStats();
+    alert(`Could not clear: ${err.message}`);
   }
-  if (btn) btn.disabled = false;
 }
 
 function plotterThemeColors() {
@@ -1745,8 +1769,31 @@ function plotterReRender() {
   if (plotterData.length > 0) plotterRender(plotterData);
 }
 
+function plotterBuildQR() {
+  const submitUrl = window.location.origin + window.location.pathname + '?submit';
+  const qrUrl     = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=6&data=${encodeURIComponent(submitUrl)}`;
+  const img       = document.getElementById('plotter-qr-img');
+  const loading   = document.getElementById('plotter-qr-loading');
+  if (img) {
+    img.src = qrUrl;
+    img.onload  = () => { img.style.display = 'block'; if (loading) loading.style.display = 'none'; };
+    img.onerror = () => { if (loading) loading.textContent = 'QR unavailable (offline?)'; };
+  }
+}
+
 function bindPlotterEvents() {
-  document.getElementById('plotter-btn-refresh')?.addEventListener('click', plotterHandleRefresh);
+  document.getElementById('plotter-btn-clear')?.addEventListener('click', plotterHandleClear);
+
+  document.getElementById('plotter-btn-copy-link')?.addEventListener('click', () => {
+    const url = window.location.origin + window.location.pathname + '?submit';
+    navigator.clipboard.writeText(url).then(() => {
+      const btn = document.getElementById('plotter-btn-copy-link');
+      const orig = btn.textContent;
+      btn.textContent = 'Copied!';
+      setTimeout(() => { btn.textContent = orig; }, 1800);
+    });
+  });
+
   ['plotter-show-labels','plotter-axis-x','plotter-axis-y','plotter-axis-z'].forEach(id => {
     document.getElementById(id)?.addEventListener('change', plotterReRender);
   });
@@ -1754,11 +1801,70 @@ function bindPlotterEvents() {
     document.getElementById(id)?.addEventListener('input', plotterReRender);
   });
 
-  const settingsPlotterUrl = document.getElementById('settings-plotter-url');
-  if (settingsPlotterUrl) settingsPlotterUrl.addEventListener('input', () => {
-    saveSettings();
-    plotterData = [];
-    plotterCamera = null;
+  // ── Student submit view ──────────────────────────
+  if (new URLSearchParams(window.location.search).has('submit')) {
+    plotterInitSubmitView();
+  }
+}
+
+function plotterInitSubmitView() {
+  // Hide everything; show submit overlay
+  document.querySelectorAll('#home-screen, #panel-app, #plotter-app, #counsel-app, #research-app').forEach(el => el.classList.add('hidden'));
+  document.getElementById('plotter-submit-view').classList.remove('hidden');
+
+  // Mirror axis labels from URL params if provided (?submit&x=Female&y=Alive&z=Royal)
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('x')) document.getElementById('submit-label-x').textContent = params.get('x');
+  if (params.get('y')) document.getElementById('submit-label-y').textContent = params.get('y');
+  if (params.get('z')) document.getElementById('submit-label-z').textContent = params.get('z');
+
+  // Slider live readout
+  ['x','y','z'].forEach(axis => {
+    const slider = document.getElementById(`submit-field-${axis}`);
+    const val    = document.getElementById(`submit-val-${axis}`);
+    if (slider && val) slider.addEventListener('input', () => { val.textContent = slider.value; });
+  });
+
+  // Form submit
+  document.getElementById('plotter-submit-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const errEl  = document.getElementById('plotter-submit-error');
+    const btn    = document.getElementById('plotter-submit-btn');
+    const student = document.getElementById('submit-field-student').value.trim();
+    const word    = document.getElementById('submit-field-word').value.trim();
+    const x       = parseFloat(document.getElementById('submit-field-x').value);
+    const y       = parseFloat(document.getElementById('submit-field-y').value);
+    const z       = parseFloat(document.getElementById('submit-field-z').value);
+
+    errEl.classList.add('hidden'); errEl.textContent = '';
+    if (!student) { errEl.textContent = 'Please enter your name.'; errEl.classList.remove('hidden'); return; }
+    if (!word)    { errEl.textContent = 'Please enter a word.';    errEl.classList.remove('hidden'); return; }
+
+    btn.disabled = true; btn.textContent = 'Submitting…';
+    try {
+      await _fbDB.ref('plotter').push({ name: student, word, x, y, z, ts: Date.now() });
+      document.getElementById('plotter-submit-confirm-text').textContent =
+        `"${word}" submitted by ${student}`;
+      document.getElementById('plotter-submit-form').classList.add('hidden');
+      document.getElementById('plotter-submit-success').classList.remove('hidden');
+    } catch (err) {
+      errEl.textContent = `Submit failed: ${err.message}`;
+      errEl.classList.remove('hidden');
+      btn.disabled = false; btn.textContent = 'Submit';
+    }
+  });
+
+  // Submit another
+  document.getElementById('plotter-submit-another').addEventListener('click', () => {
+    document.getElementById('plotter-submit-success').classList.add('hidden');
+    document.getElementById('plotter-submit-form').classList.remove('hidden');
+    document.getElementById('submit-field-word').value = '';
+    ['x','y','z'].forEach(a => {
+      document.getElementById(`submit-field-${a}`).value = '0.5';
+      document.getElementById(`submit-val-${a}`).textContent = '0.5';
+    });
+    const btn = document.getElementById('plotter-submit-btn');
+    btn.disabled = false; btn.textContent = 'Submit';
   });
 }
 
