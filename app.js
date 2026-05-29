@@ -370,6 +370,7 @@ function loadSettings() {
   if (researchAlgorithmUrl   && s.researchAlgorithmUrl)                 researchAlgorithmUrl.value   = s.researchAlgorithmUrl;
   if (researchCaseUrl        && s.researchCaseUrl)                      researchCaseUrl.value        = s.researchCaseUrl;
   if (researchLegislativeUrl && s.researchLegislativeUrl)               researchLegislativeUrl.value = s.researchLegislativeUrl;
+  // Plotter exercise settings are loaded from Firebase via plotterApplyConfig() in plotterStartListener()
 }
 
 function saveSettings() {
@@ -1589,11 +1590,24 @@ const FIREBASE_CONFIG = {
 const _fbApp = firebase.initializeApp(FIREBASE_CONFIG);
 const _fbDB  = firebase.database();
 
+// ── Generic exercise config helpers ──────────────
+// Any exercise can call these to push/receive live config via Firebase.
+//   saveExerciseConfig('plotter', { words, axisX, axisY, axisZ })
+//   onExerciseConfig('plotter', config => { ... })
+async function saveExerciseConfig(exercise, config) {
+  await _fbDB.ref(`configs/${exercise}`).set(config);
+}
+function onExerciseConfig(exercise, callback) {
+  _fbDB.ref(`configs/${exercise}`).on('value', snap => callback(snap.val() || {}));
+}
+
+// ── Plotter state ─────────────────────────────────
 let plotterInitialized = false;
 let plotterData        = [];
 let plotterCamera      = null;
 let plotterUiRevision  = 'init';
-let _plotterListener   = null;   // keeps track of the active onValue listener
+let _plotterListener   = null;
+let plotterConfig      = { words: [], axisX: 'Female', axisY: 'Alive', axisZ: 'Royal' };
 
 // ── Helpers ──────────────────────────────────────
 function plotterSnap(v) { return Math.round(v * 10) / 10; }
@@ -1635,6 +1649,9 @@ function plotterStartListener() {
 
   // connectivity indicator
   _fbDB.ref('.info/connected').on('value', snap => plotterSetLive(!!snap.val()));
+
+  // live config (axis labels + word list)
+  onExerciseConfig('plotter', cfg => plotterApplyConfig(cfg));
 }
 
 async function plotterHandleClear() {
@@ -1665,10 +1682,35 @@ function plotterAxisSettings() {
     xOn:    document.getElementById('plotter-axis-x')?.checked ?? true,
     yOn:    document.getElementById('plotter-axis-y')?.checked ?? false,
     zOn:    document.getElementById('plotter-axis-z')?.checked ?? false,
-    xLabel: document.getElementById('plotter-label-x')?.value.trim() || 'Female',
-    yLabel: document.getElementById('plotter-label-y')?.value.trim() || 'Alive',
-    zLabel: document.getElementById('plotter-label-z')?.value.trim() || 'Royal',
+    xLabel: plotterConfig.axisX || 'X',
+    yLabel: plotterConfig.axisY || 'Y',
+    zLabel: plotterConfig.axisZ || 'Z',
   };
+}
+
+// Apply config to the panel label spans and the settings inputs
+function plotterApplyConfig(cfg) {
+  plotterConfig = { ...plotterConfig, ...cfg };
+  // Side-panel read-only labels
+  const lx = document.getElementById('plotter-label-x');
+  const ly = document.getElementById('plotter-label-y');
+  const lz = document.getElementById('plotter-label-z');
+  if (lx) lx.textContent = plotterConfig.axisX;
+  if (ly) ly.textContent = plotterConfig.axisY;
+  if (lz) lz.textContent = plotterConfig.axisZ;
+  // Settings inputs (keep in sync so instructor sees current values on open)
+  const sx = document.getElementById('settings-plotter-label-x');
+  const sy = document.getElementById('settings-plotter-label-y');
+  const sz = document.getElementById('settings-plotter-label-z');
+  if (sx && sx !== document.activeElement) sx.value = plotterConfig.axisX;
+  if (sy && sy !== document.activeElement) sy.value = plotterConfig.axisY;
+  if (sz && sz !== document.activeElement) sz.value = plotterConfig.axisZ;
+  // Settings word textarea
+  const sw = document.getElementById('settings-plotter-words');
+  if (sw && sw !== document.activeElement && Array.isArray(plotterConfig.words)) {
+    sw.value = plotterConfig.words.join('\n');
+  }
+  if (plotterInitialized) plotterReRender();
 }
 
 function plotterBuildTraces(points) {
@@ -1770,10 +1812,12 @@ function plotterReRender() {
 }
 
 function plotterBuildQR() {
-  const submitUrl = window.location.origin + window.location.pathname + '?submit';
-  const qrUrl     = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=6&data=${encodeURIComponent(submitUrl)}`;
-  const img       = document.getElementById('plotter-qr-img');
-  const loading   = document.getElementById('plotter-qr-loading');
+  const submitUrl  = window.location.origin + window.location.pathname + '?submit';
+  const qrUrl      = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=6&data=${encodeURIComponent(submitUrl)}`;
+  const img        = document.getElementById('plotter-qr-img');
+  const loading    = document.getElementById('plotter-qr-loading');
+  const linkInput  = document.getElementById('plotter-student-link');
+  if (linkInput) linkInput.value = submitUrl;
   if (img) {
     img.src = qrUrl;
     img.onload  = () => { img.style.display = 'block'; if (loading) loading.style.display = 'none'; };
@@ -1784,21 +1828,38 @@ function plotterBuildQR() {
 function bindPlotterEvents() {
   document.getElementById('plotter-btn-clear')?.addEventListener('click', plotterHandleClear);
 
+  // Copy link button
   document.getElementById('plotter-btn-copy-link')?.addEventListener('click', () => {
-    const url = window.location.origin + window.location.pathname + '?submit';
+    const url = document.getElementById('plotter-student-link')?.value
+             || window.location.origin + window.location.pathname + '?submit';
     navigator.clipboard.writeText(url).then(() => {
       const btn = document.getElementById('plotter-btn-copy-link');
       const orig = btn.textContent;
-      btn.textContent = 'Copied!';
+      btn.textContent = '✓';
       setTimeout(() => { btn.textContent = orig; }, 1800);
     });
   });
 
+  // Axis checkboxes re-render
   ['plotter-show-labels','plotter-axis-x','plotter-axis-y','plotter-axis-z'].forEach(id => {
     document.getElementById(id)?.addEventListener('change', plotterReRender);
   });
-  ['plotter-label-x','plotter-label-y','plotter-label-z'].forEach(id => {
-    document.getElementById(id)?.addEventListener('input', plotterReRender);
+
+  // ── Settings: Save & Push plotter config ─────────
+  document.getElementById('settings-plotter-save')?.addEventListener('click', async () => {
+    const statusEl = document.getElementById('settings-plotter-save-status');
+    const words = (document.getElementById('settings-plotter-words')?.value ?? '')
+      .split('\n').map(w => w.trim()).filter(Boolean);
+    const axisX = document.getElementById('settings-plotter-label-x')?.value.trim() || 'X';
+    const axisY = document.getElementById('settings-plotter-label-y')?.value.trim() || 'Y';
+    const axisZ = document.getElementById('settings-plotter-label-z')?.value.trim() || 'Z';
+    if (statusEl) statusEl.textContent = 'Saving…';
+    try {
+      await saveExerciseConfig('plotter', { words, axisX, axisY, axisZ });
+      if (statusEl) { statusEl.textContent = '✓ Pushed to students'; setTimeout(() => { statusEl.textContent = ''; }, 3000); }
+    } catch (err) {
+      if (statusEl) statusEl.textContent = `Error: ${err.message}`;
+    }
   });
 
   // ── Student submit view ──────────────────────────
@@ -1807,16 +1868,19 @@ function bindPlotterEvents() {
   }
 }
 
+// ── localStorage helpers for per-student submission tracking ──
+function submitGetDone(studentName) {
+  try { return JSON.parse(localStorage.getItem(`plotter_done_${studentName}`) || '[]'); } catch { return []; }
+}
+function submitMarkDone(studentName, word) {
+  const done = submitGetDone(studentName);
+  if (!done.includes(word)) { done.push(word); localStorage.setItem(`plotter_done_${studentName}`, JSON.stringify(done)); }
+}
+
 function plotterInitSubmitView() {
-  // Hide everything; show submit overlay
+  // Show only the submit overlay
   document.querySelectorAll('#home-screen, #panel-app, #plotter-app, #counsel-app, #research-app').forEach(el => el.classList.add('hidden'));
   document.getElementById('plotter-submit-view').classList.remove('hidden');
-
-  // Mirror axis labels from URL params if provided (?submit&x=Female&y=Alive&z=Royal)
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('x')) document.getElementById('submit-label-x').textContent = params.get('x');
-  if (params.get('y')) document.getElementById('submit-label-y').textContent = params.get('y');
-  if (params.get('z')) document.getElementById('submit-label-z').textContent = params.get('z');
 
   // Slider live readout
   ['x','y','z'].forEach(axis => {
@@ -1825,26 +1889,64 @@ function plotterInitSubmitView() {
     if (slider && val) slider.addEventListener('input', () => { val.textContent = slider.value; });
   });
 
+  // When name changes, refresh the random button hint
+  document.getElementById('submit-field-student')?.addEventListener('input', submitUpdateWordHint);
+
+  // Random word button
+  document.getElementById('submit-btn-random')?.addEventListener('click', () => {
+    const studentName = document.getElementById('submit-field-student')?.value.trim();
+    const words = plotterConfig.words || [];
+    if (!words.length) return;
+    const done      = studentName ? submitGetDone(studentName) : [];
+    const available = words.filter(w => !done.includes(w));
+    const pool      = available.length ? available : words;   // fallback: ignore done list if all exhausted
+    const pick      = pool[Math.floor(Math.random() * pool.length)];
+    const sel       = document.getElementById('submit-field-word');
+    if (sel) sel.value = pick;
+    submitUpdateWordHint();
+  });
+
+  // Live config from Firebase — populates dropdown + axis labels
+  onExerciseConfig('plotter', cfg => {
+    plotterConfig = { ...plotterConfig, ...cfg };
+    // Axis labels
+    ['x','y','z'].forEach(a => {
+      const el = document.getElementById(`submit-label-${a}`);
+      if (el) el.textContent = plotterConfig[`axis${a.toUpperCase()}`] || a.toUpperCase();
+    });
+    // Word dropdown
+    const sel   = document.getElementById('submit-field-word');
+    const words = Array.isArray(cfg.words) ? cfg.words : [];
+    if (sel) {
+      const current = sel.value;
+      sel.innerHTML = words.length
+        ? words.map(w => `<option value="${escHtml(w)}">${escHtml(w)}</option>`).join('')
+        : '<option value="">— waiting for word list —</option>';
+      if (current && words.includes(current)) sel.value = current;
+    }
+    submitUpdateWordHint();
+  });
+
   // Form submit
   document.getElementById('plotter-submit-form').addEventListener('submit', async e => {
     e.preventDefault();
-    const errEl  = document.getElementById('plotter-submit-error');
-    const btn    = document.getElementById('plotter-submit-btn');
+    const errEl   = document.getElementById('plotter-submit-error');
+    const btn     = document.getElementById('plotter-submit-btn');
     const student = document.getElementById('submit-field-student').value.trim();
-    const word    = document.getElementById('submit-field-word').value.trim();
+    const word    = document.getElementById('submit-field-word').value;
     const x       = parseFloat(document.getElementById('submit-field-x').value);
     const y       = parseFloat(document.getElementById('submit-field-y').value);
     const z       = parseFloat(document.getElementById('submit-field-z').value);
 
     errEl.classList.add('hidden'); errEl.textContent = '';
     if (!student) { errEl.textContent = 'Please enter your name.'; errEl.classList.remove('hidden'); return; }
-    if (!word)    { errEl.textContent = 'Please enter a word.';    errEl.classList.remove('hidden'); return; }
+    if (!word)    { errEl.textContent = 'Please select a word.';   errEl.classList.remove('hidden'); return; }
 
     btn.disabled = true; btn.textContent = 'Submitting…';
     try {
       await _fbDB.ref('plotter').push({ name: student, word, x, y, z, ts: Date.now() });
-      document.getElementById('plotter-submit-confirm-text').textContent =
-        `"${word}" submitted by ${student}`;
+      submitMarkDone(student, word);
+      document.getElementById('plotter-submit-confirm-text').textContent = `"${word}" submitted by ${student}`;
       document.getElementById('plotter-submit-form').classList.add('hidden');
       document.getElementById('plotter-submit-success').classList.remove('hidden');
     } catch (err) {
@@ -1858,14 +1960,27 @@ function plotterInitSubmitView() {
   document.getElementById('plotter-submit-another').addEventListener('click', () => {
     document.getElementById('plotter-submit-success').classList.add('hidden');
     document.getElementById('plotter-submit-form').classList.remove('hidden');
-    document.getElementById('submit-field-word').value = '';
     ['x','y','z'].forEach(a => {
       document.getElementById(`submit-field-${a}`).value = '0.5';
       document.getElementById(`submit-val-${a}`).textContent = '0.5';
     });
     const btn = document.getElementById('plotter-submit-btn');
     btn.disabled = false; btn.textContent = 'Submit';
+    submitUpdateWordHint();
   });
+}
+
+function submitUpdateWordHint() {
+  const hintEl      = document.getElementById('submit-word-hint');
+  if (!hintEl) return;
+  const studentName = document.getElementById('submit-field-student')?.value.trim();
+  const words       = plotterConfig.words || [];
+  if (!words.length || !studentName) { hintEl.textContent = ''; return; }
+  const done      = submitGetDone(studentName);
+  const remaining = words.filter(w => !done.includes(w)).length;
+  hintEl.textContent = done.length
+    ? `${remaining} word${remaining !== 1 ? 's' : ''} remaining (${done.length} already submitted)`
+    : '';
 }
 
 // ════════════════════════════════════════════════

@@ -23,6 +23,7 @@
     <div class="settings-tabs" role="tablist" aria-label="Settings sections">
       <button class="settings-tab active" data-tab="appearance" role="tab" aria-selected="true">Appearance</button>
       <button class="settings-tab" data-tab="roster" role="tab" aria-selected="false">Roster</button>
+      <button class="settings-tab" data-tab="exercises" role="tab" aria-selected="false">Exercises</button>
       <button class="settings-tab" data-tab="data" role="tab" aria-selected="false">Data Sources</button>
     </div>
 
@@ -77,6 +78,44 @@
         <label style="margin:0;font-size:0.9rem;">Quick fill</label>
         <input type="number" id="settings-qf-count" value="9" min="1" max="26">
         <button class="btn btn-secondary btn-sm" id="settings-qf-btn">⚡ Quick Fill</button>
+      </div>
+    </div>
+
+    <!-- ── Tab: Exercises ── -->
+    <div class="settings-tab-panel" id="stab-exercises" role="tabpanel">
+      <p style="font-size:0.88rem;color:var(--muted);margin:0 0 16px;line-height:1.55;">
+        Configure interactive exercises. Settings are pushed to Firebase so student devices receive them automatically.
+      </p>
+
+      <!-- 3D Word Plotter -->
+      <div style="border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:4px;">
+        <div style="font-weight:700;font-size:0.95rem;color:var(--text);margin-bottom:12px;">3D Word Plotter</div>
+
+        <div style="margin-bottom:14px;">
+          <label style="margin-bottom:5px;">Word list <span style="font-weight:400;color:var(--muted);">(one per line)</span></label>
+          <textarea id="settings-plotter-words" rows="7" placeholder="King&#10;Queen&#10;Justice&#10;Power&#10;Freedom…"
+            style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-size:0.9rem;font-family:var(--font);color:var(--text);background:var(--bg);resize:vertical;outline:none;display:block;"></textarea>
+        </div>
+
+        <div style="margin-bottom:10px;">
+          <label style="margin-bottom:6px;">Axis labels</label>
+          <div style="display:grid;grid-template-columns:auto 1fr;align-items:center;gap:8px 10px;">
+            <span style="font-size:0.85rem;font-weight:600;color:var(--muted);">X</span>
+            <input type="text" id="settings-plotter-label-x" value="Female" maxlength="40"
+              style="padding:7px 10px;border-radius:5px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.9rem;">
+            <span style="font-size:0.85rem;font-weight:600;color:var(--muted);">Y</span>
+            <input type="text" id="settings-plotter-label-y" value="Alive" maxlength="40"
+              style="padding:7px 10px;border-radius:5px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.9rem;">
+            <span style="font-size:0.85rem;font-weight:600;color:var(--muted);">Z</span>
+            <input type="text" id="settings-plotter-label-z" value="Royal" maxlength="40"
+              style="padding:7px 10px;border-radius:5px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.9rem;">
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:10px;margin-top:14px;">
+          <button id="settings-plotter-save" class="btn btn-primary btn-sm">↑ Save &amp; Push to Students</button>
+          <span id="settings-plotter-save-status" style="font-size:0.82rem;color:var(--muted);"></span>
+        </div>
       </div>
     </div>
 
@@ -623,7 +662,12 @@
         <div class="advanced-subtitle">Student Submit Link</div>
         <img id="plotter-qr-img" src="" alt="QR code" style="width:100%;border-radius:6px;display:none;">
         <div id="plotter-qr-loading" style="font-size:0.8rem;color:var(--muted);">Generating…</div>
-        <button id="plotter-btn-copy-link" class="btn btn-sm" style="width:100%;margin-top:6px;background:transparent;border:1px solid var(--border);color:var(--muted);">Copy student link</button>
+        <div style="display:flex;align-items:center;gap:5px;margin-top:8px;">
+          <input type="text" id="plotter-student-link" readonly
+            style="flex:1;min-width:0;font-size:0.72rem;padding:5px 7px;border-radius:5px;border:1px solid var(--border);background:var(--bg);color:var(--muted);font-family:monospace;">
+          <button id="plotter-btn-copy-link" class="btn btn-sm" title="Copy link"
+            style="flex-shrink:0;padding:5px 9px;background:transparent;border:1px solid var(--border);color:var(--muted);">⎘</button>
+        </div>
       </section>
 
       <section class="plotter-section">
@@ -636,21 +680,21 @@
       </section>
 
       <section class="plotter-section">
-        <div class="advanced-subtitle">Axes</div>
+        <div class="advanced-subtitle">Axes <span style="font-weight:400;font-size:0.75rem;color:var(--muted);">(set in ⚙ Exercises)</span></div>
         <div class="plotter-input-row">
           <input type="checkbox" id="plotter-axis-x" checked title="Show X axis">
-          <label for="plotter-label-x">X</label>
-          <input type="text" id="plotter-label-x" value="Female" maxlength="40">
+          <label style="min-width:14px;">X</label>
+          <span id="plotter-label-x" style="font-size:0.88rem;color:var(--text);">Female</span>
         </div>
         <div class="plotter-input-row">
           <input type="checkbox" id="plotter-axis-y" title="Show Y axis">
-          <label for="plotter-label-y">Y</label>
-          <input type="text" id="plotter-label-y" value="Alive" maxlength="40">
+          <label style="min-width:14px;">Y</label>
+          <span id="plotter-label-y" style="font-size:0.88rem;color:var(--text);">Alive</span>
         </div>
         <div class="plotter-input-row">
           <input type="checkbox" id="plotter-axis-z" title="Show Z axis">
-          <label for="plotter-label-z">Z</label>
-          <input type="text" id="plotter-label-z" value="Royal" maxlength="40">
+          <label style="min-width:14px;">Z</label>
+          <span id="plotter-label-z" style="font-size:0.88rem;color:var(--text);">Royal</span>
         </div>
       </section>
 
@@ -758,13 +802,20 @@
 
       <div>
         <label style="display:block;font-size:0.85rem;font-weight:600;color:var(--muted);margin-bottom:6px;">Word</label>
-        <input id="submit-field-word" type="text" placeholder="e.g. Justice"
-          style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:1rem;">
+        <div style="display:flex;gap:8px;align-items:stretch;">
+          <select id="submit-field-word"
+            style="flex:1;min-width:0;padding:10px 12px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:1rem;">
+            <option value="">— waiting for word list —</option>
+          </select>
+          <button type="button" id="submit-btn-random" title="Pick a random word"
+            style="padding:10px 13px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:1.1rem;cursor:pointer;flex-shrink:0;">↻</button>
+        </div>
+        <div id="submit-word-hint" style="font-size:0.78rem;color:var(--muted);margin-top:4px;"></div>
       </div>
 
       <div>
         <label style="display:block;font-size:0.85rem;font-weight:600;color:var(--muted);margin-bottom:4px;">
-          <span id="submit-label-x">X axis</span>
+          <span id="submit-label-x">X</span>
           <span id="submit-val-x" style="float:right;font-weight:400;color:var(--text);">0.5</span>
         </label>
         <input id="submit-field-x" type="range" min="0" max="1" step="0.1" value="0.5"
@@ -773,7 +824,7 @@
 
       <div>
         <label style="display:block;font-size:0.85rem;font-weight:600;color:var(--muted);margin-bottom:4px;">
-          <span id="submit-label-y">Y axis</span>
+          <span id="submit-label-y">Y</span>
           <span id="submit-val-y" style="float:right;font-weight:400;color:var(--text);">0.5</span>
         </label>
         <input id="submit-field-y" type="range" min="0" max="1" step="0.1" value="0.5"
@@ -782,7 +833,7 @@
 
       <div>
         <label style="display:block;font-size:0.85rem;font-weight:600;color:var(--muted);margin-bottom:4px;">
-          <span id="submit-label-z">Z axis</span>
+          <span id="submit-label-z">Z</span>
           <span id="submit-val-z" style="float:right;font-weight:400;color:var(--text);">0.5</span>
         </label>
         <input id="submit-field-z" type="range" min="0" max="1" step="0.1" value="0.5"
