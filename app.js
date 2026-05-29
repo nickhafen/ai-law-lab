@@ -1845,6 +1845,20 @@ function bindPlotterEvents() {
     document.getElementById(id)?.addEventListener('change', plotterReRender);
   });
 
+  // ── Settings: Quick Fill word list ───────────────
+  const PLOTTER_WORD_BANK = [
+    'King','Queen','Prince','Princess','Frog','Crown','Wedding',
+    'Apple','Dog','Cat','Doctor','Nurse','Hospital','Ghost',
+    'Angel','Virus','Library','Love','Algorithm',
+  ];
+  document.getElementById('settings-plotter-qf-btn')?.addEventListener('click', () => {
+    const countEl  = document.getElementById('settings-plotter-qf-count');
+    const count    = Math.min(Math.max(1, parseInt(countEl?.value) || 10), PLOTTER_WORD_BANK.length);
+    const shuffled = [...PLOTTER_WORD_BANK].sort(() => Math.random() - 0.5).slice(0, count);
+    const ta       = document.getElementById('settings-plotter-words');
+    if (ta) ta.value = shuffled.join('\n');
+  });
+
   // ── Settings: Save & Push plotter config ─────────
   document.getElementById('settings-plotter-save')?.addEventListener('click', async () => {
     const statusEl = document.getElementById('settings-plotter-save-status');
@@ -1946,27 +1960,25 @@ function plotterInitSubmitView() {
     try {
       await _fbDB.ref('plotter').push({ name: student, word, x, y, z, ts: Date.now() });
       submitMarkDone(student, word);
-      document.getElementById('plotter-submit-confirm-text').textContent = `"${word}" submitted by ${student}`;
-      document.getElementById('plotter-submit-form').classList.add('hidden');
-      document.getElementById('plotter-submit-success').classList.remove('hidden');
+      // Inline confirmation — keep the form visible
+      const confirmEl = document.getElementById('plotter-submit-confirm-text');
+      const successEl = document.getElementById('plotter-submit-success');
+      if (confirmEl) confirmEl.textContent = `"${word}" submitted!`;
+      if (successEl) successEl.classList.remove('hidden');
+      btn.disabled = false; btn.textContent = 'Submit';
+      // Reset word picker and sliders for the next submission
+      ['x','y','z'].forEach(a => {
+        document.getElementById(`submit-field-${a}`).value = '0.5';
+        document.getElementById(`submit-val-${a}`).textContent = '0.5';
+      });
+      submitUpdateWordHint();
+      // Auto-hide confirmation after 3 s
+      setTimeout(() => successEl?.classList.add('hidden'), 3000);
     } catch (err) {
       errEl.textContent = `Submit failed: ${err.message}`;
       errEl.classList.remove('hidden');
       btn.disabled = false; btn.textContent = 'Submit';
     }
-  });
-
-  // Submit another
-  document.getElementById('plotter-submit-another').addEventListener('click', () => {
-    document.getElementById('plotter-submit-success').classList.add('hidden');
-    document.getElementById('plotter-submit-form').classList.remove('hidden');
-    ['x','y','z'].forEach(a => {
-      document.getElementById(`submit-field-${a}`).value = '0.5';
-      document.getElementById(`submit-val-${a}`).textContent = '0.5';
-    });
-    const btn = document.getElementById('plotter-submit-btn');
-    btn.disabled = false; btn.textContent = 'Submit';
-    submitUpdateWordHint();
   });
 }
 
