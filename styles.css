@@ -942,17 +942,23 @@ input[type="number"] { width: 72px; text-align: center; }
   overflow-y: auto;
 }
 
-.token-pill {
-  display: inline-block;
-  padding: 3px 2px;
-  margin: 1px;
-  border-radius: 4px;
-  cursor: pointer;
+#token-output {
+  line-height: 1.9;
+  font-size: 1rem;
   white-space: pre-wrap;
-  transition: background 0.12s;
 }
-.token-pill:hover { background: var(--btn-secondary-bg); }
-.token-pill.active { background: var(--accent); color: #fff; }
+.token-pill {
+  display: inline;
+  border-radius: 3px;
+  cursor: pointer;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  transition: outline-color 0.1s;
+  outline: 2px solid transparent;
+  outline-offset: -1px;
+}
+.token-pill:hover { outline-color: var(--muted); }
+.token-pill.active { outline-color: var(--accent); font-weight: 600; }
 
 .token-alt-row {
   display: grid;

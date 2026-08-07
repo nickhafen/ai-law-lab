@@ -2216,16 +2216,32 @@ async function tokenGenerate() {
   }
 }
 
+// Below ~85% confidence, tint the token from yellow toward red as confidence drops.
+// Confident tokens (the vast majority in fluent text) stay unhighlighted so the
+// uncertain ones — the pedagogically interesting ones — stand out.
+function tokenConfidenceColor(prob) {
+  const clamped = Math.min(1, Math.max(0, prob));
+  if (clamped >= 0.85) return null;
+  const t = 1 - clamped / 0.85; // 0 = just under threshold, 1 = totally uncertain
+  const hue = 50 - 50 * t; // 50° yellow → 0° red
+  const lightness = 88 - 26 * t; // 88% → 62%
+  return `hsla(${hue}, 85%, ${lightness}%, ${0.4 + 0.35 * t})`;
+}
+
 function tokenRenderOutput() {
   const out = document.getElementById('token-output');
   if (!out) return;
   out.innerHTML = '';
   tokenResults.forEach((t, i) => {
+    const prob = Math.exp(t.logprob);
     const span = document.createElement('span');
     span.className = 'token-pill';
     span.textContent = t.token;
-    span.title = `${Math.round(Math.exp(t.logprob) * 100)}% likely`;
+    const bg = tokenConfidenceColor(prob);
+    if (bg) span.style.backgroundColor = bg;
+    span.title = `${Math.round(prob * 100)}% likely`;
     span.addEventListener('click', () => tokenShowAlternatives(i));
+    span.addEventListener('mouseenter', () => tokenShowAlternatives(i));
     out.appendChild(span);
   });
   document.getElementById('token-output-card').style.display = '';
