@@ -5,6 +5,7 @@
 - Hosted on GitHub Pages (`main` branch → https://nickhafen.github.io/ai-law-lab/)
 - Firebase Realtime Database for live student submissions and exercise config
 - External CDNs: Plotly, PapaParse, Marked, DOMPurify, Firebase compat SDK
+- One backend component: `cf-worker/` — a Cloudflare Worker that proxies OpenRouter API calls for the Token Explorer card, keeping the OpenRouter key server-side (stored as a Wrangler secret, never in the repo or the browser). Deployed separately with `npx wrangler deploy` from `cf-worker/`. Firebase Cloud Functions were tried first but BYU's Google Cloud org enforces a domain-restricted-sharing policy that blocks public (`allUsers`) invocation of any Cloud Run/Cloud Functions service — including via a Firebase Hosting rewrite — so the proxy lives on Cloudflare instead, outside that org. Everything else on the site remains build-step-free static files.
 
 ## After Significant Revisions
 Whenever a meaningful change is made (new feature, refactored logic, new Firebase path, changed form behavior), provide step-by-step testing instructions in the following format:

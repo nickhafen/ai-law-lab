@@ -1,1 +1,3 @@
 .claude/
+cf-worker/.wrangler/
+cf-worker/node_modules/

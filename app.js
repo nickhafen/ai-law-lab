@@ -9,6 +9,7 @@ function showHomeScreen() {
   document.getElementById('counsel-app').classList.add('hidden');
   document.getElementById('plotter-app').classList.add('hidden');
   document.getElementById('research-app').classList.add('hidden');
+  document.getElementById('token-app').classList.add('hidden');
   document.getElementById('home-screen').classList.remove('hidden');
 }
 
@@ -17,6 +18,7 @@ function showPlotterApp() {
   document.getElementById('panel-app').classList.add('hidden');
   document.getElementById('counsel-app').classList.add('hidden');
   document.getElementById('research-app').classList.add('hidden');
+  document.getElementById('token-app').classList.add('hidden');
   document.getElementById('plotter-app').classList.remove('hidden');
   if (!plotterInitialized) {
     plotterInitialized = true;
@@ -30,9 +32,23 @@ function showResearchApp() {
   document.getElementById('panel-app').classList.add('hidden');
   document.getElementById('counsel-app').classList.add('hidden');
   document.getElementById('plotter-app').classList.add('hidden');
+  document.getElementById('token-app').classList.add('hidden');
   document.getElementById('research-app').classList.remove('hidden');
   const roster = document.getElementById('settings-roster');
   if (roster && roster.value.trim()) document.getElementById('research-names').value = roster.value;
+}
+
+function showTokenApp() {
+  document.getElementById('home-screen').classList.add('hidden');
+  document.getElementById('panel-app').classList.add('hidden');
+  document.getElementById('counsel-app').classList.add('hidden');
+  document.getElementById('plotter-app').classList.add('hidden');
+  document.getElementById('research-app').classList.add('hidden');
+  document.getElementById('token-app').classList.remove('hidden');
+  if (!tokenInitialized) {
+    tokenInitialized = true;
+    onExerciseConfig('tokenExplorer', tokenApplyConfig);
+  }
 }
 
 let panelDataLoaded = false;
@@ -2123,6 +2139,148 @@ function bindResearchEvents() {
 }
 
 // ════════════════════════════════════════════════
+//  TOKEN EXPLORER
+// ════════════════════════════════════════════════
+const TOKEN_PROXY_URL = 'https://ai-law-lab-token-explorer.nickhafen.workers.dev';
+
+let tokenInitialized = false;
+let tokenConfig = { model: 'google/gemma-4-26b-a4b-it:free', temperature: 0.7, altCount: 5 };
+let tokenResults = []; // [{ token, logprob, top_logprobs: [{token, logprob}, ...] }]
+
+function tokenApplyConfig(cfg) {
+  tokenConfig = { ...tokenConfig, ...cfg };
+
+  const modelEl = document.getElementById('token-model');
+  const tempEl  = document.getElementById('token-temperature');
+  const tempVal = document.getElementById('token-temperature-val');
+  const altEl   = document.getElementById('token-alt-count');
+  if (modelEl && modelEl !== document.activeElement) modelEl.value = tokenConfig.model;
+  if (tempEl && tempEl !== document.activeElement) { tempEl.value = tokenConfig.temperature; if (tempVal) tempVal.textContent = tokenConfig.temperature; }
+  if (altEl && altEl !== document.activeElement) altEl.value = tokenConfig.altCount;
+
+  const sModelEl = document.getElementById('settings-token-model');
+  const sTempEl  = document.getElementById('settings-token-temperature');
+  const sAltEl   = document.getElementById('settings-token-alt-count');
+  if (sModelEl && sModelEl !== document.activeElement) sModelEl.value = tokenConfig.model;
+  if (sTempEl && sTempEl !== document.activeElement) sTempEl.value = tokenConfig.temperature;
+  if (sAltEl && sAltEl !== document.activeElement) sAltEl.value = tokenConfig.altCount;
+}
+
+function tokenSetStatus(text, isError) {
+  const el = document.getElementById('token-status-text');
+  if (!el) return;
+  el.textContent = text;
+  el.classList.toggle('error', !!isError);
+}
+
+async function tokenGenerate() {
+  const promptEl = document.getElementById('token-prompt');
+  const prompt = (promptEl?.value ?? '').trim();
+  if (!prompt) { tokenSetStatus('Enter a prompt first.', true); return; }
+
+  const model = document.getElementById('token-model')?.value || tokenConfig.model;
+  const temperature = Number(document.getElementById('token-temperature')?.value ?? tokenConfig.temperature);
+  const altCount = Number(document.getElementById('token-alt-count')?.value ?? tokenConfig.altCount);
+
+  const btn = document.getElementById('token-generate-btn');
+  if (btn) btn.disabled = true;
+  tokenSetStatus('Generating…');
+  document.getElementById('token-output-card').style.display = 'none';
+  document.getElementById('token-alts-card').style.display = 'none';
+
+  try {
+    const res = await fetch(TOKEN_PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: 'user', content: prompt }],
+        temperature,
+        top_logprobs: altCount,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error?.message || data?.error || `Request failed (${res.status})`);
+
+    const content = data?.choices?.[0]?.logprobs?.content;
+    if (!Array.isArray(content) || content.length === 0) {
+      throw new Error('This model did not return token probabilities.');
+    }
+    tokenResults = content;
+    tokenRenderOutput();
+    tokenSetStatus('');
+  } catch (err) {
+    tokenSetStatus(`Error: ${err.message}`, true);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+function tokenRenderOutput() {
+  const out = document.getElementById('token-output');
+  if (!out) return;
+  out.innerHTML = '';
+  tokenResults.forEach((t, i) => {
+    const span = document.createElement('span');
+    span.className = 'token-pill';
+    span.textContent = t.token;
+    span.title = `${Math.round(Math.exp(t.logprob) * 100)}% likely`;
+    span.addEventListener('click', () => tokenShowAlternatives(i));
+    out.appendChild(span);
+  });
+  document.getElementById('token-output-card').style.display = '';
+}
+
+function tokenShowAlternatives(index) {
+  document.querySelectorAll('#token-output .token-pill').forEach((el, i) => {
+    el.classList.toggle('active', i === index);
+  });
+
+  const t = tokenResults[index];
+  const alts = Array.isArray(t.top_logprobs) ? [...t.top_logprobs] : [];
+  alts.sort((a, b) => b.logprob - a.logprob);
+
+  document.getElementById('token-alts-word').textContent = t.token.trim() || t.token;
+  const list = document.getElementById('token-alts-list');
+  list.innerHTML = '';
+  const maxProb = alts.length ? Math.exp(alts[0].logprob) : 1;
+  alts.forEach(alt => {
+    const prob = Math.exp(alt.logprob);
+    const row = document.createElement('div');
+    row.className = 'token-alt-row';
+    row.innerHTML = `
+      <span class="token-alt-label">${(alt.token || '').trim() || alt.token}</span>
+      <span class="token-alt-bar-track"><span class="token-alt-bar-fill" style="width:${Math.max(2, (prob / maxProb) * 100)}%;"></span></span>
+      <span class="token-alt-pct">${(prob * 100).toFixed(1)}%</span>
+    `;
+    list.appendChild(row);
+  });
+  document.getElementById('token-alts-card').style.display = '';
+}
+
+function bindTokenEvents() {
+  document.getElementById('token-generate-btn')?.addEventListener('click', tokenGenerate);
+
+  const tempEl = document.getElementById('token-temperature');
+  const tempVal = document.getElementById('token-temperature-val');
+  tempEl?.addEventListener('input', () => { if (tempVal) tempVal.textContent = tempEl.value; });
+
+  document.getElementById('settings-token-save')?.addEventListener('click', async () => {
+    const statusEl = document.getElementById('settings-token-save-status');
+    const model = document.getElementById('settings-token-model')?.value || tokenConfig.model;
+    const temperature = Number(document.getElementById('settings-token-temperature')?.value ?? tokenConfig.temperature);
+    const altCount = Number(document.getElementById('settings-token-alt-count')?.value ?? tokenConfig.altCount);
+    if (statusEl) statusEl.textContent = 'Saving…';
+    try {
+      await saveExerciseConfig('tokenExplorer', { model, temperature, altCount });
+      if (statusEl) { statusEl.textContent = '✓ Pushed to students'; setTimeout(() => { statusEl.textContent = ''; }, 3000); }
+    } catch (err) {
+      if (statusEl) statusEl.textContent = `Error: ${err.message}`;
+    }
+  });
+}
+
+// ════════════════════════════════════════════════
 //  INIT
 // ════════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', () => {
@@ -2158,6 +2316,7 @@ window.addEventListener('DOMContentLoaded', () => {
   bindKeyboardShortcuts();
   bindPlotterEvents();
   bindResearchEvents();
+  bindTokenEvents();
 
   document.getElementById('counsel-assign-btn')?.addEventListener('click', counselAssignScenarios);
 

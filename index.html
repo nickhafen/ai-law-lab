@@ -124,6 +124,35 @@
           <span id="settings-plotter-save-status" style="font-size:0.82rem;color:var(--muted);"></span>
         </div>
       </div>
+
+      <!-- Token Explorer -->
+      <div style="border:1px solid var(--border);border-radius:8px;padding:16px;margin-top:16px;margin-bottom:4px;">
+        <div style="font-weight:700;font-size:0.95rem;color:var(--text);margin-bottom:12px;">Token Explorer</div>
+        <p style="font-size:0.85rem;color:var(--muted);margin:0 0 14px;line-height:1.55;">Default model, temperature, and alternative count students see when they open the card. Each student's own prompt and results stay local to their device.</p>
+
+        <div style="margin-bottom:14px;">
+          <label style="margin-bottom:6px;">Default model</label>
+          <select id="settings-token-model" style="width:100%;">
+            <option value="google/gemma-4-26b-a4b-it:free">Gemma 4 26B (free)</option>
+          </select>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:10px;">
+          <div>
+            <label style="margin-bottom:6px;">Default temperature</label>
+            <input type="number" id="settings-token-temperature" value="0.7" min="0" max="2" step="0.1" style="width:100%;">
+          </div>
+          <div>
+            <label style="margin-bottom:6px;">Default # alternatives</label>
+            <input type="number" id="settings-token-alt-count" value="5" min="1" max="10" style="width:100%;">
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:10px;margin-top:14px;">
+          <button id="settings-token-save" class="btn btn-primary btn-sm">↑ Save &amp; Push to Students</button>
+          <span id="settings-token-save-status" style="font-size:0.82rem;color:var(--muted);"></span>
+        </div>
+      </div>
     </div>
 
     <!-- ── Tab: Data Sources ── -->
@@ -266,6 +295,12 @@
       <div class="exercise-card-eyebrow">Visualize</div>
       <div class="exercise-card-title">3D Word Plotter</div>
       <div class="exercise-card-desc">Explore how word embeddings work — plot words in 3D space and see how numbers capture semantic meaning and relationships between concepts.</div>
+      <div class="exercise-card-arrow">Open →</div>
+    </div>
+    <div class="exercise-card" onclick="showTokenApp()">
+      <div class="exercise-card-eyebrow">Explore</div>
+      <div class="exercise-card-title">Token Explorer</div>
+      <div class="exercise-card-desc">See how an AI model actually picks its words — type a prompt and inspect the probability behind every token it generates.</div>
       <div class="exercise-card-arrow">Open →</div>
     </div>
     <a class="exercise-card" href="https://chatgpt.com/g/g-69c5820d64e4819186c723f9fc7b9e33-otc-client-simulator-v2" target="_blank" rel="noopener">
@@ -722,6 +757,74 @@
 
   </div>
 </div><!-- end #plotter-app -->
+
+<!-- ═══════════════════════════════════ TOKEN EXPLORER APP ═══════════════════════════════════ -->
+<div id="token-app" class="hidden app-wrapper">
+
+  <div class="mod-header-bar" style="flex-shrink:0;">
+    <div class="header-left">
+      <button class="header-btn" onclick="showHomeScreen()" title="Back to Home">←</button>
+      <div>
+        <div class="header-title">Token Explorer</div>
+        <div class="header-subtitle">Explore</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <button class="header-btn settings-trigger" title="Appearance settings (S)">⚙</button>
+    </div>
+  </div>
+
+  <div id="token-shell">
+
+    <main id="token-main">
+      <section class="section-card">
+        <div class="section-title">Prompt</div>
+        <textarea id="token-prompt" rows="3" placeholder="Type a prompt, e.g. “The most important thing a new lawyer should know is”"
+          style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-size:0.95rem;font-family:var(--font);color:var(--text);background:var(--bg);resize:vertical;outline:none;"></textarea>
+        <div class="btn-row" style="margin-top:12px;">
+          <button class="btn btn-primary" id="token-generate-btn">Generate</button>
+          <span id="token-status-text" class="plotter-status-text"></span>
+        </div>
+      </section>
+
+      <section class="section-card" id="token-output-card" style="display:none;">
+        <div class="section-title">Generated Text</div>
+        <p class="plotter-hint" style="margin-bottom:10px;">Click any word to see what the model considered instead.</p>
+        <div id="token-output"></div>
+      </section>
+
+      <section class="section-card" id="token-alts-card" style="display:none;">
+        <div class="section-title">Alternatives for "<span id="token-alts-word"></span>"</div>
+        <div id="token-alts-list"></div>
+      </section>
+    </main>
+
+    <!-- ── Side panel ── -->
+    <aside id="token-panel">
+      <section class="plotter-section">
+        <div class="advanced-subtitle">Model</div>
+        <select id="token-model" style="width:100%;padding:7px 9px;border-radius:5px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.88rem;">
+          <option value="google/gemma-4-26b-a4b-it:free">Gemma 4 26B (free)</option>
+        </select>
+      </section>
+
+      <section class="plotter-section">
+        <div class="advanced-subtitle">Temperature</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <input type="range" id="token-temperature" min="0" max="2" step="0.1" value="0.7" style="flex:1;">
+          <span id="token-temperature-val" style="font-size:0.85rem;color:var(--muted);min-width:28px;text-align:right;">0.7</span>
+        </div>
+        <p class="plotter-hint">Higher values make word choice more random.</p>
+      </section>
+
+      <section class="plotter-section">
+        <div class="advanced-subtitle"># Alternatives shown</div>
+        <input type="number" id="token-alt-count" value="5" min="1" max="10" style="width:100%;">
+      </section>
+    </aside>
+
+  </div>
+</div><!-- end #token-app -->
 
 <!-- ═══════════════════════════════════ RESEARCH APP ═══════════════════════════════════ -->
 <div id="research-app" class="hidden app-wrapper">
