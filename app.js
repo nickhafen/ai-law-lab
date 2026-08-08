@@ -2185,8 +2185,7 @@ async function tokenGenerate() {
   const btn = document.getElementById('token-generate-btn');
   if (btn) btn.disabled = true;
   tokenSetStatus('Generating…');
-  document.getElementById('token-output-card').style.display = 'none';
-  document.getElementById('token-alts-card').style.display = 'none';
+  tokenResetAlternatives();
 
   const requestBody = JSON.stringify({
     model,
@@ -2266,7 +2265,12 @@ function tokenRenderOutput() {
     span.addEventListener('mouseenter', () => tokenShowAlternatives(i));
     out.appendChild(span);
   });
-  document.getElementById('token-output-card').style.display = '';
+}
+
+function tokenResetAlternatives() {
+  document.getElementById('token-alts-word-wrap').textContent = '';
+  document.getElementById('token-alts-list').innerHTML =
+    '<span class="plotter-hint">Click a word in the generated text to see what the model considered instead.</span>';
 }
 
 function tokenShowAlternatives(index) {
@@ -2278,7 +2282,7 @@ function tokenShowAlternatives(index) {
   const alts = Array.isArray(t.top_logprobs) ? [...t.top_logprobs] : [];
   alts.sort((a, b) => b.logprob - a.logprob);
 
-  document.getElementById('token-alts-word').textContent = t.token.trim() || t.token;
+  document.getElementById('token-alts-word-wrap').textContent = ` for "${t.token.trim() || t.token}"`;
   const list = document.getElementById('token-alts-list');
   list.innerHTML = '';
   const maxProb = alts.length ? Math.exp(alts[0].logprob) : 1;
@@ -2293,7 +2297,6 @@ function tokenShowAlternatives(index) {
     `;
     list.appendChild(row);
   });
-  document.getElementById('token-alts-card').style.display = '';
 }
 
 function bindTokenEvents() {
