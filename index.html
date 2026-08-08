@@ -802,21 +802,16 @@
 
     <main id="token-main">
       <div id="token-layout">
-        <section class="section-card" id="token-prompt-card">
-          <div class="section-title">Prompt</div>
-          <textarea id="token-prompt" rows="3" placeholder="Type a prompt, e.g. “The most important thing a new lawyer should know is”"
-            style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-size:0.95rem;font-family:var(--font);color:var(--text);background:var(--bg);resize:vertical;outline:none;"></textarea>
-          <div class="btn-row" style="margin-top:12px;">
-            <button class="btn btn-primary" id="token-generate-btn">Generate</button>
-            <span style="font-size:0.78rem;color:var(--muted);">Ctrl+Enter</span>
-            <span id="token-status-text" class="plotter-status-text"></span>
-          </div>
-        </section>
-
-        <div id="token-results">
-          <section class="section-card" id="token-alts-card" style="display:none;">
-            <div class="section-title">Alternatives for "<span id="token-alts-word"></span>"</div>
-            <div id="token-alts-list"></div>
+        <div id="token-left">
+          <section class="section-card" id="token-prompt-card">
+            <div class="section-title">Prompt</div>
+            <textarea id="token-prompt" rows="3" placeholder="Type a prompt, e.g. “The most important thing a new lawyer should know is”"
+              style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-size:0.95rem;font-family:var(--font);color:var(--text);background:var(--bg);resize:vertical;outline:none;"></textarea>
+            <div class="btn-row" style="margin-top:12px;">
+              <button class="btn btn-primary" id="token-generate-btn">Generate</button>
+              <span style="font-size:0.78rem;color:var(--muted);">Ctrl+Enter</span>
+              <span id="token-status-text" class="plotter-status-text"></span>
+            </div>
           </section>
 
           <section class="section-card" id="token-output-card" style="display:none;">
@@ -825,6 +820,11 @@
             <div id="token-output"></div>
           </section>
         </div>
+
+        <section class="section-card" id="token-alts-card" style="display:none;">
+          <div class="section-title">Alternatives for "<span id="token-alts-word"></span>"</div>
+          <div id="token-alts-list"></div>
+        </section>
       </div>
     </main>
 
