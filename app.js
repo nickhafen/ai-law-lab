@@ -2188,29 +2188,51 @@ async function tokenGenerate() {
   document.getElementById('token-output-card').style.display = 'none';
   document.getElementById('token-alts-card').style.display = 'none';
 
-  try {
-    const res = await fetch(TOKEN_PROXY_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model,
-        messages: [{ role: 'user', content: prompt }],
-        temperature,
-        top_logprobs: altCount,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data?.error?.message || data?.error || `Request failed (${res.status})`);
+  const requestBody = JSON.stringify({
+    model,
+    messages: [{ role: 'user', content: prompt }],
+    temperature,
+    top_logprobs: altCount,
+  });
 
-    const content = data?.choices?.[0]?.logprobs?.content;
-    if (!Array.isArray(content) || content.length === 0) {
-      throw new Error('This model did not return token probabilities.');
+  const MAX_ATTEMPTS = 3;
+  try {
+    let lastErr;
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      try {
+        if (attempt > 1) tokenSetStatus(`Generating… (retry ${attempt - 1}/${MAX_ATTEMPTS - 1}, the free model is a bit flaky)`);
+        const res = await fetch(TOKEN_PROXY_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: requestBody,
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          const msg = data?.error?.message || data?.error || `Request failed (HTTP ${res.status})`;
+          const retryable = res.status === 429 || res.status >= 500;
+          const err = new Error(msg);
+          err.retryable = retryable;
+          throw err;
+        }
+
+        const content = data?.choices?.[0]?.logprobs?.content;
+        if (!Array.isArray(content) || content.length === 0) {
+          throw new Error('This model did not return token probabilities.');
+        }
+        tokenResults = content;
+        tokenRenderOutput();
+        tokenSetStatus('');
+        lastErr = null;
+        break;
+      } catch (err) {
+        lastErr = err;
+        if (err.retryable === false || attempt === MAX_ATTEMPTS) throw err;
+        await new Promise(r => setTimeout(r, 800 * attempt));
+      }
     }
-    tokenResults = content;
-    tokenRenderOutput();
-    tokenSetStatus('');
+    if (lastErr) throw lastErr;
   } catch (err) {
-    tokenSetStatus(`Error: ${err.message}`, true);
+    tokenSetStatus(`Error: ${err.message} — the free model can be flaky under load; try again in a moment.`, true);
   } finally {
     if (btn) btn.disabled = false;
   }
