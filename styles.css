@@ -955,26 +955,21 @@ input[type="number"] { width: 72px; text-align: center; }
   flex-direction: column;
   gap: 20px;
 }
-#token-layout > .section-card,
-#token-left > .section-card { margin-bottom: 0; }
+#token-prompt-card { margin-bottom: 0; }
 
-#token-left {
+#token-results {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  min-width: 0;
 }
+#token-results > .section-card { margin-bottom: 0; }
 
 @media (min-width: 900px) {
-  #token-layout {
+  #token-results {
     flex-direction: row;
     align-items: flex-start;
   }
-  #token-left {
-    flex: 1;
-    min-width: 0;
-  }
-  #token-alts-card {
+  #token-results > .section-card {
     flex: 1;
     min-width: 0;
   }
