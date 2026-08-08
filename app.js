@@ -2299,6 +2299,13 @@ function tokenShowAlternatives(index) {
 function bindTokenEvents() {
   document.getElementById('token-generate-btn')?.addEventListener('click', tokenGenerate);
 
+  document.getElementById('token-prompt')?.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      tokenGenerate();
+    }
+  });
+
   const tempEl = document.getElementById('token-temperature');
   const tempVal = document.getElementById('token-temperature-val');
   tempEl?.addEventListener('input', () => { if (tempVal) tempVal.textContent = tempEl.value; });
