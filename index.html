@@ -798,6 +798,11 @@
         <div class="advanced-subtitle"># Alternatives shown</div>
         <input type="number" id="token-alt-count" value="5" min="1" max="10" style="width:100%;">
       </section>
+
+      <section class="plotter-section">
+        <div class="advanced-subtitle">Response length</div>
+        <p class="plotter-hint">Up to 60 generated tokens (server limit).</p>
+      </section>
     </aside>
 
     <main id="token-main">
@@ -815,9 +820,13 @@
 
         <div id="token-results">
           <section class="section-card" id="token-output-card">
-            <div class="section-title">Generated Text</div>
-            <p class="plotter-hint" style="margin-bottom:10px;">Click any word to see what the model considered instead.</p>
+            <div class="token-output-heading">
+              <div class="section-title">Generated Text</div>
+              <label class="token-render-toggle"><input type="checkbox" id="token-render-toggle"> <span>Render Markdown</span></label>
+            </div>
+            <p class="plotter-hint" style="margin-bottom:10px;">Hover to explore. Click a token to lock its alternatives; click it again to unlock.</p>
             <div id="token-output"><span class="plotter-hint">Nothing generated yet — type a prompt and hit Generate.</span></div>
+            <div id="token-output-rendered" class="token-rendered hidden"></div>
           </section>
 
           <section class="section-card" id="token-alts-card">

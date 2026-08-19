@@ -19,6 +19,7 @@ function corsHeaders(origin) {
   const headers = {
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Expose-Headers': 'Retry-After',
   };
   if (isAllowedOrigin(origin)) {
     headers['Access-Control-Allow-Origin'] = origin;
@@ -98,9 +99,12 @@ export default {
       });
 
       const data = await upstream.text();
+      const responseHeaders = { ...headers, 'Content-Type': 'application/json' };
+      const retryAfter = upstream.headers.get('Retry-After');
+      if (retryAfter) responseHeaders['Retry-After'] = retryAfter;
       return new Response(data, {
         status: upstream.status,
-        headers: { ...headers, 'Content-Type': 'application/json' },
+        headers: responseHeaders,
       });
     } catch (err) {
       return new Response(JSON.stringify({ error: 'Upstream request failed', detail: String(err) }), {

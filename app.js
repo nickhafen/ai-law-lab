@@ -2146,6 +2146,7 @@ const TOKEN_PROXY_URL = 'https://ai-law-lab-token-explorer.nickhafen.workers.dev
 let tokenInitialized = false;
 let tokenConfig = { model: 'google/gemma-4-26b-a4b-it:free', temperature: 0.7, altCount: 5 };
 let tokenResults = []; // [{ token, logprob, top_logprobs: [{token, logprob}, ...] }]
+let tokenLockedIndex = null;
 
 function tokenApplyConfig(cfg) {
   tokenConfig = { ...tokenConfig, ...cfg };
@@ -2185,6 +2186,7 @@ async function tokenGenerate() {
   const btn = document.getElementById('token-generate-btn');
   if (btn) btn.disabled = true;
   tokenSetStatus('Generating…');
+  tokenLockedIndex = null;
   tokenResetAlternatives();
 
   const requestBody = JSON.stringify({
@@ -2200,38 +2202,69 @@ async function tokenGenerate() {
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       try {
         if (attempt > 1) tokenSetStatus(`Generating… (retry ${attempt - 1}/${MAX_ATTEMPTS - 1}, the free model is a bit flaky)`);
-        const res = await fetch(TOKEN_PROXY_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: requestBody,
-        });
-        const data = await res.json();
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 30000);
+        let res;
+        try {
+          res = await fetch(TOKEN_PROXY_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: requestBody,
+            signal: controller.signal,
+          });
+        } finally {
+          clearTimeout(timeout);
+        }
+        let data;
+        try {
+          data = await res.json();
+        } catch (_) {
+          const err = new Error(`The service returned an unreadable response (HTTP ${res.status})`);
+          err.retryable = res.status >= 500;
+          err.status = res.status;
+          throw err;
+        }
         if (!res.ok) {
           const msg = data?.error?.message || data?.error || `Request failed (HTTP ${res.status})`;
-          const retryable = res.status === 429 || res.status >= 500;
-          const err = new Error(msg);
-          err.retryable = retryable;
+          const err = new Error(typeof msg === 'string' ? msg : `Request failed (HTTP ${res.status})`);
+          err.retryable = res.status === 408 || res.status === 429 || res.status >= 500;
+          err.status = res.status;
+          const retryAfter = Number(res.headers.get('Retry-After'));
+          if (Number.isFinite(retryAfter) && retryAfter > 0) err.retryAfterMs = Math.min(retryAfter * 1000, 15000);
           throw err;
         }
 
         const content = data?.choices?.[0]?.logprobs?.content;
         if (!Array.isArray(content) || content.length === 0) {
-          throw new Error('This model did not return token probabilities.');
+          const err = new Error('This model did not return token probabilities');
+          err.retryable = false;
+          throw err;
         }
         tokenResults = content;
         tokenRenderOutput();
         tokenSetStatus('');
         lastErr = null;
         break;
-      } catch (err) {
+      } catch (caught) {
+        let err = caught;
+        if (err.name === 'AbortError') {
+          err = new Error('The provider took more than 30 seconds to respond');
+          err.retryable = true;
+          err.status = 408;
+        }
         lastErr = err;
         if (err.retryable === false || attempt === MAX_ATTEMPTS) throw err;
-        await new Promise(r => setTimeout(r, 800 * attempt));
+        await new Promise(r => setTimeout(r, err.retryAfterMs || 1000 * (2 ** (attempt - 1))));
       }
     }
     if (lastErr) throw lastErr;
   } catch (err) {
-    tokenSetStatus(`Error: ${err.message} — the free model can be flaky under load; try again in a moment.`, true);
+    const category = err.status === 429 ? 'Free-model rate limit'
+      : err.status === 408 ? 'Provider timeout'
+      : err.status >= 500 ? 'Provider temporarily unavailable'
+      : 'Request failed';
+    const retryNote = err.retryable === false ? '' : ' Three automatic attempts were made; you can try Generate again.';
+    tokenSetStatus(`${category}: ${err.message}.${retryNote}`, true);
   } finally {
     if (btn) btn.disabled = false;
   }
@@ -2253,36 +2286,76 @@ function tokenRenderOutput() {
   const out = document.getElementById('token-output');
   if (!out) return;
   out.innerHTML = '';
+  tokenLockedIndex = null;
   tokenResults.forEach((t, i) => {
     const prob = Math.exp(t.logprob);
     const span = document.createElement('span');
     span.className = 'token-pill';
     span.textContent = t.token;
+    span.tabIndex = 0;
+    span.setAttribute('role', 'button');
+    span.setAttribute('aria-pressed', 'false');
     const bg = tokenConfidenceColor(prob);
     if (bg) span.style.backgroundColor = bg;
     span.title = `${Math.round(prob * 100)}% likely`;
-    span.addEventListener('click', () => tokenShowAlternatives(i));
-    span.addEventListener('mouseenter', () => tokenShowAlternatives(i));
+    span.addEventListener('click', () => tokenToggleLock(i));
+    span.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tokenToggleLock(i); }
+    });
+    span.addEventListener('mouseenter', () => {
+      if (tokenLockedIndex === null) tokenShowAlternatives(i);
+    });
     out.appendChild(span);
   });
+  tokenRenderMarkdown();
 }
 
 function tokenResetAlternatives() {
+  tokenLockedIndex = null;
+  document.querySelectorAll('#token-output .token-pill').forEach(el => {
+    el.classList.remove('active', 'locked');
+    el.setAttribute('aria-pressed', 'false');
+  });
   document.getElementById('token-alts-word-wrap').textContent = '';
   document.getElementById('token-alts-list').innerHTML =
     '<span class="plotter-hint">Click a word in the generated text to see what the model considered instead.</span>';
 }
 
+function tokenToggleLock(index) {
+  tokenLockedIndex = tokenLockedIndex === index ? null : index;
+  tokenShowAlternatives(index);
+}
+
+function tokenVisibleLabel(raw) {
+  const value = String(raw ?? '');
+  if (!value) return '∅ (empty token)';
+  return value
+    .replace(/ /g, '␠')
+    .replace(/\t/g, '⇥')
+    .replace(/[\r\n]/g, '↵');
+}
+
+function tokenFormatProbability(logprob) {
+  const pct = Math.exp(logprob) * 100;
+  if (pct === 0) return '<0.000001%';
+  if (pct < 0.001) return '<0.001%';
+  if (pct < 0.1) return `${pct.toFixed(3)}%`;
+  return `${pct.toFixed(1)}%`;
+}
+
 function tokenShowAlternatives(index) {
   document.querySelectorAll('#token-output .token-pill').forEach((el, i) => {
     el.classList.toggle('active', i === index);
+    el.classList.toggle('locked', i === tokenLockedIndex);
+    el.setAttribute('aria-pressed', String(i === tokenLockedIndex));
   });
 
   const t = tokenResults[index];
   const alts = Array.isArray(t.top_logprobs) ? [...t.top_logprobs] : [];
   alts.sort((a, b) => b.logprob - a.logprob);
 
-  document.getElementById('token-alts-word-wrap').textContent = ` for "${t.token.trim() || t.token}"`;
+  const lockedText = tokenLockedIndex === index ? ' 🔒' : '';
+  document.getElementById('token-alts-word-wrap').textContent = ` for "${tokenVisibleLabel(t.token)}"${lockedText}`;
   const list = document.getElementById('token-alts-list');
   list.innerHTML = '';
   const maxProb = alts.length ? Math.exp(alts[0].logprob) : 1;
@@ -2290,17 +2363,44 @@ function tokenShowAlternatives(index) {
     const prob = Math.exp(alt.logprob);
     const row = document.createElement('div');
     row.className = 'token-alt-row';
-    row.innerHTML = `
-      <span class="token-alt-label">${(alt.token || '').trim() || alt.token}</span>
-      <span class="token-alt-bar-track"><span class="token-alt-bar-fill" style="width:${Math.max(2, (prob / maxProb) * 100)}%;"></span></span>
-      <span class="token-alt-pct">${(prob * 100).toFixed(1)}%</span>
-    `;
+    row.title = `log probability: ${Number(alt.logprob).toFixed(6)}`;
+    const label = document.createElement('span');
+    label.className = 'token-alt-label';
+    label.textContent = tokenVisibleLabel(alt.token);
+    const track = document.createElement('span');
+    track.className = 'token-alt-bar-track';
+    const fill = document.createElement('span');
+    fill.className = 'token-alt-bar-fill';
+    fill.style.width = `${Math.max(2, (prob / maxProb) * 100)}%`;
+    track.appendChild(fill);
+    const pct = document.createElement('span');
+    pct.className = 'token-alt-pct';
+    pct.textContent = tokenFormatProbability(alt.logprob);
+    row.append(label, track, pct);
     list.appendChild(row);
   });
 }
 
+function tokenRenderMarkdown() {
+  const rendered = document.getElementById('token-output-rendered');
+  if (!rendered) return;
+  const text = tokenResults.map(t => t.token).join('');
+  if (window.marked && window.DOMPurify) {
+    rendered.innerHTML = DOMPurify.sanitize(marked.parse(text));
+  } else {
+    rendered.textContent = text;
+  }
+}
+
+function tokenUpdateOutputView() {
+  const renderedMode = !!document.getElementById('token-render-toggle')?.checked;
+  document.getElementById('token-output')?.classList.toggle('hidden', renderedMode);
+  document.getElementById('token-output-rendered')?.classList.toggle('hidden', !renderedMode);
+}
+
 function bindTokenEvents() {
   document.getElementById('token-generate-btn')?.addEventListener('click', tokenGenerate);
+  document.getElementById('token-render-toggle')?.addEventListener('change', tokenUpdateOutputView);
 
   document.getElementById('token-prompt')?.addEventListener('keydown', e => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
