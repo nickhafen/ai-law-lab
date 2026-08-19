@@ -202,7 +202,7 @@
 <div class="modal-overlay" id="help-modal">
   <div class="modal-box">
     <button class="modal-close" id="help-modal-close" aria-label="Close help">&times;</button>
-    <h2>Keyboard Shortcuts</h2>
+    <h2>Help &amp; Keyboard Shortcuts</h2>
 
     <h4>Global</h4>
     <ul class="shortcut-list">
@@ -261,6 +261,35 @@
         <li><kbd>F</kbd><span>Start / Pause Timer</span></li>
         <li><kbd>G</kbd><span>Reset Timer</span></li>
       </ul>
+    </div>
+
+    <div id="help-section-token">
+      <h4>Token Explorer</h4>
+      <ul class="shortcut-list">
+        <li><kbd>Ctrl/⌘ + Enter</kbd><span>Generate a response</span></li>
+      </ul>
+
+      <div class="token-help-note">
+        <strong>Powered by OpenRouter.</strong>
+        Prompts are sent through this site's Cloudflare Worker to <a href="https://openrouter.ai/" target="_blank" rel="noopener">OpenRouter</a>, which routes the request to the selected model provider. The Worker keeps the shared API key out of the browser.
+      </div>
+
+      <div class="token-help-note">
+        <strong>Rate limits and availability.</strong>
+        Free models have tighter provider and OpenRouter limits and may be temporarily busy or unavailable. The explorer retries retryable failures up to three times. If it still fails, wait briefly and try again, shorten the prompt, or use Cached Examples. A rate-limit message does not mean your prompt is invalid.
+      </div>
+
+      <div class="token-help-note">
+        <strong>Temperature comparison.</strong>
+        “Use 0, 1, 2” makes three sequential API requests. It runs more slowly, is more likely to encounter a free-model rate limit, and can cost about three times as much when using a paid model. Successful temperatures remain visible if another request fails.
+      </div>
+
+      <div class="token-help-note">
+        <strong>Privacy and results.</strong>
+        Do not enter confidential, privileged, personal, or client information. Generated text and token probabilities come from the selected live model and can vary between requests. Responses are capped at 60 generated tokens. Cached Examples are fixed teaching samples with illustrative—not live—probability data.
+      </div>
+
+      <div class="token-help-note token-whitespace-help"><strong>Whitespace display.</strong> In alternative-token labels, <code>␠</code> represents a space, <code>⇥</code> a tab, <code>↵</code> a line break, and <code>∅</code> an empty token. These symbols make otherwise invisible model tokens inspectable.</div>
     </div>
 
     <p class="help-credit">Created by Nick Hafen</p>
@@ -770,6 +799,7 @@
       </div>
     </div>
     <div class="header-right">
+      <button class="header-btn help-btn" title="Token Explorer help (?)">?</button>
       <button class="header-btn settings-trigger" title="Appearance settings (S)">⚙</button>
     </div>
   </div>
@@ -792,6 +822,11 @@
           <span id="token-temperature-val" style="font-size:0.85rem;color:var(--muted);min-width:28px;text-align:right;">0.7</span>
         </div>
         <p class="plotter-hint">Higher values make word choice more random.</p>
+        <label class="token-compare-toggle" for="token-compare-temperatures">
+          <input type="checkbox" id="token-compare-temperatures">
+          <span>Use 0, 1, 2</span>
+          <span class="token-info-icon" tabindex="0" role="img" title="Generates 3 responses. Runs slower and may cost about 3× as much on paid models." aria-label="Generate three responses at temperatures 0, 1, and 2. This makes three API requests, so it runs slower and may cost about three times as much on paid models." data-tooltip="Generates one response at each temperature. This makes 3 API requests, so it runs slower and may cost about 3× as much on paid models.">i</span>
+        </label>
       </section>
 
       <section class="plotter-section">
@@ -811,29 +846,71 @@
           <div class="section-title">Prompt</div>
           <textarea id="token-prompt" rows="3" placeholder="Type a prompt, e.g. “The most important thing a new lawyer should know is”"
             style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-size:0.95rem;font-family:var(--font);color:var(--text);background:var(--bg);resize:vertical;outline:none;"></textarea>
-          <div class="btn-row" style="margin-top:12px;">
-            <button class="btn btn-primary" id="token-generate-btn">Generate</button>
-            <span style="font-size:0.78rem;color:var(--muted);">Ctrl+Enter</span>
-            <span id="token-status-text" class="plotter-status-text"></span>
+          <div class="btn-row token-prompt-actions" style="margin-top:12px;">
+            <div class="token-live-actions">
+              <button class="btn btn-primary" id="token-generate-btn">Generate</button>
+              <span style="font-size:0.78rem;color:var(--muted);">Ctrl+Enter</span>
+              <span id="token-status-text" class="plotter-status-text"></span>
+            </div>
+            <div class="token-sample-control">
+              <button class="btn btn-secondary" id="token-use-sample-btn" type="button">Use Sample</button>
+              <select id="token-sample-select" aria-label="Sample prompt">
+                <option value="gettysburg">What is the Gettysburg address?</option>
+                <option value="pride-prejudice">What is Pride and Prejudice about?</option>
+                <option value="black-mirror">Give me 3 ideas for Black Mirror episodes.</option>
+              </select>
+            </div>
           </div>
         </section>
 
         <div id="token-results">
           <section class="section-card" id="token-output-card">
-            <div class="token-output-heading">
-              <div class="section-title">Generated Text</div>
-              <label class="token-render-toggle"><input type="checkbox" id="token-render-toggle"> <span>Render Markdown</span></label>
+            <div class="token-single-response-layout">
+              <div class="token-single-response-main">
+                <div class="token-output-heading">
+                  <div class="section-title">Generated Text</div>
+                  <label class="token-render-toggle"><input type="checkbox" id="token-render-toggle"> <span>Render Markdown</span></label>
+                </div>
+                <p class="plotter-hint" style="margin-bottom:10px;">Hover to explore. Click a token to lock its alternatives; click it again to unlock.</p>
+                <div id="token-output"><span class="plotter-hint">Nothing generated yet — type a prompt and hit Generate.</span></div>
+                <div id="token-output-rendered" class="token-rendered hidden"></div>
+                <div id="token-usage" class="token-usage hidden" aria-live="polite"></div>
+              </div>
+              <div id="token-alts-card" class="token-single-alternatives">
+                <div class="section-title">Alternatives<span id="token-alts-word-wrap"></span></div>
+                <div id="token-alts-list"></div>
+              </div>
             </div>
-            <p class="plotter-hint" style="margin-bottom:10px;">Hover to explore. Click a token to lock its alternatives; click it again to unlock.</p>
-            <div id="token-output"><span class="plotter-hint">Nothing generated yet — type a prompt and hit Generate.</span></div>
-            <div id="token-output-rendered" class="token-rendered hidden"></div>
-          </section>
-
-          <section class="section-card" id="token-alts-card">
-            <div class="section-title">Alternatives<span id="token-alts-word-wrap"></span></div>
-            <div id="token-alts-list"><span class="plotter-hint">Click a word in the generated text to see what the model considered instead.</span></div>
           </section>
         </div>
+
+        <div id="token-comparison-results" class="hidden" aria-live="polite"></div>
+
+        <section class="section-card" id="token-cached-card">
+          <div class="collapsible-header" id="token-cached-toggle-header" role="button" tabindex="0" aria-expanded="false" aria-controls="token-cached-body">
+            <div class="section-title" style="margin:0;border:none;padding:0;">Cached Examples</div>
+            <span class="toggle-icon" id="token-cached-toggle-icon">▼ Show</span>
+          </div>
+          <div class="collapsible-body" id="token-cached-body">
+            <p class="plotter-hint token-cached-intro">Pre-loaded examples for discussion when live generation is unavailable. Responses are fixed; token probabilities and alternatives are illustrative rather than live API results.</p>
+            <div class="token-cached-controls">
+              <label for="token-cached-prompt">Prompt
+                <select id="token-cached-prompt">
+                  <option value="gettysburg">What is the Gettysburg address?</option>
+                  <option value="pride-prejudice">What is Pride and Prejudice about?</option>
+                  <option value="black-mirror">Give me 3 ideas for Black Mirror episodes.</option>
+                </select>
+              </label>
+              <fieldset class="token-temperature-options">
+                <legend>Temperatures</legend>
+                <label><input type="checkbox" name="token-cached-temperature" value="0" checked> 0</label>
+                <label><input type="checkbox" name="token-cached-temperature" value="1" checked> 1</label>
+                <label><input type="checkbox" name="token-cached-temperature" value="2" checked> 2</label>
+              </fieldset>
+            </div>
+            <div id="token-cached-responses" aria-live="polite"></div>
+          </div>
+        </section>
       </div>
     </main>
 

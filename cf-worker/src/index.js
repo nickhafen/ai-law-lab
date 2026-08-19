@@ -17,7 +17,7 @@ function isAllowedOrigin(origin) {
 
 function corsHeaders(origin) {
   const headers = {
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Expose-Headers': 'Retry-After',
   };
@@ -42,6 +42,44 @@ export default {
         status: 403,
         headers: { ...headers, 'Content-Type': 'application/json' },
       });
+    }
+
+    if (request.method === 'GET') {
+      const model = new URL(request.url).searchParams.get('model');
+      if (!MODEL_WHITELIST.includes(model)) {
+        return new Response(JSON.stringify({ error: 'Model not allowed' }), {
+          status: 400,
+          headers: { ...headers, 'Content-Type': 'application/json' },
+        });
+      }
+
+      try {
+        const modelPath = model.split('/').map(encodeURIComponent).join('/');
+        const upstream = await fetch('https://openrouter.ai/api/v1/model/' + modelPath);
+        const data = await upstream.json();
+        if (!upstream.ok) {
+          return new Response(JSON.stringify({ error: data?.error || 'Could not load model pricing' }), {
+            status: upstream.status,
+            headers: { ...headers, 'Content-Type': 'application/json' },
+          });
+        }
+        return new Response(JSON.stringify({
+          model: data?.data?.id || model,
+          pricing: data?.data?.pricing || null,
+        }), {
+          status: 200,
+          headers: {
+            ...headers,
+            'Content-Type': 'application/json',
+            'Cache-Control': 'public, max-age=3600',
+          },
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: 'Could not load model pricing', detail: String(err) }), {
+          status: 502,
+          headers: { ...headers, 'Content-Type': 'application/json' },
+        });
+      }
     }
 
     if (request.method !== 'POST') {

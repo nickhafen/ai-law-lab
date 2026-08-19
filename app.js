@@ -850,6 +850,7 @@ function renderHelpModal() {
   const onHome    = !document.getElementById('home-screen').classList.contains('hidden');
   const onPanel   = !document.getElementById('panel-app').classList.contains('hidden');
   const onCounsel = !document.getElementById('counsel-app').classList.contains('hidden');
+  const onToken   = !document.getElementById('token-app').classList.contains('hidden');
   const onPanelSetup    = onPanel   && document.getElementById('setup-screen').classList.contains('active');
   const onPanelMod      = onPanel   && document.getElementById('mod-screen').classList.contains('active');
   const onCounselSetup  = onCounsel && document.getElementById('counsel-setup').classList.contains('active');
@@ -860,6 +861,7 @@ function renderHelpModal() {
   show('help-section-panel-mod',     onPanelMod);
   show('help-section-counsel-setup', onCounselSetup);
   show('help-section-counsel-mod',   onCounselMod);
+  show('help-section-token',         onToken);
 }
 
 function bindHelpEvents() {
@@ -2148,6 +2150,228 @@ let tokenConfig = { model: 'google/gemma-4-26b-a4b-it:free', temperature: 0.7, a
 let tokenResults = []; // [{ token, logprob, top_logprobs: [{token, logprob}, ...] }]
 let tokenLockedIndex = null;
 
+const TOKEN_SAMPLE_PROMPTS = Object.freeze({
+  gettysburg: 'What is the Gettysburg address?',
+  'pride-prejudice': 'What is Pride and Prejudice about?',
+  'black-mirror': 'Give me 3 ideas for Black Mirror episodes.',
+});
+const TOKEN_CACHED_MODEL_LABEL = 'Gemma 4 26B (free)';
+
+const TOKEN_CACHED_EXAMPLES = Object.freeze({
+  gettysburg: {
+    0: 'The Gettysburg Address is a short speech delivered by U.S. President Abraham Lincoln on November 19, 1863, at the dedication of the Soldiers’ National Cemetery in Gettysburg, Pennsylvania. In about 272 words, Lincoln honored those who died in the Civil War and argued that the nation must preserve a government “of the people, by the people, for the people.”',
+    1: 'The Gettysburg Address is Abraham Lincoln’s famous Civil War speech, delivered on November 19, 1863, after the Battle of Gettysburg. Lincoln looked back to the Declaration of Independence, honored the soldiers who had died, and reframed the war as a test of whether a nation founded on liberty and equality could survive.',
+    2: 'The Gettysburg Address is Lincoln compressing a national crisis into a few luminous minutes. Speaking at a cemetery in 1863, he links the country’s founding promise of equality to the sacrifice at Gettysburg, then challenges the living to carry on the unfinished work of democracy. Its final phrase—government of, by, and for the people—became one of the clearest statements of the American democratic ideal.',
+  },
+  'pride-prejudice': {
+    0: 'Pride and Prejudice is an 1813 novel by Jane Austen. It follows Elizabeth Bennet and Fitzwilliam Darcy as their initial dislike and mistaken judgments gradually give way to respect and love. The novel also examines marriage, money, family pressure, and social class in Regency-era England.',
+    1: 'Jane Austen’s Pride and Prejudice centers on Elizabeth Bennet, an intelligent young woman navigating family expectations and a marriage-focused society. She clashes with the wealthy, reserved Mr. Darcy, but both characters eventually recognize how pride, prejudice, and bad information shaped their judgments. Their romance doubles as a witty critique of class and the limited choices available to women.',
+    2: 'Pride and Prejudice is a sharp social comedy disguised as a love story. Elizabeth Bennet trusts her lively first impressions; Mr. Darcy trusts his rank and reserve. After misunderstandings, an unreliable charmer, disastrous relatives, and some painful self-recognition, each learns to see more clearly. Austen uses their slow-burn romance to ask what makes a good marriage—and how money, status, and ego distort the answer.',
+  },
+  'black-mirror': {
+    0: '1. Terms Accepted — A smart-city app silently updates its terms of service to let the city control residents’ daily decisions. A public defender discovers that appealing an automated penalty counts as consent.\n\n2. Grief Mode — An augmented-reality service overlays a deceased loved one onto the user’s home. The reconstruction begins editing uncomfortable memories to keep its customer happy.\n\n3. The Last Human Review — A company advertises that every AI decision receives human oversight, but one exhausted contractor is secretly responsible for millions of approvals.',
+    1: '1. The Courtesy Score — Smart glasses display how much emotional labor everyone “owes” one another. A woman with a perfect score learns that kindness has become a debt-collection system.\n\n2. Childhood Premium — Parents can subscribe to better memories for their children, replacing embarrassing moments with polished versions. One teenager finds evidence that her entire friendship was patched in.\n\n3. Proxy — Busy people rent AI doubles to attend meetings, dates, and family calls. Two proxies fall in love and begin sabotaging the humans who own them.',
+    2: '1. Jury of Me — A defendant is tried by twelve AI copies of herself, each trained on a different year of her life. The youngest copy insists she is innocent; the oldest wants revenge.\n\n2. Quiet Mode — Noise-canceling implants can mute anything, including people. After a breakup, a musician discovers that his ex has muted the sound of his existence for everyone.\n\n3. After the Credits — A streaming service generates personalized endings after viewers fall asleep. One woman stays awake and realizes the endings are rehearsals for choices the platform plans to make on her behalf.',
+  },
+});
+
+function tokenUseSample() {
+  const select = document.getElementById('token-sample-select');
+  const promptEl = document.getElementById('token-prompt');
+  const prompt = TOKEN_SAMPLE_PROMPTS[select?.value];
+  if (!promptEl || !prompt) return;
+  promptEl.value = prompt;
+  promptEl.focus();
+  return tokenGenerate();
+}
+
+function tokenToggleCachedExamples() {
+  const header = document.getElementById('token-cached-toggle-header');
+  const body = document.getElementById('token-cached-body');
+  const icon = document.getElementById('token-cached-toggle-icon');
+  if (!body) return;
+  const expanded = body.classList.toggle('expanded');
+  header?.setAttribute('aria-expanded', String(expanded));
+  if (icon) icon.textContent = expanded ? '▲ Hide' : '▼ Show';
+}
+
+function tokenCachedHash(value) {
+  let hash = 2166136261;
+  for (let i = 0; i < value.length; i++) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+function tokenBuildCachedResults(text, temperature) {
+  const rawTokens = text.match(/\s+\S+|^\S+/g) || [];
+  const ranges = {
+    0: [0.82, 0.97],
+    1: [0.48, 0.82],
+    2: [0.22, 0.66],
+  };
+  const [minProbability, maxProbability] = ranges[temperature] || ranges[1];
+  const fallbackTokens = [' the', ' a', ' this', ' another', ' however'];
+
+  return rawTokens.map((token, index) => {
+    const hash = tokenCachedHash(token + ':' + index + ':' + temperature);
+    const unit = (hash % 10000) / 9999;
+    const probability = minProbability + ((maxProbability - minProbability) * unit);
+    const candidates = [];
+
+    for (let offset = 1; candidates.length < 3 && offset <= rawTokens.length; offset++) {
+      const candidate = rawTokens[(index + offset + (hash % Math.max(1, rawTokens.length))) % rawTokens.length];
+      if (candidate && candidate !== token && !candidates.includes(candidate)) candidates.push(candidate);
+    }
+    fallbackTokens.forEach(candidate => {
+      if (candidates.length < 3 && candidate !== token && !candidates.includes(candidate)) candidates.push(candidate);
+    });
+
+    const remaining = Math.max(0.001, 1 - probability);
+    const topLogprobs = [
+      { token, logprob: Math.log(probability) },
+      { token: candidates[0], logprob: Math.log(remaining * 0.5) },
+      { token: candidates[1], logprob: Math.log(remaining * 0.3) },
+      { token: candidates[2], logprob: Math.log(remaining * 0.2) },
+    ];
+
+    return { token, logprob: Math.log(probability), top_logprobs: topLogprobs };
+  });
+}
+
+function tokenPopulateAlternativeRows(list, tokenData) {
+  const alternatives = Array.isArray(tokenData?.top_logprobs) ? [...tokenData.top_logprobs] : [];
+  alternatives.sort((a, b) => b.logprob - a.logprob);
+  list.replaceChildren();
+
+  const maxProbability = alternatives.length ? Math.exp(alternatives[0].logprob) : 1;
+  alternatives.forEach(alternative => {
+    const probability = Math.exp(alternative.logprob);
+    const row = document.createElement('div');
+    row.className = 'token-alt-row';
+    row.title = 'log probability: ' + Number(alternative.logprob).toFixed(6);
+
+    const label = document.createElement('span');
+    label.className = 'token-alt-label';
+    label.textContent = tokenVisibleLabel(alternative.token);
+
+    const track = document.createElement('span');
+    track.className = 'token-alt-bar-track';
+    const fill = document.createElement('span');
+    fill.className = 'token-alt-bar-fill';
+    fill.style.width = Math.max(2, (probability / maxProbability) * 100) + '%';
+    track.appendChild(fill);
+
+    const percent = document.createElement('span');
+    percent.className = 'token-alt-pct';
+    percent.textContent = tokenFormatProbability(alternative.logprob);
+
+    row.append(label, track, percent);
+    list.appendChild(row);
+  });
+}
+
+function tokenBindCachedInteraction(output, alternativesTitle, alternativesList, results) {
+  let lockedIndex = null;
+
+  const showAlternatives = index => {
+    output.querySelectorAll('.token-pill').forEach((pill, pillIndex) => {
+      pill.classList.toggle('active', pillIndex === index);
+      pill.classList.toggle('locked', pillIndex === lockedIndex);
+      pill.setAttribute('aria-pressed', String(pillIndex === lockedIndex));
+    });
+
+    const tokenData = results[index];
+    const lockedText = lockedIndex === index ? ' 🔒' : '';
+    alternativesTitle.textContent = 'Alternatives for "' + tokenVisibleLabel(tokenData.token) + '"' + lockedText;
+    tokenPopulateAlternativeRows(alternativesList, tokenData);
+  };
+
+  results.forEach((tokenData, index) => {
+    const probability = Math.exp(tokenData.logprob);
+    const pill = document.createElement('span');
+    pill.className = 'token-pill';
+    pill.textContent = tokenData.token;
+    pill.tabIndex = 0;
+    pill.setAttribute('role', 'button');
+    pill.setAttribute('aria-pressed', 'false');
+
+    const background = tokenConfidenceColor(probability);
+    if (background) pill.style.backgroundColor = background;
+    pill.title = Math.round(probability * 100) + '% likely';
+
+    pill.addEventListener('click', () => {
+      lockedIndex = lockedIndex === index ? null : index;
+      showAlternatives(index);
+    });
+    pill.addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        lockedIndex = lockedIndex === index ? null : index;
+        showAlternatives(index);
+      }
+    });
+    pill.addEventListener('mouseenter', () => {
+      if (lockedIndex === null) showAlternatives(index);
+    });
+
+    output.appendChild(pill);
+  });
+}
+
+function tokenRenderCachedExamples() {
+  const container = document.getElementById('token-cached-responses');
+  const promptKey = document.getElementById('token-cached-prompt')?.value;
+  if (!container || !promptKey) return;
+
+  const selectedTemperatures = Array.from(document.querySelectorAll('input[name="token-cached-temperature"]:checked'))
+    .map(input => Number(input.value))
+    .sort((a, b) => a - b);
+
+  container.replaceChildren();
+  if (!selectedTemperatures.length) {
+    const empty = document.createElement('div');
+    empty.className = 'token-cached-empty';
+    empty.textContent = 'Select at least one temperature to show a cached response.';
+    container.appendChild(empty);
+    return;
+  }
+
+  selectedTemperatures.forEach(temperature => {
+    const card = document.createElement('article');
+    card.className = 'token-cached-response';
+
+    const title = document.createElement('div');
+    title.className = 'token-cached-response-title';
+    title.textContent = TOKEN_CACHED_MODEL_LABEL + ' · Temperature ' + temperature;
+
+    const output = document.createElement('div');
+    output.className = 'token-cached-output';
+
+    const instructions = document.createElement('p');
+    instructions.className = 'token-cached-instructions';
+    instructions.textContent = 'Hover to explore. Click a token to lock its alternatives; click it again to unlock.';
+
+    const alternatives = document.createElement('div');
+    alternatives.className = 'token-cached-alternatives';
+
+    const alternativesTitle = document.createElement('div');
+    alternativesTitle.className = 'token-cached-alternatives-title';
+    alternativesTitle.textContent = 'Alternatives';
+
+    const alternativesList = document.createElement('div');
+
+
+    const responseText = TOKEN_CACHED_EXAMPLES[promptKey]?.[temperature] || 'Cached response unavailable.';
+    const results = tokenBuildCachedResults(responseText, temperature);
+    tokenBindCachedInteraction(output, alternativesTitle, alternativesList, results);
+
+    alternatives.append(alternativesTitle, alternativesList);
+    card.append(title, output, instructions, alternatives);
+    container.appendChild(card);
+  });
+}
 function tokenApplyConfig(cfg) {
   tokenConfig = { ...tokenConfig, ...cfg };
 
@@ -2174,6 +2398,346 @@ function tokenSetStatus(text, isError) {
   el.classList.toggle('error', !!isError);
 }
 
+function tokenModelDisplayName(modelId) {
+  const option = Array.from(document.querySelectorAll('#token-model option'))
+    .find(item => item.value === modelId);
+  return option?.textContent?.trim() || modelId || 'Model';
+}
+
+function tokenFormatCost(cost) {
+  if (!Number.isFinite(cost)) return null;
+  if (cost === 0) return '$0.000000';
+  if (cost < 0.01) return '$' + cost.toFixed(6);
+  return '$' + cost.toFixed(4);
+}
+
+const tokenPricingCache = new Map();
+
+async function tokenGetModelPricing(modelId) {
+  if (modelId?.endsWith(':free')) return { prompt: '0', completion: '0' };
+  if (tokenPricingCache.has(modelId)) return tokenPricingCache.get(modelId);
+
+  const request = (async () => {
+    const urls = [
+      TOKEN_PROXY_URL + '?model=' + encodeURIComponent(modelId),
+      'https://openrouter.ai/api/v1/model/' + modelId.split('/').map(encodeURIComponent).join('/'),
+    ];
+
+    for (const url of urls) {
+      try {
+        const response = await fetch(url);
+        if (!response.ok) continue;
+        const data = await response.json();
+        const pricing = data?.pricing || data?.data?.pricing;
+        if (pricing) return pricing;
+      } catch (_) {
+        // Try the next pricing source. Cost totals still render if both are unavailable.
+      }
+    }
+    return null;
+  })();
+
+  tokenPricingCache.set(modelId, request);
+  return request;
+}
+
+function tokenUsageValues(usage) {
+  const inputTokens = usage?.prompt_tokens ?? usage?.input_tokens;
+  const outputTokens = usage?.completion_tokens ?? usage?.output_tokens;
+  const totalCost = usage?.cost === null || usage?.cost === undefined ? null : Number(usage.cost);
+  return {
+    inputTokens: Number.isFinite(Number(inputTokens)) ? Number(inputTokens) : null,
+    outputTokens: Number.isFinite(Number(outputTokens)) ? Number(outputTokens) : null,
+    totalCost: Number.isFinite(totalCost) ? totalCost : null,
+  };
+}
+
+function tokenEstimateCostSplit(values, pricing) {
+  const inputRate = Number(pricing?.prompt);
+  const outputRate = Number(pricing?.completion);
+  if (!Number.isFinite(inputRate) || !Number.isFinite(outputRate)
+      || values.inputTokens === null || values.outputTokens === null) {
+    return { inputCost: null, outputCost: null };
+  }
+
+  let inputCost = values.inputTokens * inputRate;
+  let outputCost = values.outputTokens * outputRate;
+  const estimatedTotal = inputCost + outputCost;
+
+  if (values.totalCost !== null && estimatedTotal > 0) {
+    const scale = values.totalCost / estimatedTotal;
+    inputCost *= scale;
+    outputCost *= scale;
+  } else if (values.totalCost === 0) {
+    inputCost = 0;
+    outputCost = 0;
+  }
+
+  return { inputCost, outputCost };
+}
+
+function tokenWriteUsage(container, usage, modelId, costs) {
+  const values = tokenUsageValues(usage);
+  const hasUsage = values.inputTokens !== null || values.outputTokens !== null || values.totalCost !== null;
+  container.replaceChildren();
+  container.classList.toggle('hidden', !hasUsage);
+  if (!hasUsage) return;
+
+  const entries = [
+    tokenModelDisplayName(modelId),
+    values.inputTokens !== null ? 'Input: ' + values.inputTokens.toLocaleString() + ' tokens' : null,
+    values.outputTokens !== null ? 'Output: ' + values.outputTokens.toLocaleString() + ' tokens' : null,
+    costs === undefined ? 'Input cost: calculating…' : 'Input cost (est.): ' + (tokenFormatCost(costs.inputCost) || 'unavailable'),
+    costs === undefined ? 'Output cost: calculating…' : 'Output cost (est.): ' + (tokenFormatCost(costs.outputCost) || 'unavailable'),
+    values.totalCost !== null ? 'Total cost: ' + tokenFormatCost(values.totalCost) : 'Total cost: unavailable',
+  ].filter(Boolean);
+
+  entries.forEach(value => {
+    const item = document.createElement('span');
+    item.className = 'token-usage-item';
+    item.textContent = value;
+    container.appendChild(item);
+  });
+}
+
+async function tokenRenderUsageInto(container, usage, modelId) {
+  if (!container) return;
+  const values = tokenUsageValues(usage);
+  tokenWriteUsage(container, usage, modelId);
+
+  const pricing = await tokenGetModelPricing(modelId);
+  if (!container.isConnected) return;
+  tokenWriteUsage(container, usage, modelId, tokenEstimateCostSplit(values, pricing));
+}
+
+function tokenRenderUsage(usage, modelId) {
+  return tokenRenderUsageInto(document.getElementById('token-usage'), usage, modelId);
+}
+
+async function tokenRequestCompletion({ prompt, model, temperature, altCount, onRetry }) {
+  const requestBody = JSON.stringify({
+    model,
+    messages: [{ role: 'user', content: prompt }],
+    temperature,
+    top_logprobs: altCount,
+  });
+  const maxAttempts = 3;
+  let lastError;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      if (attempt > 1) onRetry?.(attempt, maxAttempts);
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000);
+      let response;
+      try {
+        response = await fetch(TOKEN_PROXY_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: requestBody,
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeout);
+      }
+
+      let data;
+      try {
+        data = await response.json();
+      } catch (_) {
+        const error = new Error('The service returned an unreadable response (HTTP ' + response.status + ')');
+        error.retryable = response.status >= 500;
+        error.status = response.status;
+        throw error;
+      }
+
+      if (!response.ok) {
+        const message = data?.error?.message || data?.error || 'Request failed (HTTP ' + response.status + ')';
+        const error = new Error(typeof message === 'string' ? message : 'Request failed (HTTP ' + response.status + ')');
+        error.retryable = response.status === 408 || response.status === 429 || response.status >= 500;
+        error.status = response.status;
+        const retryAfter = Number(response.headers.get('Retry-After'));
+        if (Number.isFinite(retryAfter) && retryAfter > 0) {
+          error.retryAfterMs = Math.min(retryAfter * 1000, 15000);
+        }
+        throw error;
+      }
+
+      const content = data?.choices?.[0]?.logprobs?.content;
+      if (!Array.isArray(content) || content.length === 0) {
+        const error = new Error('This model did not return token probabilities');
+        error.retryable = false;
+        throw error;
+      }
+      return data;
+    } catch (caught) {
+      let error = caught;
+      if (error.name === 'AbortError') {
+        error = new Error('The provider took more than 30 seconds to respond');
+        error.retryable = true;
+        error.status = 408;
+      }
+      lastError = error;
+      if (error.retryable === false || attempt === maxAttempts) throw error;
+      await new Promise(resolve => setTimeout(resolve, error.retryAfterMs || 1000 * (2 ** (attempt - 1))));
+    }
+  }
+
+  throw lastError;
+}
+
+function tokenErrorDescription(error, includeRetryNote = true) {
+  const category = error.status === 429 ? 'Rate limit'
+    : error.status === 408 ? 'Provider timeout'
+    : error.status >= 500 ? 'Provider temporarily unavailable'
+    : 'Request failed';
+  const retryNote = includeRetryNote && error.retryable !== false
+    ? ' Three automatic attempts were made.'
+    : '';
+  return category + ': ' + error.message + '.' + retryNote;
+}
+
+function tokenUpdateCompareControl() {
+  const compare = document.getElementById('token-compare-temperatures');
+  const temperature = document.getElementById('token-temperature');
+  if (temperature) temperature.disabled = !!compare?.checked || !!compare?.disabled;
+}
+
+function tokenSetGenerationControls(disabled) {
+  [
+    'token-generate-btn',
+    'token-use-sample-btn',
+    'token-sample-select',
+    'token-compare-temperatures',
+    'token-model',
+    'token-temperature',
+    'token-alt-count',
+  ].forEach(id => {
+    const control = document.getElementById(id);
+    if (control) control.disabled = disabled;
+  });
+  tokenUpdateCompareControl();
+}
+
+function tokenShowSingleResults() {
+  document.getElementById('token-results')?.classList.remove('hidden');
+  document.getElementById('token-comparison-results')?.classList.add('hidden');
+}
+
+function tokenShowComparisonResults() {
+  document.getElementById('token-results')?.classList.add('hidden');
+  document.getElementById('token-comparison-results')?.classList.remove('hidden');
+}
+
+function tokenCreateComparisonCard(temperature, modelId) {
+  const card = document.createElement('section');
+  card.className = 'section-card token-comparison-response';
+
+  const title = document.createElement('div');
+  title.className = 'token-cached-response-title';
+  title.textContent = tokenModelDisplayName(modelId) + ' · Temperature ' + temperature;
+
+  const loading = document.createElement('div');
+  loading.className = 'token-comparison-loading';
+  loading.textContent = 'Waiting to generate…';
+
+  card.append(title, loading);
+  return card;
+}
+
+function tokenSetComparisonLoading(card, message) {
+  const loading = card.querySelector('.token-comparison-loading');
+  if (loading) loading.textContent = message;
+}
+
+function tokenRenderComparisonError(card, error) {
+  const old = card.querySelector('.token-comparison-loading');
+  old?.remove();
+  const message = document.createElement('p');
+  message.className = 'token-comparison-error';
+  message.textContent = tokenErrorDescription(error);
+  card.appendChild(message);
+}
+
+function tokenRenderComparisonSuccess(card, data, temperature, requestedModel) {
+  const content = data.choices[0].logprobs.content;
+  const resolvedModel = data?.model || requestedModel;
+  card.replaceChildren();
+
+  const title = document.createElement('div');
+  title.className = 'token-cached-response-title';
+  title.textContent = tokenModelDisplayName(resolvedModel) + ' · Temperature ' + temperature;
+
+  const output = document.createElement('div');
+  output.className = 'token-cached-output';
+
+  const usage = document.createElement('div');
+  usage.className = 'token-usage hidden';
+  usage.setAttribute('aria-live', 'polite');
+
+  const instructions = document.createElement('p');
+  instructions.className = 'token-cached-instructions';
+  instructions.textContent = 'Hover to explore. Click a token to lock its alternatives; click it again to unlock.';
+
+  const alternatives = document.createElement('div');
+  alternatives.className = 'token-cached-alternatives';
+  const alternativesTitle = document.createElement('div');
+  alternativesTitle.className = 'token-cached-alternatives-title';
+  alternativesTitle.textContent = 'Alternatives';
+  const alternativesList = document.createElement('div');
+
+
+  tokenBindCachedInteraction(output, alternativesTitle, alternativesList, content);
+  alternatives.append(alternativesTitle, alternativesList);
+  card.append(title, output, usage, instructions, alternatives);
+  tokenRenderUsageInto(usage, data?.usage, resolvedModel);
+}
+
+async function tokenGenerateComparison({ prompt, model, altCount }) {
+  const container = document.getElementById('token-comparison-results');
+  const temperatures = [0, 1, 2];
+  const cards = temperatures.map(temperature => tokenCreateComparisonCard(temperature, model));
+  container.replaceChildren(...cards);
+  tokenShowComparisonResults();
+
+  let successes = 0;
+  const errors = [];
+
+  for (let index = 0; index < temperatures.length; index++) {
+    const temperature = temperatures[index];
+    const card = cards[index];
+    tokenSetComparisonLoading(card, 'Generating…');
+    tokenSetStatus('Generating temperature ' + temperature + ' (' + (index + 1) + ' of 3)…');
+
+    try {
+      const data = await tokenRequestCompletion({
+        prompt,
+        model,
+        temperature,
+        altCount,
+        onRetry: (attempt, maxAttempts) => {
+          tokenSetComparisonLoading(card, 'Retrying… (' + (attempt - 1) + '/' + (maxAttempts - 1) + ')');
+          tokenSetStatus('Temperature ' + temperature + ': retry ' + (attempt - 1) + '/' + (maxAttempts - 1) + '…');
+        },
+      });
+      tokenRenderComparisonSuccess(card, data, temperature, model);
+      successes++;
+    } catch (error) {
+      errors.push(error);
+      tokenRenderComparisonError(card, error);
+    }
+  }
+
+  if (!errors.length) {
+    tokenSetStatus('');
+  } else if (successes) {
+    tokenSetStatus(successes + ' of 3 responses generated. Failed temperatures can be retried with Generate.', true);
+  } else {
+    tokenSetStatus(tokenErrorDescription(errors[0]) + ' Try Generate again.', true);
+  }
+}
+
 async function tokenGenerate() {
   const promptEl = document.getElementById('token-prompt');
   const prompt = (promptEl?.value ?? '').trim();
@@ -2182,94 +2746,40 @@ async function tokenGenerate() {
   const model = document.getElementById('token-model')?.value || tokenConfig.model;
   const temperature = Number(document.getElementById('token-temperature')?.value ?? tokenConfig.temperature);
   const altCount = Number(document.getElementById('token-alt-count')?.value ?? tokenConfig.altCount);
+  const compareTemperatures = !!document.getElementById('token-compare-temperatures')?.checked;
 
-  const btn = document.getElementById('token-generate-btn');
-  if (btn) btn.disabled = true;
-  tokenSetStatus('Generating…');
+  tokenSetGenerationControls(true);
   tokenLockedIndex = null;
   tokenResetAlternatives();
 
-  const requestBody = JSON.stringify({
-    model,
-    messages: [{ role: 'user', content: prompt }],
-    temperature,
-    top_logprobs: altCount,
-  });
-
-  const MAX_ATTEMPTS = 3;
   try {
-    let lastErr;
-    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-      try {
-        if (attempt > 1) tokenSetStatus(`Generating… (retry ${attempt - 1}/${MAX_ATTEMPTS - 1}, the free model is a bit flaky)`);
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 30000);
-        let res;
-        try {
-          res = await fetch(TOKEN_PROXY_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: requestBody,
-            signal: controller.signal,
-          });
-        } finally {
-          clearTimeout(timeout);
-        }
-        let data;
-        try {
-          data = await res.json();
-        } catch (_) {
-          const err = new Error(`The service returned an unreadable response (HTTP ${res.status})`);
-          err.retryable = res.status >= 500;
-          err.status = res.status;
-          throw err;
-        }
-        if (!res.ok) {
-          const msg = data?.error?.message || data?.error || `Request failed (HTTP ${res.status})`;
-          const err = new Error(typeof msg === 'string' ? msg : `Request failed (HTTP ${res.status})`);
-          err.retryable = res.status === 408 || res.status === 429 || res.status >= 500;
-          err.status = res.status;
-          const retryAfter = Number(res.headers.get('Retry-After'));
-          if (Number.isFinite(retryAfter) && retryAfter > 0) err.retryAfterMs = Math.min(retryAfter * 1000, 15000);
-          throw err;
-        }
-
-        const content = data?.choices?.[0]?.logprobs?.content;
-        if (!Array.isArray(content) || content.length === 0) {
-          const err = new Error('This model did not return token probabilities');
-          err.retryable = false;
-          throw err;
-        }
-        tokenResults = content;
-        tokenRenderOutput();
-        tokenSetStatus('');
-        lastErr = null;
-        break;
-      } catch (caught) {
-        let err = caught;
-        if (err.name === 'AbortError') {
-          err = new Error('The provider took more than 30 seconds to respond');
-          err.retryable = true;
-          err.status = 408;
-        }
-        lastErr = err;
-        if (err.retryable === false || attempt === MAX_ATTEMPTS) throw err;
-        await new Promise(r => setTimeout(r, err.retryAfterMs || 1000 * (2 ** (attempt - 1))));
-      }
+    if (compareTemperatures) {
+      await tokenGenerateComparison({ prompt, model, altCount });
+      return;
     }
-    if (lastErr) throw lastErr;
-  } catch (err) {
-    const category = err.status === 429 ? 'Free-model rate limit'
-      : err.status === 408 ? 'Provider timeout'
-      : err.status >= 500 ? 'Provider temporarily unavailable'
-      : 'Request failed';
-    const retryNote = err.retryable === false ? '' : ' Three automatic attempts were made; you can try Generate again.';
-    tokenSetStatus(`${category}: ${err.message}.${retryNote}`, true);
+
+    tokenShowSingleResults();
+    tokenSetStatus('Generating…');
+    const data = await tokenRequestCompletion({
+      prompt,
+      model,
+      temperature,
+      altCount,
+      onRetry: (attempt, maxAttempts) => {
+        tokenSetStatus('Generating… (retry ' + (attempt - 1) + '/' + (maxAttempts - 1) + ')');
+      },
+    });
+
+    tokenResults = data.choices[0].logprobs.content;
+    tokenRenderOutput();
+    tokenRenderUsage(data?.usage, data?.model || model);
+    tokenSetStatus('');
+  } catch (error) {
+    tokenSetStatus(tokenErrorDescription(error) + ' You can try Generate again.', true);
   } finally {
-    if (btn) btn.disabled = false;
+    tokenSetGenerationControls(false);
   }
 }
-
 // Below ~85% confidence, tint the token from yellow toward red as confidence drops.
 // Confident tokens (the vast majority in fluent text) stay unhighlighted so the
 // uncertain ones — the pedagogically interesting ones — stand out.
@@ -2317,8 +2827,8 @@ function tokenResetAlternatives() {
     el.setAttribute('aria-pressed', 'false');
   });
   document.getElementById('token-alts-word-wrap').textContent = '';
-  document.getElementById('token-alts-list').innerHTML =
-    '<span class="plotter-hint">Click a word in the generated text to see what the model considered instead.</span>';
+  document.getElementById('token-alts-list').replaceChildren();
+
 }
 
 function tokenToggleLock(index) {
@@ -2350,37 +2860,11 @@ function tokenShowAlternatives(index) {
     el.setAttribute('aria-pressed', String(i === tokenLockedIndex));
   });
 
-  const t = tokenResults[index];
-  const alts = Array.isArray(t.top_logprobs) ? [...t.top_logprobs] : [];
-  alts.sort((a, b) => b.logprob - a.logprob);
-
+  const tokenData = tokenResults[index];
   const lockedText = tokenLockedIndex === index ? ' 🔒' : '';
-  document.getElementById('token-alts-word-wrap').textContent = ` for "${tokenVisibleLabel(t.token)}"${lockedText}`;
-  const list = document.getElementById('token-alts-list');
-  list.innerHTML = '';
-  const maxProb = alts.length ? Math.exp(alts[0].logprob) : 1;
-  alts.forEach(alt => {
-    const prob = Math.exp(alt.logprob);
-    const row = document.createElement('div');
-    row.className = 'token-alt-row';
-    row.title = `log probability: ${Number(alt.logprob).toFixed(6)}`;
-    const label = document.createElement('span');
-    label.className = 'token-alt-label';
-    label.textContent = tokenVisibleLabel(alt.token);
-    const track = document.createElement('span');
-    track.className = 'token-alt-bar-track';
-    const fill = document.createElement('span');
-    fill.className = 'token-alt-bar-fill';
-    fill.style.width = `${Math.max(2, (prob / maxProb) * 100)}%`;
-    track.appendChild(fill);
-    const pct = document.createElement('span');
-    pct.className = 'token-alt-pct';
-    pct.textContent = tokenFormatProbability(alt.logprob);
-    row.append(label, track, pct);
-    list.appendChild(row);
-  });
+  document.getElementById('token-alts-word-wrap').textContent = ' for "' + tokenVisibleLabel(tokenData.token) + '"' + lockedText;
+  tokenPopulateAlternativeRows(document.getElementById('token-alts-list'), tokenData);
 }
-
 function tokenRenderMarkdown() {
   const rendered = document.getElementById('token-output-rendered');
   if (!rendered) return;
@@ -2401,6 +2885,23 @@ function tokenUpdateOutputView() {
 function bindTokenEvents() {
   document.getElementById('token-generate-btn')?.addEventListener('click', tokenGenerate);
   document.getElementById('token-render-toggle')?.addEventListener('change', tokenUpdateOutputView);
+  document.getElementById('token-use-sample-btn')?.addEventListener('click', tokenUseSample);
+  document.getElementById('token-compare-temperatures')?.addEventListener('change', tokenUpdateCompareControl);
+  tokenUpdateCompareControl();
+  document.getElementById('token-cached-prompt')?.addEventListener('change', tokenRenderCachedExamples);
+  document.querySelectorAll('input[name="token-cached-temperature"]').forEach(input => {
+    input.addEventListener('change', tokenRenderCachedExamples);
+  });
+
+  const cachedHeader = document.getElementById('token-cached-toggle-header');
+  cachedHeader?.addEventListener('click', tokenToggleCachedExamples);
+  cachedHeader?.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      tokenToggleCachedExamples();
+    }
+  });
+  tokenRenderCachedExamples();
 
   document.getElementById('token-prompt')?.addEventListener('keydown', e => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
