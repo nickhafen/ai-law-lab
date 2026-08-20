@@ -1626,9 +1626,69 @@ let plotterCamera      = null;
 let plotterUiRevision  = 'init';
 let _plotterListener   = null;
 let plotterConfig      = { words: [], axisX: 'Female', axisY: 'Alive', axisZ: 'Royal' };
+let plotterDemoMode    = false;   // showing simulated data instead of live submissions
+let plotterLiveCount   = 0;       // raw submission count from Firebase
+let _plotterDemoPoints = null;    // generated once, then cached
+
+// ── Sample data ───────────────────────────────────
+// Lets the plotter work as a standalone visual when nobody is submitting.
+// Each word is a simulated class: a centroid plus per-axis spread, so words a
+// class would argue about (Crown's gender, Doctor's gender, Ghost's aliveness,
+// Wedding generally) scatter while King/Queen stay tight.
+const PLOTTER_DEMO_AXES  = { axisX: 'Female', axisY: 'Alive', axisZ: 'Royal' };
+const PLOTTER_DEMO_WORDS = [
+  //  word          centroid [x,y,z]        spread [x,y,z]        n
+  { word: 'King',     c: [0.05, 0.75, 0.95], s: [0.06, 0.18, 0.06], n: 11 },
+  { word: 'Queen',    c: [0.95, 0.75, 0.95], s: [0.06, 0.18, 0.06], n: 11 },
+  { word: 'Prince',   c: [0.08, 0.85, 0.90], s: [0.07, 0.12, 0.08], n:  8 },
+  { word: 'Princess', c: [0.93, 0.85, 0.90], s: [0.07, 0.12, 0.08], n:  8 },
+  { word: 'Crown',    c: [0.50, 0.05, 0.97], s: [0.20, 0.07, 0.04], n:  9 },
+  { word: 'Wedding',  c: [0.65, 0.35, 0.35], s: [0.18, 0.25, 0.22], n:  9 },
+  { word: 'Frog',     c: [0.45, 0.90, 0.10], s: [0.15, 0.10, 0.12], n:  8 },
+  { word: 'Doctor',   c: [0.35, 0.95, 0.10], s: [0.22, 0.06, 0.09], n: 10 },
+  { word: 'Nurse',    c: [0.80, 0.95, 0.08], s: [0.16, 0.06, 0.07], n: 10 },
+  { word: 'Ghost',    c: [0.45, 0.15, 0.15], s: [0.12, 0.22, 0.13], n:  9 },
+  { word: 'Angel',    c: [0.60, 0.55, 0.30], s: [0.18, 0.28, 0.20], n:  9 },
+];
+
+// Far enough back that the cube and its axis titles both fit the viewport.
+const PLOTTER_FITTED_CAMERA = { eye: { x: 1.6, y: 1.6, z: 1.2 } };
 
 // ── Helpers ──────────────────────────────────────
 function plotterSnap(v) { return Math.round(v * 10) / 10; }
+
+// Seeded PRNG (mulberry32) so the sample cloud looks identical every session.
+function plotterDemoRng(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6D2B79F5) >>> 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Simulated submissions: jittered around each centroid, then snapped to the
+// same 0.1 slider steps a real student is limited to.
+function plotterDemoPoints() {
+  if (_plotterDemoPoints) return _plotterDemoPoints;
+  const rand  = plotterDemoRng(20250820);
+  const gauss = () => (rand() + rand() + rand() + rand() - 2) / 0.5774;
+  const jitter = (c, s) => Math.min(1, Math.max(0, plotterSnap(c + gauss() * s)));
+  const pts = [];
+  for (const w of PLOTTER_DEMO_WORDS) {
+    for (let i = 0; i < w.n; i++) {
+      pts.push({
+        name: w.word,
+        x: jitter(w.c[0], w.s[0]),
+        y: jitter(w.c[1], w.s[1]),
+        z: jitter(w.c[2], w.s[2]),
+      });
+    }
+  }
+  _plotterDemoPoints = pts;
+  return pts;
+}
 
 function plotterSetLive(connected) {
   const dot   = document.getElementById('plotter-live-dot');
@@ -1656,9 +1716,10 @@ function plotterStartListener() {
       !isNaN(p.x) && !isNaN(p.y) && !isNaN(p.z) &&
       p.x >= 0 && p.x <= 1 && p.y >= 0 && p.y <= 1 && p.z >= 0 && p.z <= 1
     );
-    plotterData = points;
-    plotterSetStats(`Submissions : ${Object.keys(raw).length}\nValid points : ${points.length}`);
-    plotterSetStatus('ok', points.length === 0 ? 'No submissions yet.' : `Showing ${points.length} point${points.length !== 1 ? 's' : ''}.`);
+    plotterData      = points;
+    plotterLiveCount = Object.keys(raw).length;
+    if (plotterDemoMode) { plotterShowDemoStatus(); return; }  // keep the sample view on screen
+    plotterShowLiveStatus();
     plotterRender(points);
   }, err => {
     plotterSetLive(false);
@@ -1696,26 +1757,33 @@ function plotterThemeColors() {
 }
 
 function plotterAxisSettings() {
+  // Sample data only makes sense on its own axes, so it overrides the live config.
+  const src = plotterDemoMode ? PLOTTER_DEMO_AXES : plotterConfig;
   return {
     xOn:    document.getElementById('plotter-axis-x')?.checked ?? true,
     yOn:    document.getElementById('plotter-axis-y')?.checked ?? false,
     zOn:    document.getElementById('plotter-axis-z')?.checked ?? false,
-    xLabel: plotterConfig.axisX || 'X',
-    yLabel: plotterConfig.axisY || 'Y',
-    zLabel: plotterConfig.axisZ || 'Z',
+    xLabel: src.axisX || 'X',
+    yLabel: src.axisY || 'Y',
+    zLabel: src.axisZ || 'Z',
   };
+}
+
+// Side-panel read-only axis labels
+function plotterUpdateAxisLabels() {
+  const src = plotterDemoMode ? PLOTTER_DEMO_AXES : plotterConfig;
+  const lx = document.getElementById('plotter-label-x');
+  const ly = document.getElementById('plotter-label-y');
+  const lz = document.getElementById('plotter-label-z');
+  if (lx) lx.textContent = src.axisX;
+  if (ly) ly.textContent = src.axisY;
+  if (lz) lz.textContent = src.axisZ;
 }
 
 // Apply config to the panel label spans and the settings inputs
 function plotterApplyConfig(cfg) {
   plotterConfig = { ...plotterConfig, ...cfg };
-  // Side-panel read-only labels
-  const lx = document.getElementById('plotter-label-x');
-  const ly = document.getElementById('plotter-label-y');
-  const lz = document.getElementById('plotter-label-z');
-  if (lx) lx.textContent = plotterConfig.axisX;
-  if (ly) ly.textContent = plotterConfig.axisY;
-  if (lz) lz.textContent = plotterConfig.axisZ;
+  plotterUpdateAxisLabels();
   // Settings inputs (keep in sync so instructor sees current values on open)
   const sx = document.getElementById('settings-plotter-label-x');
   const sy = document.getElementById('settings-plotter-label-y');
@@ -1785,14 +1853,28 @@ function plotterBuildLayout(camera) {
     zaxis: axis(ax.zLabel, ax.zOn),
     bgcolor: col.axisPane, aspectmode: 'cube',
   };
-  if (camera) scene.camera = camera;
+  // Plotly's default eye (1.25 each) fills the whole viewport with zero margins,
+  // which pushes the axis titles off-screen. Pull back so they always fit.
+  // uirevision keeps whatever the instructor has rotated to, so handing Plotly
+  // the fitted camera on every render only sets the starting and reset view.
+  scene.camera = camera || PLOTTER_FITTED_CAMERA;
   return {
     scene,
     paper_bgcolor: col.paper, plot_bgcolor: col.plot,
     font: { color: col.font, family: 'Segoe UI, system-ui, sans-serif' },
     margin: { l: 0, r: 0, t: 0, b: 0 },
     showlegend: true,
-    legend: { font: { color: col.fontBright, size: 11 }, bgcolor: col.axisPane, bordercolor: col.grid, borderwidth: 1 },
+    // Legend top-left, modebar stacked vertically top-right — otherwise the two
+    // collide in the same corner and the plot controls sit on top of the words.
+    legend: {
+      x: 0.01, xanchor: 'left', y: 0.99, yanchor: 'top',
+      font: { color: col.fontBright, size: 11 },
+      bgcolor: col.axisPane, bordercolor: col.grid, borderwidth: 1,
+    },
+    modebar: {
+      orientation: 'v',
+      bgcolor: 'rgba(0,0,0,0)', color: col.font, activecolor: col.fontBright,
+    },
     uirevision: plotterUiRevision,
     hoverlabel: { bgcolor: col.axisPane, bordercolor: col.grid, font: { color: col.fontBright, size: 12 } },
   };
@@ -1801,8 +1883,27 @@ function plotterBuildLayout(camera) {
 function plotterRender(points) {
   const plotEl = document.getElementById('plotter-plot');
   if (!plotEl) return;
+
+  // Plotly 2.35 never re-enables a 3D axis title once that axis has been drawn
+  // with visible:false — ticks and grid come back, the title stays gone. Since
+  // the plotter starts with Y and Z off, "Alive" and "Royal" would never appear.
+  // Rebuilding the plot whenever the visible-axis set changes is the only fix
+  // through the public API; the tracked camera is passed back in, so the
+  // instructor's viewing angle survives the rebuild.
+  const ax       = plotterAxisSettings();
+  const axisKey  = `${ax.xOn}|${ax.yOn}|${ax.zOn}`;
+  const rebuild  = !!plotEl._plotterAxisKey && plotEl._plotterAxisKey !== axisKey;
+  if (rebuild) {
+    Plotly.purge(plotEl);
+    plotEl._plotterCamAttached = false;
+  }
+  plotEl._plotterAxisKey = axisKey;
+
+  // Plotly's own "reset to default" jumps to an eye of 1.25, the zoomed-in view
+  // that clips the axis titles — the panel's Reset view button replaces it.
   Plotly.react(plotEl, plotterBuildTraces(points), plotterBuildLayout(plotterCamera),
-    { responsive: true, displaylogo: false, modeBarButtonsToRemove: ['toImage'] });
+    { responsive: true, displaylogo: false,
+      modeBarButtonsToRemove: ['toImage', 'resetCameraDefault3d', 'resetCameraLastSave3d'] });
   if (!plotEl._plotterCamAttached) {
     plotEl.on('plotly_relayout', event => {
       const cam = event['scene.camera'];
@@ -1810,6 +1911,15 @@ function plotterRender(points) {
     });
     plotEl._plotterCamAttached = true;
   }
+}
+
+// Back to the framing where the whole cube and all three axis titles are visible.
+// Goes through relayout because uirevision makes Plotly ignore a camera handed
+// to react once the instructor has dragged the scene.
+function plotterResetView() {
+  const plotEl = document.getElementById('plotter-plot');
+  plotterCamera = JSON.parse(JSON.stringify(PLOTTER_FITTED_CAMERA));
+  if (plotEl && plotEl._fullLayout) Plotly.relayout(plotEl, { 'scene.camera': plotterCamera });
 }
 
 function plotterSetStatus(type, message) {
@@ -1825,8 +1935,47 @@ function plotterClearStats() {
   if (el) el.textContent = '';
 }
 
+function plotterShowLiveStatus() {
+  plotterSetStats(`Submissions : ${plotterLiveCount}\nValid points : ${plotterData.length}`);
+  plotterSetStatus('ok', plotterData.length === 0
+    ? 'No submissions yet.'
+    : `Showing ${plotterData.length} point${plotterData.length !== 1 ? 's' : ''}.`);
+}
+
+function plotterShowDemoStatus() {
+  const pts   = plotterDemoPoints();
+  const words = new Set(pts.map(p => p.name)).size;
+  plotterSetStats(
+    `Sample points : ${pts.length}\nWords         : ${words}` +
+    (plotterLiveCount > 0 ? `\nLive (hidden) : ${plotterLiveCount}` : '')
+  );
+  plotterSetStatus('ok', `Sample data — ${pts.length} simulated plots. Live submissions hidden.`);
+}
+
+// Toggle between live Firebase submissions and the built-in sample cloud.
+function plotterSetDemoMode(on) {
+  plotterDemoMode = on;
+  const btn = document.getElementById('plotter-btn-demo');
+  if (btn) {
+    btn.textContent = on ? '◉ Show live submissions' : '▦ Show sample data';
+    btn.setAttribute('aria-pressed', String(on));
+    btn.style.color       = on ? 'var(--accent)' : 'var(--muted)';
+    btn.style.borderColor = on ? 'var(--accent)' : 'var(--border)';
+  }
+  document.getElementById('plotter-demo-badge')?.classList.toggle('hidden', !on);
+  plotterUpdateAxisLabels();
+  if (on) {
+    plotterShowDemoStatus();
+    plotterRender(plotterDemoPoints());
+  } else {
+    plotterShowLiveStatus();
+    plotterRender(plotterData);
+  }
+}
+
 function plotterReRender() {
-  if (plotterData.length > 0) plotterRender(plotterData);
+  const pts = plotterDemoMode ? plotterDemoPoints() : plotterData;
+  if (pts.length > 0) plotterRender(pts);
 }
 
 function plotterBuildQR() {
@@ -1846,6 +1995,11 @@ function plotterBuildQR() {
 function bindPlotterEvents() {
   document.getElementById('plotter-btn-clear')?.addEventListener('click', plotterHandleClear);
 
+  // Sample-data toggle
+  document.getElementById('plotter-btn-demo')?.addEventListener('click', () => {
+    plotterSetDemoMode(!plotterDemoMode);
+  });
+
   // Copy link button
   document.getElementById('plotter-btn-copy-link')?.addEventListener('click', () => {
     const url = document.getElementById('plotter-student-link')?.value
@@ -1862,6 +2016,8 @@ function bindPlotterEvents() {
   ['plotter-show-labels','plotter-axis-x','plotter-axis-y','plotter-axis-z'].forEach(id => {
     document.getElementById(id)?.addEventListener('change', plotterReRender);
   });
+
+  document.getElementById('plotter-btn-reset-view')?.addEventListener('click', plotterResetView);
 
   // ── Settings: Quick Fill word list ───────────────
   const PLOTTER_WORD_BANK = [

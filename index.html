@@ -730,6 +730,14 @@
         <button id="plotter-btn-clear" class="btn btn-sm" style="width:100%;background:transparent;border:1px solid var(--border);color:var(--muted);" aria-label="Clear all submissions">✕ Clear all submissions</button>
       </section>
 
+      <!-- Sample data (works without student submissions) -->
+      <section class="plotter-section">
+        <div class="advanced-subtitle">Sample Data</div>
+        <button id="plotter-btn-demo" class="btn btn-sm" aria-pressed="false"
+          style="width:100%;background:transparent;border:1px solid var(--border);color:var(--muted);">▦ Show sample data</button>
+        <p class="plotter-hint">A simulated class of ~100 plots on Female / Alive / Royal. Live submissions stay in Firebase — they're just hidden while this is on.</p>
+      </section>
+
       <!-- Student QR / link -->
       <section class="plotter-section">
         <div class="advanced-subtitle">Student Submit Link</div>
@@ -769,6 +777,7 @@
           <label style="min-width:14px;">Z</label>
           <span id="plotter-label-z" style="font-size:0.88rem;color:var(--text);">Royal</span>
         </div>
+        <button id="plotter-btn-reset-view" class="btn btn-sm" style="width:100%;margin-top:4px;background:transparent;border:1px solid var(--border);color:var(--muted);">⤢ Reset view</button>
       </section>
 
       <section class="plotter-section">
@@ -781,6 +790,7 @@
 
     <!-- ── Plot area ── -->
     <main id="plotter-plot-area">
+      <div id="plotter-demo-badge" class="hidden">Sample data — not live submissions</div>
       <div id="plotter-plot"></div>
     </main>
 
