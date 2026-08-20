@@ -306,45 +306,62 @@
   <div class="home-subtitle">Practical Exercise Launcher</div>
   <hr class="home-rule">
 
-  <div class="exercise-grid">
-    <div class="exercise-card" onclick="showPanelApp()">
-      <div class="exercise-card-eyebrow">Practice</div>
-      <div class="exercise-card-title">AI Regulation Panel</div>
-      <div class="exercise-card-desc">A simulated Silicon Slopes panel on the state of AI regulation. Randomize student groups, assign panelist topics, and moderate the Q&amp;A with a built-in timer.</div>
-      <div class="exercise-card-arrow">Open →</div>
-    </div>
+  <section class="exercise-group">
+    <header class="group-head">
+      <h2 class="group-title">The Law of AI</h2>
+      <span class="group-desc">Simulations and practice exercises in advising, regulating, and researching AI</span>
+    </header>
 
-    <div class="exercise-card" onclick="showCounselApp()">
-      <div class="exercise-card-eyebrow">Practice</div>
-      <div class="exercise-card-title">Product Counsel</div>
-      <div class="exercise-card-desc">Practice advising a tech company on AI product scenarios. Draw a student and scenario at random, then reveal the priority legal issues for discussion.</div>
-      <div class="exercise-card-arrow">Open →</div>
+    <div class="exercise-grid">
+      <div class="exercise-card" onclick="showPanelApp()">
+        <div class="exercise-card-eyebrow">Practice</div>
+        <div class="exercise-card-title">AI Regulation Panel</div>
+        <div class="exercise-card-desc">A simulated Silicon Slopes panel on the state of AI regulation. Randomize student groups, assign panelist topics, and moderate the Q&amp;A with a built-in timer.</div>
+        <div class="exercise-card-arrow">Open →</div>
+      </div>
+
+      <div class="exercise-card" onclick="showCounselApp()">
+        <div class="exercise-card-eyebrow">Practice</div>
+        <div class="exercise-card-title">Product Counsel</div>
+        <div class="exercise-card-desc">Practice advising a tech company on AI product scenarios. Draw a student and scenario at random, then reveal the priority legal issues for discussion.</div>
+        <div class="exercise-card-arrow">Open →</div>
+      </div>
+      <a class="exercise-card" href="https://chatgpt.com/g/g-69c5820d64e4819186c723f9fc7b9e33-otc-client-simulator-v2" target="_blank" rel="noopener">
+        <div class="exercise-card-eyebrow">Practice</div>
+        <div class="exercise-card-title">OTC Client Simulator</div>
+        <div class="exercise-card-desc">Practice gathering information from a client to understand their AI use and assess risk. Interview a simulated representative of OTC, a fictional company, in preparation for drafting their AI policy.</div>
+        <div class="exercise-card-arrow">Open ↗</div>
+      </a>
+      <div class="exercise-card" onclick="showResearchApp()">
+        <div class="exercise-card-eyebrow">Research</div>
+        <div class="exercise-card-title">Research Exercises <i>(Coming soon)</i></div>
+        <div class="exercise-card-desc">Assign students to individual research tasks — algorithm research or case research — drawn from a Google Sheet. Each student receives a unique row.</div>
+        <div class="exercise-card-arrow">Open →</div>
+      </div>
     </div>
-    <div class="exercise-card" onclick="showPlotterApp()">
-      <div class="exercise-card-eyebrow">Visualize</div>
-      <div class="exercise-card-title">3D Word Plotter</div>
-      <div class="exercise-card-desc">Explore how word embeddings work — plot words in 3D space and see how numbers capture semantic meaning and relationships between concepts.</div>
-      <div class="exercise-card-arrow">Open →</div>
+  </section>
+
+  <section class="exercise-group group-mechanics">
+    <header class="group-head">
+      <h2 class="group-title">How AI Works</h2>
+      <span class="group-desc">Interactive demonstrations of what a model is actually doing under the hood</span>
+    </header>
+
+    <div class="exercise-grid">
+      <div class="exercise-card" onclick="showPlotterApp()">
+        <div class="exercise-card-eyebrow">Visualize</div>
+        <div class="exercise-card-title">3D Word Plotter</div>
+        <div class="exercise-card-desc">Explore how word embeddings work — plot words in 3D space and see how numbers capture semantic meaning and relationships between concepts.</div>
+        <div class="exercise-card-arrow">Open →</div>
+      </div>
+      <div class="exercise-card" onclick="showTokenApp()">
+        <div class="exercise-card-eyebrow">Visualize</div>
+        <div class="exercise-card-title">Token Explorer</div>
+        <div class="exercise-card-desc">See how an AI model actually picks its words — type a prompt and inspect the probability behind every token it generates.</div>
+        <div class="exercise-card-arrow">Open →</div>
+      </div>
     </div>
-    <div class="exercise-card" onclick="showTokenApp()">
-      <div class="exercise-card-eyebrow">Explore</div>
-      <div class="exercise-card-title">Token Explorer</div>
-      <div class="exercise-card-desc">See how an AI model actually picks its words — type a prompt and inspect the probability behind every token it generates.</div>
-      <div class="exercise-card-arrow">Open →</div>
-    </div>
-    <a class="exercise-card" href="https://chatgpt.com/g/g-69c5820d64e4819186c723f9fc7b9e33-otc-client-simulator-v2" target="_blank" rel="noopener">
-      <div class="exercise-card-eyebrow">Practice</div>
-      <div class="exercise-card-title">OTC Client Simulator</div>
-      <div class="exercise-card-desc">Practice gathering information from a client to understand their AI use and assess risk. Interview a simulated representative of OTC, a fictional company, in preparation for drafting their AI policy.</div>
-      <div class="exercise-card-arrow">Open ↗</div>
-    </a>
-    <div class="exercise-card" onclick="showResearchApp()">
-      <div class="exercise-card-eyebrow">Research</div>
-      <div class="exercise-card-title">Research Exercises <i>(Coming soon)</i></div>
-      <div class="exercise-card-desc">Assign students to individual research tasks — algorithm research or case research — drawn from a Google Sheet. Each student receives a unique row.</div>
-      <div class="exercise-card-arrow">Open →</div>
-    </div>
-  </div>
+  </section>
 </div>
 
 <!-- ═══════════════════════════════════ PANEL APP ═══════════════════════════════════ -->

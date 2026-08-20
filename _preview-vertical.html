@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI &amp; Law · vertical split preview</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+  /* ── PREVIEW ONLY: vertical (side-by-side) split ── */
+  .exercise-columns { width: 100%; }
+
+  @media (min-width: 1000px) {
+    .exercise-columns {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 44px;
+      align-items: start;
+    }
+    .exercise-group + .exercise-group { margin-top: 0; }
+    .group-mechanics {
+      border-left: 1px solid var(--border);
+      padding-left: 44px;
+    }
+    /* keep both card grids starting at the same y even when one description wraps */
+    .exercise-columns .group-head {
+      min-height: 82px;
+      align-content: start;
+    }
+    .exercise-columns .exercise-grid { grid-template-columns: repeat(2, 1fr); }
+    .group-mechanics .exercise-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div id="home-screen">
+  <div style="position:absolute;top:16px;right:20px;display:flex;gap:8px;">
+    <button class="settings-btn-light" title="Keyboard shortcuts (?)">?</button>
+    <button class="settings-btn-light" title="Appearance settings (S)">⚙</button>
+  </div>
+  <div class="home-wordmark">AI &amp; Law</div>
+  <div class="home-subtitle">Practical Exercise Launcher</div>
+  <hr class="home-rule">
+
+  <div class="exercise-columns">
+    <section class="exercise-group">
+      <header class="group-head">
+        <h2 class="group-title">The Law of AI</h2>
+        <span class="group-desc">Simulations and practice exercises in advising, regulating, and researching AI</span>
+      </header>
+
+      <div class="exercise-grid">
+        <div class="exercise-card">
+          <div class="exercise-card-eyebrow">Practice</div>
+          <div class="exercise-card-title">AI Regulation Panel</div>
+          <div class="exercise-card-desc">A simulated Silicon Slopes panel on the state of AI regulation. Randomize student groups, assign panelist topics, and moderate the Q&amp;A with a built-in timer.</div>
+          <div class="exercise-card-arrow">Open →</div>
+        </div>
+        <div class="exercise-card">
+          <div class="exercise-card-eyebrow">Practice</div>
+          <div class="exercise-card-title">Product Counsel</div>
+          <div class="exercise-card-desc">Practice advising a tech company on AI product scenarios. Draw a student and scenario at random, then reveal the priority legal issues for discussion.</div>
+          <div class="exercise-card-arrow">Open →</div>
+        </div>
+        <div class="exercise-card">
+          <div class="exercise-card-eyebrow">Practice</div>
+          <div class="exercise-card-title">OTC Client Simulator</div>
+          <div class="exercise-card-desc">Practice gathering information from a client to understand their AI use and assess risk. Interview a simulated representative of OTC, a fictional company, in preparation for drafting their AI policy.</div>
+          <div class="exercise-card-arrow">Open ↗</div>
+        </div>
+        <div class="exercise-card">
+          <div class="exercise-card-eyebrow">Research</div>
+          <div class="exercise-card-title">Research Exercises <i>(Coming soon)</i></div>
+          <div class="exercise-card-desc">Assign students to individual research tasks — algorithm research or case research — drawn from a Google Sheet. Each student receives a unique row.</div>
+          <div class="exercise-card-arrow">Open →</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="exercise-group group-mechanics">
+      <header class="group-head">
+        <h2 class="group-title">How AI Works</h2>
+        <span class="group-desc">Interactive demonstrations of what a model is actually doing under the hood</span>
+      </header>
+
+      <div class="exercise-grid">
+        <div class="exercise-card">
+          <div class="exercise-card-eyebrow">Visualize</div>
+          <div class="exercise-card-title">3D Word Plotter</div>
+          <div class="exercise-card-desc">Explore how word embeddings work — plot words in 3D space and see how numbers capture semantic meaning and relationships between concepts.</div>
+          <div class="exercise-card-arrow">Open →</div>
+        </div>
+        <div class="exercise-card">
+          <div class="exercise-card-eyebrow">Visualize</div>
+          <div class="exercise-card-title">Token Explorer</div>
+          <div class="exercise-card-desc">See how an AI model actually picks its words — type a prompt and inspect the probability behind every token it generates.</div>
+          <div class="exercise-card-arrow">Open →</div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+</body>
+</html>

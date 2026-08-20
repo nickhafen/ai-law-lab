@@ -91,7 +91,41 @@ body {
   border: none;
   border-top: 1px solid var(--border);
   width: 60px;
-  margin: 16px auto 56px;
+  margin: 16px auto 44px;
+}
+
+/* ── LANDING GROUPS (Law of AI vs. How AI Works) ── */
+.exercise-group {
+  width: 100%;
+  align-self: stretch;
+}
+
+.exercise-group + .exercise-group {
+  margin-top: 52px;
+}
+
+.group-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 16px;
+  padding-bottom: 12px;
+  margin-bottom: 22px;
+  border-bottom: 1px solid var(--border);
+}
+
+.group-title {
+  font-family: var(--serif);
+  font-size: 1.75rem;
+  font-weight: 400;
+  line-height: 1.2;
+  color: var(--text);
+}
+
+.group-desc {
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--muted);
 }
 
 .exercise-grid {
