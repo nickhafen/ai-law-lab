@@ -3165,7 +3165,11 @@ let tokenInitialized = false;
 // Default to a paid model: the :free variants share an upstream provider pool across
 // all OpenRouter users and are frequently saturated (HTTP 429), which is fatal for a
 // live classroom demo. Gemma stays selectable for the no-system-turn comparison.
-let tokenConfig = { model: 'openai/gpt-4.1-mini', temperature: 0.7, altCount: 5 };
+let tokenConfig = { model: 'openai/gpt-4.1-mini', temperature: 0.7, altCount: 5, systemPrompt: '' };
+// The last system prompt the instructor pushed, plus whether this student has
+// typed over it. Together they decide if a new push may overwrite the field.
+let tokenSystemPushed = '';
+let tokenSystemEdited = false;
 let tokenResults = []; // [{ token, logprob, top_logprobs: [{token, logprob}, ...] }]
 let tokenLockedIndex = null;
 
@@ -3436,6 +3440,47 @@ function tokenApplyConfig(cfg) {
   if (sModelEl && sModelEl !== document.activeElement) sModelEl.value = tokenConfig.model;
   if (sTempEl && sTempEl !== document.activeElement) sTempEl.value = tokenConfig.temperature;
   if (sAltEl && sAltEl !== document.activeElement) sAltEl.value = tokenConfig.altCount;
+
+  const sSystemEl = document.getElementById('settings-token-system-prompt');
+  if (sSystemEl && sSystemEl !== document.activeElement) sSystemEl.value = tokenConfig.systemPrompt;
+
+  tokenApplySystemPrompt(tokenConfig.systemPrompt);
+}
+
+// Push the instructor's system prompt into the student's field, but never over
+// text the student wrote themselves — they get a restore button instead.
+function tokenApplySystemPrompt(next) {
+  const field = document.getElementById('token-system-prompt');
+  if (field) {
+    const current = field.value;
+    const untouched = !tokenSystemEdited || current.trim() === '' || current === tokenSystemPushed;
+    if (untouched && current !== next) {
+      field.value = next;
+      tokenSystemEdited = false;
+      tokenUpdateSystemCount();
+    }
+  }
+  tokenSystemPushed = next;
+  tokenUpdateSystemNotice();
+}
+
+function tokenUpdateSystemNotice() {
+  const notice = document.getElementById('token-system-notice');
+  const text = document.getElementById('token-system-notice-text');
+  const restore = document.getElementById('token-system-restore');
+  const field = document.getElementById('token-system-prompt');
+  if (!notice || !text || !restore || !field) return;
+
+  if (!tokenSystemPushed) {
+    notice.classList.add('hidden');
+    return;
+  }
+  notice.classList.remove('hidden');
+  const matches = field.value === tokenSystemPushed;
+  text.textContent = matches
+    ? 'Your instructor set this system prompt. Edit or clear it to see how the answers change.'
+    : 'Your instructor pushed a system prompt; you are using your own.';
+  restore.classList.toggle('hidden', matches);
 }
 
 function tokenSetStatus(text, isError) {
@@ -4086,6 +4131,14 @@ function tokenUpdateOutputView() {
 }
 
 function bindTokenEvents() {
+  // Subscribe at load, not on first open of the card: the Settings panel shows
+  // the pushed defaults, so an instructor who never opens the card must not see
+  // (and re-push) blank fields over what is already live.
+  if (!tokenInitialized) {
+    tokenInitialized = true;
+    onExerciseConfig('tokenExplorer', tokenApplyConfig);
+  }
+
   document.getElementById('token-generate-btn')?.addEventListener('click', tokenGenerate);
   document.getElementById('token-render-toggle')?.addEventListener('change', tokenUpdateOutputView);
   document.getElementById('token-use-sample-btn')?.addEventListener('click', tokenUseSample);
@@ -4123,7 +4176,11 @@ function bindTokenEvents() {
   tokenBindInfoToggle('token-top-p-info-btn', 'token-top-p-info');
 
   const systemEl = document.getElementById('token-system-prompt');
-  systemEl?.addEventListener('input', tokenUpdateSystemCount);
+  systemEl?.addEventListener('input', () => {
+    tokenSystemEdited = true;
+    tokenUpdateSystemCount();
+    tokenUpdateSystemNotice();
+  });
   systemEl?.addEventListener('keydown', e => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
       e.preventDefault();
@@ -4133,19 +4190,31 @@ function bindTokenEvents() {
   document.getElementById('token-system-clear')?.addEventListener('click', () => {
     if (!systemEl) return;
     systemEl.value = '';
+    tokenSystemEdited = true;
     tokenUpdateSystemCount();
+    tokenUpdateSystemNotice();
+    systemEl.focus();
+  });
+  document.getElementById('token-system-restore')?.addEventListener('click', () => {
+    if (!systemEl) return;
+    systemEl.value = tokenSystemPushed;
+    tokenSystemEdited = false;
+    tokenUpdateSystemCount();
+    tokenUpdateSystemNotice();
     systemEl.focus();
   });
   tokenUpdateSystemCount();
+  tokenUpdateSystemNotice();
 
   document.getElementById('settings-token-save')?.addEventListener('click', async () => {
     const statusEl = document.getElementById('settings-token-save-status');
     const model = document.getElementById('settings-token-model')?.value || tokenConfig.model;
     const temperature = Number(document.getElementById('settings-token-temperature')?.value ?? tokenConfig.temperature);
     const altCount = Number(document.getElementById('settings-token-alt-count')?.value ?? tokenConfig.altCount);
+    const systemPrompt = (document.getElementById('settings-token-system-prompt')?.value ?? '').trim();
     if (statusEl) statusEl.textContent = 'Saving…';
     try {
-      await saveExerciseConfig('tokenExplorer', { model, temperature, altCount });
+      await saveExerciseConfig('tokenExplorer', { model, temperature, altCount, systemPrompt });
       if (statusEl) { statusEl.textContent = '✓ Pushed to students'; setTimeout(() => { statusEl.textContent = ''; }, 3000); }
     } catch (err) {
       if (statusEl) statusEl.textContent = `Error: ${err.message}`;
