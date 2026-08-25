@@ -2483,20 +2483,7 @@ function citeSetStatus(type, message) {
   if (el) { el.className = `plotter-status-text ${type}`; el.textContent = message; }
 }
 
-function citeSetStats(records) {
-  const el = document.getElementById('cite-stats-text');
-  if (!el) return;
-  const distinct = key => new Set(records.map(r => r[key]).filter(Boolean)).size;
-  const row = (label, value) => `${label.padEnd(10)}: ${value}`;
-  el.textContent = [
-    row('Citations', records.length),
-    row('Names',     `${distinct('caption')} distinct`),
-    row('Reporters', `${distinct('reporter')} distinct`),
-    row('Courts',    `${distinct('court')} distinct`),
-    row('Years',     `${distinct('year')} distinct`),
-    (!citeDemoMode || citeLiveCount === 0) ? '' : row('Live', `${citeLiveCount} hidden`),
-  ].filter(Boolean).join('\n');
-}
+
 
 // ── Firebase listener (instructor view) ──────────
 function citeStartListener() {
@@ -2612,7 +2599,7 @@ function citeRender() {
   const ordered    = newestFirst ? [...records].reverse() : [...records];
   citeRenderList(ordered);
   citeRenderParts(ordered);
-  citeSetStats(records);
+  
 
   const countEl = document.getElementById('cite-count');
   if (countEl) countEl.textContent = `${records.length} submitted`;

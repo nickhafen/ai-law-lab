@@ -133,11 +133,11 @@
         <div style="margin-bottom:14px;">
           <label style="margin-bottom:6px;">Default model</label>
           <select id="settings-token-model" style="width:100%;">
-            <optgroup label="Paid — reliable">
+            <optgroup label="Paid">
               <option value="openai/gpt-4.1-mini" selected>GPT-4.1 mini</option>
               <option value="openai/gpt-4.1">GPT-4.1</option>
             </optgroup>
-            <optgroup label="Free — often rate-limited">
+            <optgroup label="Free">
               <option value="google/gemma-4-26b-a4b-it:free">Gemma 4 26B</option>
             </optgroup>
           </select>
@@ -296,35 +296,14 @@
         <li><kbd>Ctrl/⌘ + Enter</kbd><span>Generate a response</span></li>
       </ul>
 
-      <div class="token-help-note">
-        <strong>Powered by OpenRouter.</strong>
-        Prompts are sent through this site's Cloudflare Worker to <a href="https://openrouter.ai/" target="_blank" rel="noopener">OpenRouter</a>, which routes the request to the selected model provider. The Worker keeps the shared API key out of the browser.
-      </div>
+      
 
       <div class="token-help-note">
         <strong>Rate limits and availability.</strong>
         A rate-limit message does not mean your prompt is invalid. Models marked <em>free</em> run on a provider pool shared by every OpenRouter user, so they return HTTP 429 whenever that pool is saturated — which is common and unpredictable. This is not your account's quota, and buying credits does not raise it. <strong>For anything you plan to run live in class, select a paid model.</strong> The explorer retries retryable failures up to three times; if a paid model still fails, wait briefly and try again, shorten the prompt, or fall back to Cached Examples.
       </div>
 
-      <div class="token-help-note">
-        <strong>Temperature comparison.</strong>
-        “Use 0, 1, 2” makes three sequential API requests. It runs more slowly, is more likely to encounter a free-model rate limit, and can cost about three times as much when using a paid model. Successful temperatures remain visible if another request fails.
-      </div>
-
-      <div class="token-help-note">
-        <strong>System prompt.</strong>
-        Optional and collapsed by default, above the prompt box. Text entered there is sent ahead of your prompt as the model's instructions. It is capped at 2,000 characters, and models handle it differently: some are trained on a distinct system role, while others have no separate system turn and the provider merges the text into the front of your prompt. Comparing the same system prompt across two models shows how much of that "privileged instruction" layer is convention rather than architecture.
-      </div>
-
-      <div class="token-help-note">
-        <strong>Seed and Top-K.</strong>
-        Under <em>Advanced</em> in the left panel. <em>Seed</em> fixes the starting point for the model's random draws — the same seed, prompt, and settings should reproduce the same text, though not every provider honors it. <em>Top-K</em> keeps only the K most likely tokens as candidates at each step; 1 always takes the top token, 0 turns it off. <strong>OpenAI models have no Top-K parameter and ignore it silently.</strong> The card detects this from the response — if the model produced a token ranked below K, Top-K cannot have been applied — and shows a warning under the answer.
-      </div>
-
-      <div class="token-help-note">
-        <strong>Why the generated token is sometimes missing from Alternatives.</strong>
-        The Alternatives panel lists the most <em>likely</em> tokens at that position — not the ones that were eligible to be chosen. Temperature controls how far down that ranking the sampler is willing to reach, and at high temperature it regularly picks something below the listed few. When the generated token does appear in the list it is highlighted; when nothing is highlighted, the model reached past every candidate shown. At temperature 0 the generated token is the top-ranked one every single time, which makes the contrast easy to demonstrate: run the same prompt at temperature 0 and again at temperature 2, and watch how often the highlight disappears.
-      </div>
+      
 
       <div class="token-help-note">
         <strong>View request.</strong>
@@ -356,20 +335,7 @@
         <li><kbd>D</kbd><span>Sample data on / off</span></li>
       </ul>
 
-      <div class="token-help-note">
-        <strong>Running it.</strong>
-        Project this view and put the QR code or link in front of the class. Students fill in the parts of a case citation for a case that does not exist. Every submission appears in the list as a finished citation, and the cards below break the class's citations apart part by part. Hover any value in those cards to see the full citation it came from — hovering a grouped value lists every citation that used it.
-      </div>
-
-      <div class="token-help-note">
-        <strong>The point.</strong>
-        Each card footer counts distinct values. Reporters, courts, and years collapse to a handful of repeated values because those parts follow patterns a reader has absorbed — the same statistical regularities a model learns. Case names almost never repeat: there is no pattern to fall back on, so every student invents something new. That gap is what a hallucinated citation looks like from the inside.
-      </div>
-
-      <div class="token-help-note">
-        <strong>Anonymity.</strong>
-        No name or device identifier is collected or stored — only the six parts of the citation and a timestamp. Anything a student types into the Case name field is shown verbatim, so remind them not to use real names.
-      </div>
+      
 
       <div class="token-help-note">
         <strong>Setting the prompt.</strong>
@@ -452,7 +418,7 @@
       <div class="exercise-card" onclick="showTokenApp()">
         <div class="exercise-card-eyebrow">Visualize</div>
         <div class="exercise-card-title">Token Explorer</div>
-        <div class="exercise-card-desc">See how an AI model actually picks its words — type a prompt and inspect the probability behind every token it generates.</div>
+        <div class="exercise-card-desc">See how an AI model actually picks its words — type a prompt and inspect the probability behind every token it generates. Based on Rebecca Fordon's TokenExplorer.</div>
         <div class="exercise-card-arrow">Open →</div>
       </div>
       <div class="exercise-card" onclick="showCitationApp()">
@@ -851,7 +817,7 @@
           <button id="plotter-btn-clear" class="btn btn-sm" title="Archive the current submissions and clear the plot"
             style="flex:1;justify-content:center;background:transparent;border:1px solid var(--border);color:var(--muted);">✕ Clear</button>
         </div>
-        <p class="plotter-hint">Clearing archives the current class rather than deleting it — the export includes every archived round.</p>
+        <p class="plotter-hint"><code>Clear</code> archives the current data. <code>Export</code> exports all current and archived data.</p>
       </section>
 
       <!-- Sample data (works without student submissions) -->
@@ -945,15 +911,15 @@
       <section class="plotter-section">
         <div class="advanced-subtitle">Model</div>
         <select id="token-model" style="width:100%;padding:7px 9px;border-radius:5px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.88rem;">
-          <optgroup label="Paid — reliable">
+          <optgroup label="Paid">
             <option value="openai/gpt-4.1-mini" selected>GPT-4.1 mini</option>
             <option value="openai/gpt-4.1">GPT-4.1</option>
           </optgroup>
-          <optgroup label="Free — often rate-limited">
+          <optgroup label="Free">
             <option value="google/gemma-4-26b-a4b-it:free">Gemma 4 26B</option>
           </optgroup>
         </select>
-        <p class="plotter-hint">Free models share a provider pool across all OpenRouter users and often fail with a rate-limit error.</p>
+        
       </section>
 
       <section class="plotter-section">
@@ -977,7 +943,7 @@
 
       <section class="plotter-section">
         <div class="advanced-subtitle">Response length</div>
-        <p class="plotter-hint">Up to 60 generated tokens (server limit).</p>
+        <p class="plotter-hint">Up to 60 generated tokens.</p>
       </section>
 
       <section class="plotter-section">
@@ -994,7 +960,7 @@
                 aria-expanded="false" aria-controls="token-seed-info" title="What is a seed?">i</button>
             </label>
             <input type="number" id="token-seed" placeholder="none" min="0" max="2147483647" step="1" style="width:100%;">
-            <p class="plotter-hint">Blank draws fresh randomness each run.</p>
+            
             <p class="token-info-note hidden" id="token-seed-info">The starting point for the model's random draws. Run the same prompt twice with the same seed, temperature, and Top-K and a provider that honors the seed returns the same text. Not all of them do — if two identical runs still differ, that provider ignored it.</p>
           </div>
 
@@ -1040,7 +1006,7 @@
               <button class="btn btn-secondary btn-sm" id="token-system-clear" type="button">Clear</button>
             </div>
             <div class="token-help-note" style="margin-top:12px;">
-              <strong>Limitations.</strong> Capped at 2,000 characters by the server; longer text is rejected rather than truncated. Models also treat this field differently — some are trained on a genuine system role, while others (Gemma among them) have no separate system turn at all, so the provider folds this text into the start of your prompt. The same instructions can therefore carry different weight on different models, which is itself worth comparing. A system prompt constrains the model; it does not enforce anything.
+              <strong>Limitations.</strong> Models treat this field differently — some are trained on a genuine system role, while others have no separate system turn at all, so the provider folds this text into the start of your prompt. The same instructions can therefore carry different weight on different models. 
             </div>
           </div>
         </section>
@@ -1049,7 +1015,7 @@
           <div class="section-title">Prompt</div>
           <div class="token-privacy-notice" role="note">
             <strong>Assume everything you type here is kept and used to train future models.</strong>
-            Your prompt, your system prompt, and the response are sent out of this browser to OpenRouter and on to a third-party model provider. Free models are commonly offered on the condition that prompts may be logged and used for training. Paid providers vary, and some contractually do not train on API traffic — but neither this site nor your instructor controls what any provider retains. Never enter confidential, privileged, client, or personal information.
+            Neither this site nor your instructor controls what any provider retains. Never enter confidential, privileged, client, or personal information.
           </div>
           <textarea id="token-prompt" rows="3" placeholder="Type a prompt, e.g. “The most important thing a new lawyer should know is”"
             style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-size:0.95rem;font-family:var(--font);color:var(--text);background:var(--bg);resize:vertical;outline:none;"></textarea>
@@ -1218,7 +1184,7 @@
           <button id="cite-btn-clear" class="btn btn-sm" title="Archive the current citations and clear the board"
             style="flex:1;justify-content:center;background:transparent;border:1px solid var(--border);color:var(--muted);">✕ Clear</button>
         </div>
-        <p class="plotter-hint">Clearing archives the current class rather than deleting it — the export includes every archived round.</p>
+        <p class="plotter-hint"><code>Clear</code> archives the current data. <code>Export</code> exports all current and archived data.</p>
       </section>
 
       <!-- Sample data (works without student submissions) -->
@@ -1279,7 +1245,7 @@
       <section class="cite-block">
         <header class="cite-block-head">
           <h3>Part by Part</h3>
-          <span class="cite-block-count">Every value the class submitted</span>
+          
         </header>
         <div id="cite-parts" class="cite-parts-row"></div>
       </section>
