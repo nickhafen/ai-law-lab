@@ -133,7 +133,13 @@
         <div style="margin-bottom:14px;">
           <label style="margin-bottom:6px;">Default model</label>
           <select id="settings-token-model" style="width:100%;">
-            <option value="google/gemma-4-26b-a4b-it:free">Gemma 4 26B (free)</option>
+            <optgroup label="Paid — reliable">
+              <option value="openai/gpt-4.1-mini" selected>GPT-4.1 mini</option>
+              <option value="openai/gpt-4.1">GPT-4.1</option>
+            </optgroup>
+            <optgroup label="Free — often rate-limited">
+              <option value="google/gemma-4-26b-a4b-it:free">Gemma 4 26B</option>
+            </optgroup>
           </select>
         </div>
 
@@ -151,6 +157,27 @@
         <div style="display:flex;align-items:center;gap:10px;margin-top:14px;">
           <button id="settings-token-save" class="btn btn-primary btn-sm">↑ Save &amp; Push to Students</button>
           <span id="settings-token-save-status" style="font-size:0.82rem;color:var(--muted);"></span>
+        </div>
+      </div>
+
+      <!-- Hallucinated Citations -->
+      <div style="border:1px solid var(--border);border-radius:8px;padding:16px;margin-top:16px;margin-bottom:4px;">
+        <div style="font-weight:700;font-size:0.95rem;color:var(--text);margin-bottom:12px;">Hallucinated Citations</div>
+        <p style="font-size:0.85rem;color:var(--muted);margin:0 0 14px;line-height:1.55;">The prompt students see on the submit form, also shown on the projected instructor view. Pushing a new prompt updates open phones immediately; it does not clear submissions already on the board.</p>
+
+        <div style="margin-bottom:10px;">
+          <label style="margin-bottom:6px;">Prompt <span style="font-weight:400;color:var(--muted);">(blank restores the default)</span></label>
+          <textarea id="settings-cite-prompt" rows="3" maxlength="400"
+            style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-size:0.9rem;font-family:var(--font);color:var(--text);background:var(--bg);resize:vertical;outline:none;display:block;"></textarea>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:6px;">
+            <button class="btn btn-secondary btn-sm" id="settings-cite-reset">↺ Restore default</button>
+            <span id="settings-cite-count" style="font-size:0.78rem;color:var(--muted);">0 / 400 characters</span>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:10px;margin-top:14px;">
+          <button id="settings-cite-save" class="btn btn-primary btn-sm">↑ Save &amp; Push to Students</button>
+          <span id="settings-cite-save-status" style="font-size:0.82rem;color:var(--muted);"></span>
         </div>
       </div>
     </div>
@@ -276,7 +303,7 @@
 
       <div class="token-help-note">
         <strong>Rate limits and availability.</strong>
-        Free models have tighter provider and OpenRouter limits and may be temporarily busy or unavailable. The explorer retries retryable failures up to three times. If it still fails, wait briefly and try again, shorten the prompt, or use Cached Examples. A rate-limit message does not mean your prompt is invalid.
+        A rate-limit message does not mean your prompt is invalid. Models marked <em>free</em> run on a provider pool shared by every OpenRouter user, so they return HTTP 429 whenever that pool is saturated — which is common and unpredictable. This is not your account's quota, and buying credits does not raise it. <strong>For anything you plan to run live in class, select a paid model.</strong> The explorer retries retryable failures up to three times; if a paid model still fails, wait briefly and try again, shorten the prompt, or fall back to Cached Examples.
       </div>
 
       <div class="token-help-note">
@@ -285,11 +312,79 @@
       </div>
 
       <div class="token-help-note">
-        <strong>Privacy and results.</strong>
-        Do not enter confidential, privileged, personal, or client information. Generated text and token probabilities come from the selected live model and can vary between requests. Responses are capped at 60 generated tokens. Cached Examples are fixed teaching samples with illustrative—not live—probability data.
+        <strong>System prompt.</strong>
+        Optional and collapsed by default, above the prompt box. Text entered there is sent ahead of your prompt as the model's instructions. It is capped at 2,000 characters, and models handle it differently: some are trained on a distinct system role, while others have no separate system turn and the provider merges the text into the front of your prompt. Comparing the same system prompt across two models shows how much of that "privileged instruction" layer is convention rather than architecture.
+      </div>
+
+      <div class="token-help-note">
+        <strong>Seed and Top-K.</strong>
+        Under <em>Advanced</em> in the left panel. <em>Seed</em> fixes the starting point for the model's random draws — the same seed, prompt, and settings should reproduce the same text, though not every provider honors it. <em>Top-K</em> keeps only the K most likely tokens as candidates at each step; 1 always takes the top token, 0 turns it off. <strong>OpenAI models have no Top-K parameter and ignore it silently.</strong> The card detects this from the response — if the model produced a token ranked below K, Top-K cannot have been applied — and shows a warning under the answer.
+      </div>
+
+      <div class="token-help-note">
+        <strong>Why the generated token is sometimes missing from Alternatives.</strong>
+        The Alternatives panel lists the most <em>likely</em> tokens at that position — not the ones that were eligible to be chosen. Temperature controls how far down that ranking the sampler is willing to reach, and at high temperature it regularly picks something below the listed few. When the generated token does appear in the list it is highlighted; when nothing is highlighted, the model reached past every candidate shown. At temperature 0 the generated token is the top-ranked one every single time, which makes the contrast easy to demonstrate: run the same prompt at temperature 0 and again at temperature 2, and watch how often the highlight disappears.
+      </div>
+
+      <div class="token-help-note">
+        <strong>View request.</strong>
+        Appears under each generated response. The first block is the JSON this page sent to the Worker; the second is what the Worker forwarded to the model provider, including the response cap and logprob settings the page cannot change. Everything in both blocks left your browser.
+      </div>
+
+      <div class="token-help-note">
+        <strong>Privacy, retention, and training.</strong>
+        Do not enter confidential, privileged, personal, or client information. Everything you submit — prompt, system prompt, and the returned response — leaves this browser, passes through this site's Cloudflare Worker and OpenRouter, and reaches a third-party model provider. <strong>Assume it is retained and used to train future models.</strong> Free models are commonly offered on the condition that prompts may be logged and used for training; paid providers vary, and some contractually do not train on API traffic, but neither this site nor your instructor controls or can audit what a provider retains. Use the <em>View request</em> panel under any response to see exactly what was transmitted.
+      </div>
+
+      <div class="token-help-note">
+        <strong>Results.</strong>
+        Generated text and token probabilities come from the selected live model and can vary between requests. Responses are capped at 60 generated tokens and prompts at 8,000 characters. Cached Examples are real captures from the live model — genuine text and genuine probabilities — recorded once and committed to the repository so class time never depends on the network. Regenerate them with <code>scripts/capture-cached-examples.mjs</code>.
       </div>
 
       <div class="token-help-note token-whitespace-help"><strong>Whitespace display.</strong> In alternative-token labels, <code>␠</code> represents a space, <code>⇥</code> a tab, <code>↵</code> a line break, and <code>∅</code> an empty token. These symbols make otherwise invisible model tokens inspectable.</div>
+
+      <div class="token-help-note">
+        <strong>Acknowledgment.</strong>
+        This exercise was inspired by Rebecca Fordon's <a href="https://github.com/rlfordon/TokenExplorer" target="_blank" rel="noopener">TokenExplorer</a>.
+      </div>
+    </div>
+
+    <div id="help-section-citations">
+      <h4>Hallucinated Citations</h4>
+      <ul class="shortcut-list">
+        <li><kbd>G</kbd><span>Group duplicates on / off</span></li>
+        <li><kbd>D</kbd><span>Sample data on / off</span></li>
+      </ul>
+
+      <div class="token-help-note">
+        <strong>Running it.</strong>
+        Project this view and put the QR code or link in front of the class. Students fill in the parts of a case citation for a case that does not exist. Every submission appears in the list as a finished citation, and the cards below break the class's citations apart part by part. Hover any value in those cards to see the full citation it came from — hovering a grouped value lists every citation that used it.
+      </div>
+
+      <div class="token-help-note">
+        <strong>The point.</strong>
+        Each card footer counts distinct values. Reporters, courts, and years collapse to a handful of repeated values because those parts follow patterns a reader has absorbed — the same statistical regularities a model learns. Case names almost never repeat: there is no pattern to fall back on, so every student invents something new. That gap is what a hallucinated citation looks like from the inside.
+      </div>
+
+      <div class="token-help-note">
+        <strong>Anonymity.</strong>
+        No name or device identifier is collected or stored — only the six parts of the citation and a timestamp. Anything a student types into the Case name field is shown verbatim, so remind them not to use real names.
+      </div>
+
+      <div class="token-help-note">
+        <strong>Setting the prompt.</strong>
+        ⚙ Settings → Exercises → <em>Hallucinated Citations</em> sets the instruction students see — for example, narrowing the round to a family law case. Saving pushes it to phones already sitting on the form and echoes it on this screen under the heading. Blank restores the default. Changing the prompt never clears the board; archive the round first if you want a clean slate.
+      </div>
+
+      <div class="token-help-note">
+        <strong>Clearing and exporting.</strong>
+        <em>Clear</em> archives the current class and empties the board — it is not a delete. <em>Export</em> downloads one CSV of every citation ever collected: each archived round plus whatever is on the board now, one row per citation, tagged with its session and the prompt that was in effect. Aggregate across classes in a spreadsheet without keeping anything on screen.
+      </div>
+
+      <div class="token-help-note">
+        <strong>Sample data.</strong>
+        The sample toggle shows a simulated class of invented citations so the exercise can be rehearsed or demonstrated with nobody submitting. Live submissions stay in Firebase while it is on — they are only hidden.
+      </div>
     </div>
 
     <p class="help-credit">Created by Nick Hafen</p>
@@ -358,6 +453,12 @@
         <div class="exercise-card-eyebrow">Visualize</div>
         <div class="exercise-card-title">Token Explorer</div>
         <div class="exercise-card-desc">See how an AI model actually picks its words — type a prompt and inspect the probability behind every token it generates.</div>
+        <div class="exercise-card-arrow">Open →</div>
+      </div>
+      <div class="exercise-card" onclick="showCitationApp()">
+        <div class="exercise-card-eyebrow">Experiment</div>
+        <div class="exercise-card-title">Hallucinated Citations</div>
+        <div class="exercise-card-desc">Invent a case citation the way a model does — from patterns in what you've seen. The class's fake cites are collected anonymously and split apart, part by part.</div>
         <div class="exercise-card-arrow">Open →</div>
       </div>
     </div>
@@ -744,7 +845,13 @@
           <span id="plotter-live-dot" style="width:10px;height:10px;border-radius:50%;background:var(--muted);flex-shrink:0;"></span>
           <span id="plotter-live-label" style="font-size:0.82rem;color:var(--muted);">Connecting…</span>
         </div>
-        <button id="plotter-btn-clear" class="btn btn-sm" style="width:100%;background:transparent;border:1px solid var(--border);color:var(--muted);" aria-label="Clear all submissions">✕ Clear all submissions</button>
+        <div style="display:flex;gap:6px;">
+          <button id="plotter-btn-export" class="btn btn-sm" title="Download every submission ever collected, including archived classes"
+            style="flex:1;justify-content:center;background:transparent;border:1px solid var(--border);color:var(--muted);">⤓ Export</button>
+          <button id="plotter-btn-clear" class="btn btn-sm" title="Archive the current submissions and clear the plot"
+            style="flex:1;justify-content:center;background:transparent;border:1px solid var(--border);color:var(--muted);">✕ Clear</button>
+        </div>
+        <p class="plotter-hint">Clearing archives the current class rather than deleting it — the export includes every archived round.</p>
       </section>
 
       <!-- Sample data (works without student submissions) -->
@@ -838,8 +945,15 @@
       <section class="plotter-section">
         <div class="advanced-subtitle">Model</div>
         <select id="token-model" style="width:100%;padding:7px 9px;border-radius:5px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.88rem;">
-          <option value="google/gemma-4-26b-a4b-it:free">Gemma 4 26B (free)</option>
+          <optgroup label="Paid — reliable">
+            <option value="openai/gpt-4.1-mini" selected>GPT-4.1 mini</option>
+            <option value="openai/gpt-4.1">GPT-4.1</option>
+          </optgroup>
+          <optgroup label="Free — often rate-limited">
+            <option value="google/gemma-4-26b-a4b-it:free">Gemma 4 26B</option>
+          </optgroup>
         </select>
+        <p class="plotter-hint">Free models share a provider pool across all OpenRouter users and often fail with a rate-limit error.</p>
       </section>
 
       <section class="plotter-section">
@@ -865,12 +979,78 @@
         <div class="advanced-subtitle">Response length</div>
         <p class="plotter-hint">Up to 60 generated tokens (server limit).</p>
       </section>
+
+      <section class="plotter-section">
+        <div class="collapsible-header" id="token-advanced-toggle-header" role="button" tabindex="0" aria-expanded="false" aria-controls="token-advanced-body">
+          <div class="advanced-subtitle" style="margin:0;">Advanced</div>
+          <span class="toggle-icon" id="token-advanced-toggle-icon">▼ Show</span>
+        </div>
+        <div class="collapsible-body" id="token-advanced-body">
+
+          <div class="token-advanced-field">
+            <label class="token-advanced-label" for="token-seed">
+              <span>Seed</span>
+              <button type="button" class="token-info-icon token-info-toggle" id="token-seed-info-btn"
+                aria-expanded="false" aria-controls="token-seed-info" title="What is a seed?">i</button>
+            </label>
+            <input type="number" id="token-seed" placeholder="none" min="0" max="2147483647" step="1" style="width:100%;">
+            <p class="plotter-hint">Blank draws fresh randomness each run.</p>
+            <p class="token-info-note hidden" id="token-seed-info">The starting point for the model's random draws. Run the same prompt twice with the same seed, temperature, and Top-K and a provider that honors the seed returns the same text. Not all of them do — if two identical runs still differ, that provider ignored it.</p>
+          </div>
+
+          <div class="token-advanced-field">
+            <label class="token-advanced-label" for="token-top-k">
+              <span>Top-K</span>
+              <button type="button" class="token-info-icon token-info-toggle" id="token-top-k-info-btn"
+                aria-expanded="false" aria-controls="token-top-k-info" title="What is Top-K?">i</button>
+            </label>
+            <input type="number" id="token-top-k" value="0" min="0" max="100" step="1" style="width:100%;">
+            <p class="plotter-hint">0 = off. Not every provider supports Top-K.</p>
+            <p class="token-info-note hidden" id="token-top-k-info">At each step the model ranks every possible next token. Top-K throws away everything below the top K before sampling. Set it to 1 and the model always takes the most likely token; set it to 0 and nothing is discarded. <strong>OpenAI models have no Top-K parameter and silently ignore it</strong> — the card detects this and warns you under the response. The Alternatives list is separate: it always shows the most <em>likely</em> tokens, which are not necessarily the ones Top-K left eligible.</p>
+          </div>
+
+          <div class="token-advanced-field">
+            <label class="token-advanced-label" for="token-top-p">
+              <span>Top-P</span>
+              <button type="button" class="token-info-icon token-info-toggle" id="token-top-p-info-btn"
+                aria-expanded="false" aria-controls="token-top-p-info" title="What is Top-P?">i</button>
+            </label>
+            <input type="number" id="token-top-p" placeholder="off" min="0.01" max="1" step="0.05" style="width:100%;">
+            <p class="plotter-hint">Blank = off. 1 keeps everything.</p>
+            <p class="token-info-note hidden" id="token-top-p-info">Also called nucleus sampling. Where Top-K keeps a fixed <em>number</em> of candidates, Top-P keeps the smallest group of top-ranked tokens whose probabilities add up to P. At 0.9 the model keeps whatever covers 90% of the probability — which might be two tokens where it is confident and fifty where it is not. That is the key difference: Top-P adapts to the model's certainty at each step, Top-K does not. Unlike Top-K, <strong>OpenAI models do support Top-P</strong>. Changing both it and Temperature at once makes results hard to attribute, so vary one at a time.</p>
+          </div>
+
+        </div>
+      </section>
     </aside>
 
     <main id="token-main">
       <div id="token-layout">
+        <section class="section-card" id="token-system-card">
+          <div class="collapsible-header" id="token-system-toggle-header" role="button" tabindex="0" aria-expanded="false" aria-controls="token-system-body">
+            <div class="section-title" style="margin:0;border:none;padding:0;">System Prompt <span class="token-optional-tag">optional</span></div>
+            <span class="toggle-icon" id="token-system-toggle-icon">▼ Show</span>
+          </div>
+          <div class="collapsible-body" id="token-system-body">
+            <p class="plotter-hint" style="margin-top:0;">Instructions sent ahead of your prompt. In a normal chat product this layer is written by the vendor and never shown to the user.</p>
+            <textarea id="token-system-prompt" rows="3" maxlength="2000" placeholder="e.g. You are a cautious research assistant. Never give legal advice. Always note when you are uncertain."
+              style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-size:0.95rem;font-family:var(--font);color:var(--text);background:var(--bg);resize:vertical;outline:none;"></textarea>
+            <div class="token-system-meta">
+              <span id="token-system-count" class="plotter-hint">0 / 2,000 characters</span>
+              <button class="btn btn-secondary btn-sm" id="token-system-clear" type="button">Clear</button>
+            </div>
+            <div class="token-help-note" style="margin-top:12px;">
+              <strong>Limitations.</strong> Capped at 2,000 characters by the server; longer text is rejected rather than truncated. Models also treat this field differently — some are trained on a genuine system role, while others (Gemma among them) have no separate system turn at all, so the provider folds this text into the start of your prompt. The same instructions can therefore carry different weight on different models, which is itself worth comparing. A system prompt constrains the model; it does not enforce anything.
+            </div>
+          </div>
+        </section>
+
         <section class="section-card" id="token-prompt-card">
           <div class="section-title">Prompt</div>
+          <div class="token-privacy-notice" role="note">
+            <strong>Assume everything you type here is kept and used to train future models.</strong>
+            Your prompt, your system prompt, and the response are sent out of this browser to OpenRouter and on to a third-party model provider. Free models are commonly offered on the condition that prompts may be logged and used for training. Paid providers vary, and some contractually do not train on API traffic — but neither this site nor your instructor controls what any provider retains. Never enter confidential, privileged, client, or personal information.
+          </div>
           <textarea id="token-prompt" rows="3" placeholder="Type a prompt, e.g. “The most important thing a new lawyer should know is”"
             style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-size:0.95rem;font-family:var(--font);color:var(--text);background:var(--bg);resize:vertical;outline:none;"></textarea>
           <div class="btn-row token-prompt-actions" style="margin-top:12px;">
@@ -902,6 +1082,7 @@
                 <div id="token-output"><span class="plotter-hint">Nothing generated yet — type a prompt and hit Generate.</span></div>
                 <div id="token-output-rendered" class="token-rendered hidden"></div>
                 <div id="token-usage" class="token-usage hidden" aria-live="polite"></div>
+                <div id="token-request-slot"></div>
               </div>
               <div id="token-alts-card" class="token-single-alternatives">
                 <div class="section-title">Alternatives<span id="token-alts-word-wrap"></span></div>
@@ -919,7 +1100,7 @@
             <span class="toggle-icon" id="token-cached-toggle-icon">▼ Show</span>
           </div>
           <div class="collapsible-body" id="token-cached-body">
-            <p class="plotter-hint token-cached-intro">Pre-loaded examples for discussion when live generation is unavailable. Responses are fixed; token probabilities and alternatives are illustrative rather than live API results.</p>
+            <p class="plotter-hint token-cached-intro">Real responses captured from the live model, saved for discussion when generation is unavailable. The text, the token probabilities, and the alternatives are all genuine API output — only fixed in time, not simulated. Notice that at temperature 0 the generated token is the most likely one at every single step.</p>
             <div class="token-cached-controls">
               <label for="token-cached-prompt">Prompt
                 <select id="token-cached-prompt">
@@ -1003,6 +1184,110 @@
   </div>
 </div><!-- end #research-app -->
 
+<!-- ═══════════════════════════════════ CITATION APP ═══════════════════════════════════ -->
+<div id="citation-app" class="hidden app-wrapper">
+
+  <div class="mod-header-bar" style="flex-shrink:0;">
+    <div class="header-left">
+      <button class="header-btn" onclick="showHomeScreen()" title="Back to Home">←</button>
+      <div>
+        <div class="header-title">Hallucinated Citations</div>
+        <div class="header-subtitle">Experiment</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <button class="header-btn help-btn" title="Keyboard shortcuts (?)">?</button>
+      <button class="header-btn settings-trigger" title="Appearance settings (S)">⚙</button>
+    </div>
+  </div>
+
+  <div id="cite-shell">
+
+    <!-- ── Side panel ── -->
+    <aside id="cite-panel">
+
+      <section class="plotter-section">
+        <div class="advanced-subtitle">Live Feed</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <span id="cite-live-dot" style="width:10px;height:10px;border-radius:50%;background:var(--muted);flex-shrink:0;"></span>
+          <span id="cite-live-label" style="font-size:0.82rem;color:var(--muted);">Connecting…</span>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button id="cite-btn-export" class="btn btn-sm" title="Download every citation ever collected, including archived classes"
+            style="flex:1;justify-content:center;background:transparent;border:1px solid var(--border);color:var(--muted);">⤓ Export</button>
+          <button id="cite-btn-clear" class="btn btn-sm" title="Archive the current citations and clear the board"
+            style="flex:1;justify-content:center;background:transparent;border:1px solid var(--border);color:var(--muted);">✕ Clear</button>
+        </div>
+        <p class="plotter-hint">Clearing archives the current class rather than deleting it — the export includes every archived round.</p>
+      </section>
+
+      <!-- Sample data (works without student submissions) -->
+      <section class="plotter-section">
+        <div class="advanced-subtitle">Sample Data</div>
+        <button id="cite-btn-demo" class="btn btn-sm" aria-pressed="false"
+          style="width:100%;background:transparent;border:1px solid var(--border);color:var(--muted);">▦ Show sample data</button>
+        
+      </section>
+
+      <!-- Student QR / link -->
+      <section class="plotter-section">
+        <div class="advanced-subtitle">Student Submit Link</div>
+        <img id="cite-qr-img" src="" alt="QR code" style="width:100%;border-radius:6px;display:none;">
+        <div id="cite-qr-loading" style="font-size:0.8rem;color:var(--muted);">Generating…</div>
+        <div style="display:flex;align-items:center;gap:5px;margin-top:8px;">
+          <input type="text" id="cite-student-link" readonly
+            style="flex:1;min-width:0;font-size:0.72rem;padding:5px 7px;border-radius:5px;border:1px solid var(--border);background:var(--bg);color:var(--muted);font-family:monospace;">
+          <button id="cite-btn-copy-link" class="btn btn-sm" title="Copy link"
+            style="flex-shrink:0;padding:5px 9px;background:transparent;border:1px solid var(--border);color:var(--muted);">⎘</button>
+        </div>
+      </section>
+
+      <section class="plotter-section">
+        <div class="advanced-subtitle">Display</div>
+        <label class="plotter-checkbox-label">
+          <input type="checkbox" id="cite-group-dupes" checked>
+          Group duplicates
+        </label>
+        <label class="plotter-checkbox-label">
+          <input type="checkbox" id="cite-newest-first" checked>
+          Newest citation first
+        </label>
+        
+      </section>
+
+      <section class="plotter-section">
+        <div class="advanced-subtitle">Status</div>
+        <div id="cite-status-text" class="plotter-status-text">Ready</div>
+        <pre id="cite-stats-text" class="plotter-stats-text"></pre>
+      </section>
+
+    </aside>
+
+    <!-- ── Display area ── -->
+    <main id="cite-main">
+      <div id="cite-demo-badge" class="hidden">Sample data — not live submissions</div>
+
+      <section class="cite-block">
+        <header class="cite-block-head">
+          <h3>Class Citations</h3>
+          <span id="cite-count" class="cite-block-count">0 submitted</span>
+        </header>
+        <div id="cite-prompt-line" class="cite-prompt-line"><span class="cite-prompt-tag">Prompt</span><span id="cite-prompt-text"></span></div>
+        <div id="cite-list" class="cite-list"></div>
+      </section>
+
+      <section class="cite-block">
+        <header class="cite-block-head">
+          <h3>Part by Part</h3>
+          <span class="cite-block-count">Every value the class submitted</span>
+        </header>
+        <div id="cite-parts" class="cite-parts-row"></div>
+      </section>
+    </main>
+
+  </div>
+</div><!-- end #citation-app -->
+
 <!-- ══════════════════ STUDENT SUBMIT VIEW ══════════════════ -->
 <div id="plotter-submit-view" class="hidden" style="
   position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
@@ -1072,6 +1357,75 @@
     </form>
   </div>
 </div>
+
+<!-- ══════════════════ STUDENT SUBMIT VIEW — CITATIONS ══════════════════ -->
+<div id="cite-submit-view" class="hidden" style="
+  position:fixed;inset:0;display:flex;align-items:flex-start;justify-content:center;
+  background:var(--bg);z-index:9999;padding:24px;box-sizing:border-box;overflow-y:auto;">
+  <div style="width:100%;max-width:440px;margin:auto;">
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="font-size:1.4rem;font-weight:700;color:var(--text);margin-bottom:6px;">Case Citation</div>
+      <div id="cite-submit-instructions" style="font-size:0.9rem;color:var(--muted);line-height:1.5;">Make up a citation for a case that does not exist. Fill in every part, as you would if you were citing a real one.</div>
+    </div>
+
+    <form id="cite-submit-form" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;display:flex;flex-direction:column;gap:16px;">
+
+      <div>
+        <label for="cite-field-caption" class="cite-sub-label">Case name</label>
+        <input id="cite-field-caption" type="text" maxlength="120" autocomplete="off" autocapitalize="words" class="cite-sub-input">
+      </div>
+
+      <div class="cite-sub-row">
+        <div>
+          <label for="cite-field-volume" class="cite-sub-label">Volume</label>
+          <input id="cite-field-volume" type="text" maxlength="8" inputmode="numeric" autocomplete="off" class="cite-sub-input">
+        </div>
+        <div>
+          <label for="cite-field-reporter" class="cite-sub-label">Reporter</label>
+          <input id="cite-field-reporter" type="text" maxlength="40" autocomplete="off" autocapitalize="characters" class="cite-sub-input">
+        </div>
+        <div>
+          <label for="cite-field-page" class="cite-sub-label">First page</label>
+          <input id="cite-field-page" type="text" maxlength="8" inputmode="numeric" autocomplete="off" class="cite-sub-input">
+        </div>
+      </div>
+
+      <div class="cite-sub-row cite-sub-row-2">
+        <div>
+          <label for="cite-field-court" class="cite-sub-label">Court</label>
+          <input id="cite-field-court" type="text" maxlength="40" autocomplete="off" class="cite-sub-input">
+        </div>
+        <div>
+          <label for="cite-field-year" class="cite-sub-label">Year</label>
+          <input id="cite-field-year" type="text" maxlength="8" inputmode="numeric" autocomplete="off" class="cite-sub-input">
+        </div>
+      </div>
+
+      <div>
+        <div class="cite-sub-label" style="margin-bottom:6px;">Your citation</div>
+        <div id="cite-submit-preview" class="cite-sub-preview cite-sub-preview-empty">Fill in the fields above.</div>
+      </div>
+
+      <div id="cite-submit-error" class="hidden" style="font-size:0.85rem;color:#f87171;padding:8px 12px;background:rgba(248,113,113,0.1);border-radius:6px;"></div>
+
+      <div id="cite-submit-success" class="hidden" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.35);border-radius:6px;">
+        <span style="font-size:1.1rem;color:#22c55e;">✓</span>
+        <span id="cite-submit-confirm-text" style="font-size:0.88rem;color:var(--text);flex:1;"></span>
+      </div>
+
+      <button type="submit" id="cite-submit-btn" class="btn btn-primary" style="width:100%;padding:12px;">Submit</button>
+      <div id="cite-submit-tally" style="font-size:0.78rem;color:var(--muted);text-align:center;"></div>
+      <div style="font-size:0.75rem;color:var(--muted);text-align:center;line-height:1.5;">Submitted anonymously — no name is collected. Your citation is shown to the whole class, so don't type anyone's real name.</div>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ GLOBAL DISCLAIMER ═══════════════════════════════════ -->
+<footer id="global-disclaimer" role="contentinfo">
+  <span><strong>For educational use only.</strong> Classroom demonstrations — not legal advice and not a substitute for professional judgment.</span>
+  <span class="disclaimer-sep">·</span>
+  <span>Do not enter confidential, privileged, personal, or client information.</span>
+</footer>
 
 <script src="app.js"></script>
 </body>

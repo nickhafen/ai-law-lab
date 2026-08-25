@@ -10,6 +10,7 @@ function showHomeScreen() {
   document.getElementById('plotter-app').classList.add('hidden');
   document.getElementById('research-app').classList.add('hidden');
   document.getElementById('token-app').classList.add('hidden');
+  document.getElementById('citation-app').classList.add('hidden');
   document.getElementById('home-screen').classList.remove('hidden');
 }
 
@@ -19,6 +20,7 @@ function showPlotterApp() {
   document.getElementById('counsel-app').classList.add('hidden');
   document.getElementById('research-app').classList.add('hidden');
   document.getElementById('token-app').classList.add('hidden');
+  document.getElementById('citation-app').classList.add('hidden');
   document.getElementById('plotter-app').classList.remove('hidden');
   if (!plotterInitialized) {
     plotterInitialized = true;
@@ -33,6 +35,7 @@ function showResearchApp() {
   document.getElementById('counsel-app').classList.add('hidden');
   document.getElementById('plotter-app').classList.add('hidden');
   document.getElementById('token-app').classList.add('hidden');
+  document.getElementById('citation-app').classList.add('hidden');
   document.getElementById('research-app').classList.remove('hidden');
   const roster = document.getElementById('settings-roster');
   if (roster && roster.value.trim()) document.getElementById('research-names').value = roster.value;
@@ -44,10 +47,26 @@ function showTokenApp() {
   document.getElementById('counsel-app').classList.add('hidden');
   document.getElementById('plotter-app').classList.add('hidden');
   document.getElementById('research-app').classList.add('hidden');
+  document.getElementById('citation-app').classList.add('hidden');
   document.getElementById('token-app').classList.remove('hidden');
   if (!tokenInitialized) {
     tokenInitialized = true;
     onExerciseConfig('tokenExplorer', tokenApplyConfig);
+  }
+}
+
+function showCitationApp() {
+  document.getElementById('home-screen').classList.add('hidden');
+  document.getElementById('panel-app').classList.add('hidden');
+  document.getElementById('counsel-app').classList.add('hidden');
+  document.getElementById('plotter-app').classList.add('hidden');
+  document.getElementById('research-app').classList.add('hidden');
+  document.getElementById('token-app').classList.add('hidden');
+  document.getElementById('citation-app').classList.remove('hidden');
+  if (!citationInitialized) {
+    citationInitialized = true;
+    citeStartListener();
+    citeBuildQR();
   }
 }
 
@@ -94,6 +113,35 @@ function escHtml(str) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+// ── CSV export (shared by the archiving exercises) ──
+function csvCell(value) {
+  const str = String(value ?? '');
+  // A leading =, +, - or @ makes Excel treat the cell as a formula.
+  const safe = /^[=+\-@\t\r]/.test(str) ? `'${str}` : str;
+  return `"${safe.replace(/"/g, '""')}"`;
+}
+
+function csvRow(values) {
+  return values.map(csvCell).join(',');
+}
+
+// Hands the browser a finished file. The BOM keeps Excel from mangling UTF-8.
+function csvDownload(filename, header, rows) {
+  const blob = new Blob([`﻿${header}\n${rows.join('\n')}\n`], { type: 'text/csv;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function csvDateStamp() {
+  return new Date().toISOString().slice(0, 10);
 }
 
 // ════════════════════════════════════════════════
@@ -851,6 +899,7 @@ function renderHelpModal() {
   const onPanel   = !document.getElementById('panel-app').classList.contains('hidden');
   const onCounsel = !document.getElementById('counsel-app').classList.contains('hidden');
   const onToken   = !document.getElementById('token-app').classList.contains('hidden');
+  const onCites   = !document.getElementById('citation-app').classList.contains('hidden');
   const onPanelSetup    = onPanel   && document.getElementById('setup-screen').classList.contains('active');
   const onPanelMod      = onPanel   && document.getElementById('mod-screen').classList.contains('active');
   const onCounselSetup  = onCounsel && document.getElementById('counsel-setup').classList.contains('active');
@@ -862,6 +911,7 @@ function renderHelpModal() {
   show('help-section-counsel-setup', onCounselSetup);
   show('help-section-counsel-mod',   onCounselMod);
   show('help-section-token',         onToken);
+  show('help-section-citations',     onCites);
 }
 
 function bindHelpEvents() {
@@ -906,6 +956,13 @@ function bindKeyboardShortcuts() {
     if (e.key === '?') { renderHelpModal(); openModal($helpModal); return; }
 
     if (document.querySelector('.modal-overlay.open')) return;
+
+    // ── Citation-only shortcuts ──
+    if (!document.getElementById('citation-app').classList.contains('hidden')) {
+      if (e.key === 'g' || e.key === 'G') { document.getElementById('cite-group-dupes')?.click(); return; }
+      if (e.key === 'd' || e.key === 'D') { citeSetDemoMode(!citeDemoMode); return; }
+      return;
+    }
 
     // ── Counsel-only shortcuts ──
     const onCounsel = !document.getElementById('counsel-app').classList.contains('hidden');
@@ -1620,6 +1677,14 @@ function onExerciseConfig(exercise, callback) {
 }
 
 // ── Plotter state ─────────────────────────────────
+// Same split as the citations exercise, both under the permitted `plotter`
+// path: clearing the board archives the round instead of destroying it, and
+// the export reads live and archive together.
+//   plotter/live/{pushId}
+//   plotter/archive/{sessionId}/{records,axes,archivedAt}
+const PLOTTER_LIVE_PATH    = 'plotter/live';
+const PLOTTER_ARCHIVE_PATH = 'plotter/archive';
+
 let plotterInitialized = false;
 let plotterData        = [];
 let plotterCamera      = null;
@@ -1703,7 +1768,7 @@ function plotterStartListener() {
   if (_plotterListener) return;           // already attached
   plotterSetStatus('loading', 'Connecting…');
 
-  const ref = _fbDB.ref('plotter');
+  const ref = _fbDB.ref(PLOTTER_LIVE_PATH);
   _plotterListener = ref.on('value', snapshot => {
     plotterSetLive(true);
     const raw = snapshot.val() || {};
@@ -1733,12 +1798,82 @@ function plotterStartListener() {
   onExerciseConfig('plotter', cfg => plotterApplyConfig(cfg));
 }
 
+// Clearing moves the round into the archive instead of destroying it, so the
+// plot can be emptied between classes while the export still sees everything.
 async function plotterHandleClear() {
-  if (!confirm('Delete all submissions from Firebase? This cannot be undone.')) return;
+  const count = plotterLiveCount;
+  if (!count) { alert('There are no submissions on the plot to clear.'); return; }
+  if (!confirm(`Archive these ${count} submission${count !== 1 ? 's' : ''} and clear the plot?\n\nThey stay in the export — this is not a delete.`)) return;
+
+  const btn = document.getElementById('plotter-btn-clear');
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
   try {
-    await _fbDB.ref('plotter').remove();
+    const snap    = await _fbDB.ref(PLOTTER_LIVE_PATH).once('value');
+    const records = snap.val() || {};
+    if (Object.keys(records).length) {
+      const sessionId = new Date().toISOString().replace(/[.:]/g, '-');
+      await _fbDB.ref(`${PLOTTER_ARCHIVE_PATH}/${sessionId}`).set({
+        archivedAt: Date.now(),
+        // The ratings only mean something alongside the axes they were made on.
+        axes: { x: plotterConfig.axisX || '', y: plotterConfig.axisY || '', z: plotterConfig.axisZ || '' },
+        records,
+      });
+    }
+    await _fbDB.ref(PLOTTER_LIVE_PATH).remove();
+    // The listener repaints an empty plot on the way out — land the
+    // confirmation after it, or its own status message overwrites this one.
+    setTimeout(() => plotterSetStatus('ok', `Archived ${count} submission${count !== 1 ? 's' : ''}. Plot cleared.`), 300);
   } catch (err) {
     alert(`Could not clear: ${err.message}`);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '✕ Clear'; }
+  }
+}
+
+// ── Export ───────────────────────────────────────
+// Every rating ever collected — the plot plus every archived round — with the
+// axis labels each round was rated against.
+function plotterCsvRow(sessionLabel, axes, rec) {
+  return csvRow([
+    sessionLabel, axes.x || '', axes.y || '', axes.z || '',
+    rec.name ?? '', rec.word ?? '', rec.x ?? '', rec.y ?? '', rec.z ?? '',
+    rec.ts ? new Date(Number(rec.ts)).toISOString() : '',
+  ]);
+}
+
+async function plotterHandleExport() {
+  const btn = document.getElementById('plotter-btn-export');
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  plotterSetStatus('loading', 'Building export…');
+  try {
+    const [liveSnap, archiveSnap] = await Promise.all([
+      _fbDB.ref(PLOTTER_LIVE_PATH).once('value'),
+      _fbDB.ref(PLOTTER_ARCHIVE_PATH).once('value'),
+    ]);
+
+    const header = csvRow(['session', 'axis_x', 'axis_y', 'axis_z', 'student', 'word', 'x', 'y', 'z', 'submitted_at']);
+    const rows   = [];
+
+    const archive = archiveSnap.val() || {};
+    for (const sessionId of Object.keys(archive).sort()) {
+      const session = archive[sessionId] || {};
+      for (const rec of Object.values(session.records || {})) {
+        rows.push(plotterCsvRow(sessionId, session.axes || {}, rec));
+      }
+    }
+    const liveAxes = { x: plotterConfig.axisX, y: plotterConfig.axisY, z: plotterConfig.axisZ };
+    for (const rec of Object.values(liveSnap.val() || {})) {
+      rows.push(plotterCsvRow('current', liveAxes, rec));
+    }
+
+    if (!rows.length) { plotterSetStatus('ok', 'Nothing to export yet.'); return; }
+
+    csvDownload(`word-plotter-${csvDateStamp()}.csv`, header, rows);
+    plotterSetStatus('ok', `Exported ${rows.length} submission${rows.length !== 1 ? 's' : ''}.`);
+  } catch (err) {
+    plotterSetStatus('error', `Export failed: ${err.message}`);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '⤓ Export'; }
   }
 }
 
@@ -1979,7 +2114,9 @@ function plotterReRender() {
 }
 
 function plotterBuildQR() {
-  const submitUrl  = window.location.origin + window.location.pathname + '?submit';
+  // Named form of the parameter — bare `?submit` still routes here, so links
+  // and QR codes handed out before the citations exercise existed keep working.
+  const submitUrl  = window.location.origin + window.location.pathname + '?submit=plotter';
   const qrUrl      = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=6&data=${encodeURIComponent(submitUrl)}`;
   const img        = document.getElementById('plotter-qr-img');
   const loading    = document.getElementById('plotter-qr-loading');
@@ -1994,6 +2131,7 @@ function plotterBuildQR() {
 
 function bindPlotterEvents() {
   document.getElementById('plotter-btn-clear')?.addEventListener('click', plotterHandleClear);
+  document.getElementById('plotter-btn-export')?.addEventListener('click', plotterHandleExport);
 
   // Sample-data toggle
   document.getElementById('plotter-btn-demo')?.addEventListener('click', () => {
@@ -2003,7 +2141,7 @@ function bindPlotterEvents() {
   // Copy link button
   document.getElementById('plotter-btn-copy-link')?.addEventListener('click', () => {
     const url = document.getElementById('plotter-student-link')?.value
-             || window.location.origin + window.location.pathname + '?submit';
+             || window.location.origin + window.location.pathname + '?submit=plotter';
     navigator.clipboard.writeText(url).then(() => {
       const btn = document.getElementById('plotter-btn-copy-link');
       const orig = btn.textContent;
@@ -2050,10 +2188,18 @@ function bindPlotterEvents() {
     }
   });
 
-  // ── Student submit view ──────────────────────────
-  if (new URLSearchParams(window.location.search).has('submit')) {
-    plotterInitSubmitView();
-  }
+}
+
+// ── Student submit routing ─────────────────────────
+// `?submit` is the shared entry point for every student-facing form. The bare
+// parameter stays with the plotter so QR codes and links printed before the
+// citations exercise existed keep working.
+function bindSubmitRouter() {
+  const params = new URLSearchParams(window.location.search);
+  if (!params.has('submit')) return;
+  const which = (params.get('submit') || '').trim().toLowerCase();
+  if (which === 'citations' || which === 'citation') citeInitSubmitView();
+  else plotterInitSubmitView();
 }
 
 // ── localStorage helpers for per-student submission tracking ──
@@ -2132,7 +2278,7 @@ function plotterInitSubmitView() {
 
     btn.disabled = true; btn.textContent = 'Submitting…';
     try {
-      await _fbDB.ref('plotter').push({ name: student, word, x, y, z, ts: Date.now() });
+      await _fbDB.ref(PLOTTER_LIVE_PATH).push({ name: student, word, x, y, z, ts: Date.now() });
       submitMarkDone(student, word);
       // Inline confirmation — keep the form visible
       const confirmEl = document.getElementById('plotter-submit-confirm-text');
@@ -2167,6 +2313,700 @@ function submitUpdateWordHint() {
   hintEl.textContent = done.length
     ? `${remaining} word${remaining !== 1 ? 's' : ''} remaining (${done.length} already submitted)`
     : '';
+}
+
+// ════════════════════════════════════════════════
+//  HALLUCINATED CITATIONS
+// ════════════════════════════════════════════════
+// Students invent a case citation for a case that does not exist. The class's
+// submissions are collected anonymously and then broken apart: reporters,
+// courts, and years collapse onto a handful of repeated values because those
+// parts follow patterns, while case names almost never repeat.
+//
+// Firebase layout, all under the single permitted `citations` path:
+//   citations/live/{pushId}                  — the class currently on screen
+//   citations/archive/{sessionId}/records    — every class cleared before it
+//   citations/archive/{sessionId}/{prompt,archivedAt}
+// Clearing archives rather than deletes, so the export can aggregate every
+// round ever run without the instructor having to remember to save first.
+const CITE_LIVE_PATH    = 'citations/live';
+const CITE_ARCHIVE_PATH = 'citations/archive';
+
+// Shown when the instructor hasn't set a prompt of their own.
+const CITE_DEFAULT_PROMPT = 'Make up a citation for a case that does not exist. Fill in every part, as you would if you were citing a real one.';
+
+// Field order is Bluebook order — it drives the form, the assembled citation,
+// and the part cards, so adding a part means touching this list and the markup.
+const CITE_PARTS = [
+  { key: 'caption',  label: 'Case name'  },
+  { key: 'volume',   label: 'Volume'     },
+  { key: 'reporter', label: 'Reporter'   },
+  { key: 'page',     label: 'First page' },
+  { key: 'court',    label: 'Court'      },
+  { key: 'year',     label: 'Year'       },
+];
+const CITE_MAXLEN = { caption: 120, volume: 8, reporter: 40, page: 8, court: 40, year: 8 };
+
+let citationInitialized = false;
+let citeData         = [];     // normalized live submissions, oldest first
+let citeLiveCount    = 0;      // raw record count from Firebase
+let citeDemoMode     = false;  // showing the simulated class instead of live submissions
+let citeConfig       = { prompt: '' };
+let _citeListener    = null;
+let _citeSeenIds     = null;   // null until the first render, so a full load doesn't flash
+
+function citePrompt() {
+  return citeConfig.prompt || CITE_DEFAULT_PROMPT;
+}
+
+// Live config from Firebase — the instructor's prompt, pushed from ⚙ Exercises.
+// Runs on both the instructor view and every open student form.
+function citeApplyConfig(cfg) {
+  citeConfig = { ...citeConfig, ...cfg };
+  const prompt = citePrompt();
+
+  const projected = document.getElementById('cite-prompt-text');
+  if (projected) projected.textContent = prompt;
+
+  const onForm = document.getElementById('cite-submit-instructions');
+  if (onForm) onForm.textContent = prompt;
+
+  // Keep the settings textarea in step, but never yank text out from under
+  // an instructor who is mid-edit.
+  const box = document.getElementById('settings-cite-prompt');
+  if (box && box !== document.activeElement) {
+    box.value = citeConfig.prompt || '';
+    citeUpdatePromptCount();
+  }
+}
+
+function citeUpdatePromptCount() {
+  const box = document.getElementById('settings-cite-prompt');
+  const out = document.getElementById('settings-cite-count');
+  if (box && out) out.textContent = `${box.value.length} / 400 characters`;
+}
+
+// ── Sample data ───────────────────────────────────
+// A simulated class, so the exercise can be rehearsed with nobody submitting.
+// Deliberately shaped like real results: every case name is unique, while the
+// reporters, courts, and years pile onto a few familiar values.
+const CITE_DEMO_RECORDS = [
+  ['Hartley v. Brennan',            '412', 'F.3d',        '118', '9th Cir.',  '2004'],
+  ['Marston v. Delgado',            '287', 'F.3d',        '551', '2d Cir.',   '2002'],
+  ['United States v. Coyle',        '533', 'U.S.',        '204', 'U.S.',      '2001'],
+  ['Whitfield v. Ramsey',           '119', 'F. Supp. 2d', '442', 'S.D.N.Y.',  '2010'],
+  ['Ellison v. Vance',              '764', 'F.3d',        '89',  '10th Cir.', '2015'],
+  ['Barlow v. Ridgeway Holdings',   '221', 'P.3d',        '1032','Utah',      '2010'],
+  ['State v. Pruitt',               '318', 'F.3d',        '77',  '9th Cir.',  '1996'],
+  ['Cardoza v. Fenwick',            '605', 'F.3d',        '1145','9th Cir.',  '2010'],
+  ['Ingram v. Sutter County',       '478', 'U.S.',        '331', 'U.S.',      '1986'],
+  ['Delacroix v. Meridian Bank',    '92',  'F. Supp. 2d', '210', 'D. Utah',   '1999'],
+  ['Okafor v. Trellis Systems',     '831', 'F.3d',        '664', '10th Cir.', '2015'],
+  ['Nunley v. Ashcombe',            '145', 'P.3d',        '509', 'Utah',      '2006'],
+  ['Rivera v. Halloran',            '299', 'F.3d',        '1201','2d Cir.',   '2002'],
+  ['Weatherby v. Colston',          '514', 'U.S.',        '87',  'U.S.',      '1995'],
+  ['Aldridge v. Pemberton Mills',   '673', 'F.3d',        '412', '9th Cir.',  '2012'],
+  ['In re Kessler Estate',          '208', 'P.3d',        '918', 'Utah',      '2018'],
+  ['Salazar v. Grantham',           '387', 'F. Supp. 2d', '55',  'S.D.N.Y.',  '2005'],
+  ['Bristow v. Kaneko',             '752', 'F.3d',        '229', '2d Cir.',   '2015'],
+  ['Tavares v. Milbank County',     '166', 'P.3d',        '744', 'Utah',      '2007'],
+  ['Fenton v. Aurora Logistics',    '941', 'F.3d',        '1077','9th Cir.',  '2019'],
+  ['United States v. Marchetti',    '461', 'U.S.',        '612', 'U.S.',      '2010'],
+  ['Halstead v. Verity Health',     '327', 'F. Supp. 2d', '881', 'D. Utah',   '2004'],
+  ['Quinlan v. Broadmoor Trust',    '588', 'F.3d',        '340', '10th Cir.', '2012'],
+  ['Ferrand v. Oakes',              '134', 'P.3d',        '62',  'Utah',      '2005'],
+];
+
+let _citeDemoRecords = null;
+function citeDemoRecords() {
+  if (_citeDemoRecords) return _citeDemoRecords;
+  // Spread the timestamps a minute apart so "newest first" has something to sort.
+  const base = Date.now() - CITE_DEMO_RECORDS.length * 60000;
+  _citeDemoRecords = CITE_DEMO_RECORDS.map((row, i) => ({
+    id: `demo-${i}`,
+    caption: row[0], volume: row[1], reporter: row[2],
+    page: row[3], court: row[4], year: row[5],
+    ts: base + i * 60000,
+  }));
+  return _citeDemoRecords;
+}
+
+// ── Helpers ──────────────────────────────────────
+function citeClean(value, key) {
+  return String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, CITE_MAXLEN[key] || 120);
+}
+
+// Firebase record → display record. Anything with no parts at all is dropped.
+function citeNormalize(id, raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const rec = { id, ts: Number(raw.ts) || 0 };
+  for (const part of CITE_PARTS) rec[part.key] = citeClean(raw[part.key], part.key);
+  return CITE_PARTS.some(p => rec[p.key]) ? rec : null;
+}
+
+// Assembles the parts into a citation: name, then volume/reporter/page, then
+// court and year in parentheses. Missing parts are simply left out.
+function citeFormat(rec) {
+  const middle = [rec.volume, rec.reporter, rec.page].filter(Boolean).join(' ');
+  const paren  = [rec.court, rec.year].filter(Boolean).join(' ');
+  let rest = '';
+  if (middle) rest += `, ${middle}`;
+  if (paren)  rest += `${middle ? ' ' : ', '}(${paren})`;
+  if (rest)   rest += '.';
+  return { name: rec.caption, rest };
+}
+
+function citeGroupValues(values) {
+  const counts = new Map();
+  for (const v of values) counts.set(v, (counts.get(v) || 0) + 1);
+  return [...counts.entries()]
+    .map(([value, count]) => ({ value, count }))
+    .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value));
+}
+
+function citeRecords() {
+  return citeDemoMode ? citeDemoRecords() : citeData;
+}
+
+function citeSetLive(connected) {
+  const dot   = document.getElementById('cite-live-dot');
+  const label = document.getElementById('cite-live-label');
+  if (dot)   dot.style.background = connected ? '#22c55e' : '#f87171';
+  if (label) {
+    label.textContent = connected ? 'Live' : 'Disconnected';
+    label.style.color = connected ? '#22c55e' : '#f87171';
+  }
+}
+
+function citeSetStatus(type, message) {
+  const el = document.getElementById('cite-status-text');
+  if (el) { el.className = `plotter-status-text ${type}`; el.textContent = message; }
+}
+
+function citeSetStats(records) {
+  const el = document.getElementById('cite-stats-text');
+  if (!el) return;
+  const distinct = key => new Set(records.map(r => r[key]).filter(Boolean)).size;
+  const row = (label, value) => `${label.padEnd(10)}: ${value}`;
+  el.textContent = [
+    row('Citations', records.length),
+    row('Names',     `${distinct('caption')} distinct`),
+    row('Reporters', `${distinct('reporter')} distinct`),
+    row('Courts',    `${distinct('court')} distinct`),
+    row('Years',     `${distinct('year')} distinct`),
+    (!citeDemoMode || citeLiveCount === 0) ? '' : row('Live', `${citeLiveCount} hidden`),
+  ].filter(Boolean).join('\n');
+}
+
+// ── Firebase listener (instructor view) ──────────
+function citeStartListener() {
+  if (_citeListener) return;
+  // Draw the empty scaffold first, so the projected screen shows the list and
+  // the six part cards even if Firebase never answers.
+  citeRender();
+  citeSetStatus('loading', 'Connecting…');
+
+  const ref = _fbDB.ref(CITE_LIVE_PATH);
+  _citeListener = ref.on('value', snapshot => {
+    citeSetLive(true);
+    const raw = snapshot.val() || {};
+    citeData = Object.entries(raw)
+      .map(([id, rec]) => citeNormalize(id, rec))
+      .filter(Boolean)
+      .sort((a, b) => a.ts - b.ts);
+    citeLiveCount = Object.keys(raw).length;
+    citeRender();
+  }, err => {
+    citeSetLive(false);
+    citeSetStatus('error', `Firebase error: ${err.message}`);
+  });
+
+  _fbDB.ref('.info/connected').on('value', snap => citeSetLive(!!snap.val()));
+}
+
+// Clearing moves the round into the archive instead of destroying it, so the
+// board can be emptied between classes while the export still sees everything.
+async function citeHandleClear() {
+  const count = citeData.length;
+  if (!count) { alert('There are no citations on the board to clear.'); return; }
+  if (!confirm(`Archive these ${count} citation${count !== 1 ? 's' : ''} and clear the board?\n\nThey stay in the export — this is not a delete.`)) return;
+
+  const btn = document.getElementById('cite-btn-clear');
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  try {
+    const snap    = await _fbDB.ref(CITE_LIVE_PATH).once('value');
+    const records = snap.val() || {};
+    if (Object.keys(records).length) {
+      const sessionId = new Date().toISOString().replace(/[.:]/g, '-');
+      await _fbDB.ref(`${CITE_ARCHIVE_PATH}/${sessionId}`).set({
+        archivedAt: Date.now(),
+        prompt:     citePrompt(),
+        records,
+      });
+    }
+    await _fbDB.ref(CITE_LIVE_PATH).remove();
+    // The listener repaints an empty board on the way out — land the
+    // confirmation after it, or its own status message overwrites this one.
+    setTimeout(() => citeSetStatus('ok', `Archived ${count} citation${count !== 1 ? 's' : ''}. Board cleared.`), 300);
+  } catch (err) {
+    alert(`Could not clear: ${err.message}`);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '✕ Clear'; }
+  }
+}
+
+// ── Export ───────────────────────────────────────
+// One CSV of every citation ever collected — the board plus every archived
+// round — so results can be aggregated across classes and semesters.
+function citeCsvRow(sessionLabel, prompt, rec) {
+  return csvRow([
+    sessionLabel, prompt,
+    ...CITE_PARTS.map(p => rec[p.key] ?? ''),
+    rec.ts ? new Date(Number(rec.ts)).toISOString() : '',
+  ]);
+}
+
+async function citeHandleExport() {
+  const btn = document.getElementById('cite-btn-export');
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  citeSetStatus('loading', 'Building export…');
+  try {
+    const [liveSnap, archiveSnap] = await Promise.all([
+      _fbDB.ref(CITE_LIVE_PATH).once('value'),
+      _fbDB.ref(CITE_ARCHIVE_PATH).once('value'),
+    ]);
+
+    const header = csvRow(['session', 'prompt', ...CITE_PARTS.map(p => p.label), 'submitted_at']);
+    const rows = [];
+
+    // Archived rounds first, oldest session first, then the current board.
+    const archive = archiveSnap.val() || {};
+    for (const sessionId of Object.keys(archive).sort()) {
+      const session = archive[sessionId] || {};
+      for (const rec of Object.values(session.records || {})) {
+        rows.push(citeCsvRow(sessionId, session.prompt || '', rec));
+      }
+    }
+    for (const rec of Object.values(liveSnap.val() || {})) {
+      rows.push(citeCsvRow('current', citePrompt(), rec));
+    }
+
+    if (!rows.length) {
+      citeSetStatus('ok', 'Nothing to export yet.');
+      return;
+    }
+
+    csvDownload(`hallucinated-citations-${csvDateStamp()}.csv`, header, rows);
+    citeSetStatus('ok', `Exported ${rows.length} citation${rows.length !== 1 ? 's' : ''}.`);
+  } catch (err) {
+    citeSetStatus('error', `Export failed: ${err.message}`);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '⤓ Export'; }
+  }
+}
+
+// ── Rendering ────────────────────────────────────
+function citeRender() {
+  const records    = citeRecords();
+  const newestFirst = document.getElementById('cite-newest-first')?.checked ?? true;
+  const ordered    = newestFirst ? [...records].reverse() : [...records];
+  citeRenderList(ordered);
+  citeRenderParts(ordered);
+  citeSetStats(records);
+
+  const countEl = document.getElementById('cite-count');
+  if (countEl) countEl.textContent = `${records.length} submitted`;
+
+  if (citeDemoMode) {
+    citeSetStatus('ok', `Sample data — ${records.length} simulated citations. Live submissions hidden.`);
+  } else {
+    citeSetStatus('ok', records.length === 0
+      ? 'No submissions yet.'
+      : `Showing ${records.length} citation${records.length !== 1 ? 's' : ''}.`);
+  }
+}
+
+function citeRenderList(records) {
+  const list = document.getElementById('cite-list');
+  if (!list) return;
+  list.innerHTML = '';
+
+  if (!records.length) {
+    const empty = document.createElement('div');
+    empty.className = 'cite-empty';
+    empty.textContent = 'Waiting for the first citation…';
+    list.appendChild(empty);
+    _citeSeenIds = citeDemoMode ? _citeSeenIds : new Set();
+    return;
+  }
+
+  // Flash only what arrived since the last render — never on the first load,
+  // which would set the whole screen blinking when the app opens.
+  const firstRender = _citeSeenIds === null;
+  const seen        = _citeSeenIds || new Set();
+
+  for (const rec of records) {
+    const { name, rest } = citeFormat(rec);
+    const item = document.createElement('div');
+    item.className = 'cite-item';
+    if (!firstRender && !citeDemoMode && !seen.has(rec.id)) item.classList.add('is-new');
+
+    const nameEl = document.createElement('span');
+    nameEl.className = 'cite-item-name';
+    nameEl.textContent = name;
+    const restEl = document.createElement('span');
+    restEl.className = 'cite-item-rest';
+    restEl.textContent = rest;
+
+    item.appendChild(nameEl);
+    item.appendChild(restEl);
+    list.appendChild(item);
+  }
+
+  // Demo records must not poison the seen set, or every live submission would
+  // flash again the moment sample mode is switched off.
+  if (!citeDemoMode) _citeSeenIds = new Set(records.map(r => r.id));
+}
+
+function citeRenderParts(records) {
+  const wrap = document.getElementById('cite-parts');
+  if (!wrap) return;
+  const grouped = document.getElementById('cite-group-dupes')?.checked ?? true;
+  citeHideTooltip();
+  _citeHoverRow = null;
+  wrap.innerHTML = '';
+
+  for (const part of CITE_PARTS) {
+    const present  = records.filter(r => r[part.key]);
+    const values   = present.map(r => r[part.key]);
+    const distinct = new Set(values).size;
+
+    const card = document.createElement('div');
+    card.className = 'cite-part-card';
+
+    const head = document.createElement('div');
+    head.className = 'cite-part-head';
+    head.textContent = part.label;
+    card.appendChild(head);
+
+    const body = document.createElement('div');
+    body.className = 'cite-part-values';
+    if (!values.length) {
+      const empty = document.createElement('div');
+      empty.className = 'cite-part-value';
+      empty.style.color = 'var(--muted)';
+      empty.textContent = '—';
+      body.appendChild(empty);
+    } else if (grouped) {
+      for (const { value, count } of citeGroupValues(values)) {
+        const row = document.createElement('div');
+        row.className = 'cite-part-value has-records';
+        // Every submission this value came from, for the hover tooltip.
+        row._citeRecords = present.filter(r => r[part.key] === value);
+        const text = document.createElement('span');
+        text.textContent = value;
+        row.appendChild(text);
+        if (count > 1) {
+          const badge = document.createElement('span');
+          badge.className = 'cite-part-count';
+          badge.textContent = `×${count}`;
+          row.appendChild(badge);
+        }
+        body.appendChild(row);
+      }
+    } else {
+      for (const rec of present) {
+        const row = document.createElement('div');
+        row.className = 'cite-part-value has-records';
+        row._citeRecords = [rec];
+        row.textContent = rec[part.key];
+        body.appendChild(row);
+      }
+    }
+    card.appendChild(body);
+
+    const foot = document.createElement('div');
+    foot.className = 'cite-part-foot';
+    // Highlight the part nobody agreed on — that's the hallucination.
+    if (values.length > 1 && distinct === values.length) foot.classList.add('all-distinct');
+    foot.textContent = values.length
+      ? `${values.length} submitted · ${distinct} distinct`
+      : '0 submitted';
+    card.appendChild(foot);
+
+    wrap.appendChild(card);
+  }
+}
+
+// ── Part-value hover tooltip ─────────────────────
+// Hovering a part value shows the whole citation it came from — and for a
+// grouped value, every citation that used it, so a reporter repeated eleven
+// times can be traced back to the eleven different cases invented around it.
+const CITE_TOOLTIP_MAX = 15;
+let _citeHoverRow = null;
+
+function citeTooltipEl() {
+  let el = document.getElementById('cite-tooltip');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'cite-tooltip';
+    el.className = 'cite-tooltip hidden';
+    document.body.appendChild(el);
+  }
+  return el;
+}
+
+function citeHideTooltip() {
+  document.getElementById('cite-tooltip')?.classList.add('hidden');
+}
+
+function citeShowTooltip(row) {
+  const records = row._citeRecords;
+  if (!records || !records.length) return;
+  const el = citeTooltipEl();
+  el.innerHTML = '';
+
+  if (records.length > 1) {
+    const head = document.createElement('div');
+    head.className = 'cite-tooltip-head';
+    head.textContent = `${records.length} citations`;
+    el.appendChild(head);
+  }
+
+  for (const rec of records.slice(0, CITE_TOOLTIP_MAX)) {
+    const { name, rest } = citeFormat(rec);
+    const line   = document.createElement('div');
+    line.className = 'cite-tooltip-line';
+    const nameEl = document.createElement('span');
+    nameEl.className = 'cite-item-name';
+    nameEl.textContent = name;
+    const restEl = document.createElement('span');
+    restEl.textContent = rest;
+    line.appendChild(nameEl);
+    line.appendChild(restEl);
+    el.appendChild(line);
+  }
+
+  if (records.length > CITE_TOOLTIP_MAX) {
+    const more = document.createElement('div');
+    more.className = 'cite-tooltip-more';
+    more.textContent = `…and ${records.length - CITE_TOOLTIP_MAX} more`;
+    el.appendChild(more);
+  }
+
+  // Show it before measuring — a display:none box has no dimensions to clamp.
+  el.classList.remove('hidden');
+  el.style.left = '0px';
+  el.style.top  = '0px';
+  const rowRect = row.getBoundingClientRect();
+  const box     = el.getBoundingClientRect();
+  const pad     = 10;
+  // Prefer the right of the value; flip to the left when it would run off.
+  let left = rowRect.right + pad;
+  if (left + box.width > window.innerWidth - pad) {
+    left = Math.max(pad, rowRect.left - box.width - pad);
+  }
+  let top = rowRect.top;
+  if (top + box.height > window.innerHeight - pad) {
+    top = Math.max(pad, window.innerHeight - box.height - pad);
+  }
+  el.style.left = `${Math.round(left)}px`;
+  el.style.top  = `${Math.round(top)}px`;
+}
+
+function bindCiteTooltip() {
+  const wrap = document.getElementById('cite-parts');
+  if (!wrap) return;
+
+  wrap.addEventListener('mouseover', e => {
+    const row = e.target.closest?.('.cite-part-value.has-records');
+    if (!row || row === _citeHoverRow) return;
+    _citeHoverRow = row;
+    citeShowTooltip(row);
+  });
+  wrap.addEventListener('mouseout', e => {
+    const row = e.target.closest?.('.cite-part-value.has-records');
+    if (!row || row.contains(e.relatedTarget)) return;
+    _citeHoverRow = null;
+    citeHideTooltip();
+  });
+
+  // Scrolling moves the row out from under an anchored tooltip. Capture, since
+  // scroll events from the inner value lists don't bubble.
+  wrap.addEventListener('scroll', citeHideTooltip, true);
+  document.getElementById('cite-main')?.addEventListener('scroll', citeHideTooltip);
+  window.addEventListener('resize', citeHideTooltip);
+}
+
+// Toggle between live Firebase submissions and the built-in sample class.
+function citeSetDemoMode(on) {
+  citeDemoMode = on;
+  const btn = document.getElementById('cite-btn-demo');
+  if (btn) {
+    btn.textContent = on ? '◉ Show live submissions' : '▦ Show sample data';
+    btn.setAttribute('aria-pressed', String(on));
+    btn.style.color       = on ? 'var(--accent)' : 'var(--muted)';
+    btn.style.borderColor = on ? 'var(--accent)' : 'var(--border)';
+  }
+  document.getElementById('cite-demo-badge')?.classList.toggle('hidden', !on);
+  citeRender();
+}
+
+function citeBuildQR() {
+  const submitUrl = `${window.location.origin + window.location.pathname}?submit=citations`;
+  const qrUrl     = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=6&data=${encodeURIComponent(submitUrl)}`;
+  const img       = document.getElementById('cite-qr-img');
+  const loading   = document.getElementById('cite-qr-loading');
+  const linkInput = document.getElementById('cite-student-link');
+  if (linkInput) linkInput.value = submitUrl;
+  if (img) {
+    img.src = qrUrl;
+    img.onload  = () => { img.style.display = 'block'; if (loading) loading.style.display = 'none'; };
+    img.onerror = () => { if (loading) loading.textContent = 'QR unavailable (offline?)'; };
+  }
+}
+
+function bindCitationEvents() {
+  bindCiteTooltip();
+
+  // One listener for every surface: the projected prompt line, the student
+  // form's instructions, and the settings textarea all read from it — and it
+  // has to be live on the submit page too, where no app is ever "opened".
+  onExerciseConfig('citations', citeApplyConfig);
+
+  document.getElementById('cite-btn-clear')?.addEventListener('click', citeHandleClear);
+  document.getElementById('cite-btn-export')?.addEventListener('click', citeHandleExport);
+  document.getElementById('cite-btn-demo')?.addEventListener('click', () => citeSetDemoMode(!citeDemoMode));
+
+  // ── Settings: prompt ─────────────────────────────
+  const promptBox = document.getElementById('settings-cite-prompt');
+  promptBox?.addEventListener('input', citeUpdatePromptCount);
+
+  document.getElementById('settings-cite-reset')?.addEventListener('click', () => {
+    if (promptBox) { promptBox.value = ''; citeUpdatePromptCount(); promptBox.focus(); }
+  });
+
+  document.getElementById('settings-cite-save')?.addEventListener('click', async () => {
+    const statusEl = document.getElementById('settings-cite-save-status');
+    const prompt   = (promptBox?.value ?? '').trim().slice(0, 400);
+    if (statusEl) statusEl.textContent = 'Saving…';
+    try {
+      await saveExerciseConfig('citations', { prompt });
+      if (statusEl) {
+        statusEl.textContent = prompt ? '✓ Pushed to students' : '✓ Default restored';
+        setTimeout(() => { statusEl.textContent = ''; }, 3000);
+      }
+    } catch (err) {
+      if (statusEl) statusEl.textContent = `Error: ${err.message}`;
+    }
+  });
+
+  ['cite-group-dupes', 'cite-newest-first'].forEach(id => {
+    document.getElementById(id)?.addEventListener('change', citeRender);
+  });
+
+  document.getElementById('cite-btn-copy-link')?.addEventListener('click', () => {
+    const btn = document.getElementById('cite-btn-copy-link');
+    const url = document.getElementById('cite-student-link')?.value
+             || `${window.location.origin + window.location.pathname}?submit=citations`;
+    navigator.clipboard.writeText(url).then(() => {
+      const orig = btn.textContent;
+      btn.textContent = '✓';
+      setTimeout(() => { btn.textContent = orig; }, 1800);
+    });
+  });
+}
+
+// ── Student submit view ──────────────────────────
+function citeSubmitCount() {
+  return parseInt(localStorage.getItem('citations_submitted') || '0', 10) || 0;
+}
+function citeSubmitTally(n) {
+  localStorage.setItem('citations_submitted', String(n));
+  const el = document.getElementById('cite-submit-tally');
+  if (el) el.textContent = n ? `You've submitted ${n} citation${n !== 1 ? 's' : ''}.` : '';
+}
+
+function citeSubmitFields() {
+  const rec = {};
+  for (const part of CITE_PARTS) {
+    rec[part.key] = citeClean(document.getElementById(`cite-field-${part.key}`)?.value, part.key);
+  }
+  return rec;
+}
+
+function citeSubmitUpdatePreview() {
+  const el = document.getElementById('cite-submit-preview');
+  if (!el) return;
+  const rec = citeSubmitFields();
+  if (!CITE_PARTS.some(p => rec[p.key])) {
+    el.className = 'cite-sub-preview cite-sub-preview-empty';
+    el.textContent = 'Fill in the fields above.';
+    return;
+  }
+  const { name, rest } = citeFormat(rec);
+  el.className = 'cite-sub-preview';
+  el.innerHTML = '';
+  const nameEl = document.createElement('span');
+  nameEl.className = 'cite-item-name';
+  nameEl.textContent = name;
+  const restEl = document.createElement('span');
+  restEl.textContent = rest;
+  el.appendChild(nameEl);
+  el.appendChild(restEl);
+}
+
+function citeInitSubmitView() {
+  // Show only the submit overlay
+  document.querySelectorAll('#home-screen, #panel-app, #plotter-app, #counsel-app, #research-app, #token-app, #citation-app')
+    .forEach(el => el.classList.add('hidden'));
+  document.getElementById('cite-submit-view').classList.remove('hidden');
+
+  CITE_PARTS.forEach(part => {
+    document.getElementById(`cite-field-${part.key}`)?.addEventListener('input', citeSubmitUpdatePreview);
+  });
+  citeSubmitUpdatePreview();
+  citeSubmitTally(citeSubmitCount());
+
+  document.getElementById('cite-submit-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const errEl = document.getElementById('cite-submit-error');
+    const btn   = document.getElementById('cite-submit-btn');
+    const rec   = citeSubmitFields();
+
+    errEl.classList.add('hidden'); errEl.textContent = '';
+    const missing = CITE_PARTS.filter(p => !rec[p.key]);
+    if (missing.length) {
+      errEl.textContent = `Please fill in every part — missing: ${missing.map(p => p.label.toLowerCase()).join(', ')}.`;
+      errEl.classList.remove('hidden');
+      document.getElementById(`cite-field-${missing[0].key}`)?.focus();
+      return;
+    }
+
+    btn.disabled = true; btn.textContent = 'Submitting…';
+    try {
+      await _fbDB.ref(CITE_LIVE_PATH).push({ ...rec, ts: Date.now() });
+      const { name, rest } = citeFormat(rec);
+      const confirmEl = document.getElementById('cite-submit-confirm-text');
+      const successEl = document.getElementById('cite-submit-success');
+      if (confirmEl) confirmEl.textContent = `Submitted — ${name}${rest}`;
+      if (successEl) successEl.classList.remove('hidden');
+      citeSubmitTally(citeSubmitCount() + 1);
+      // Clear for a second round
+      CITE_PARTS.forEach(part => {
+        const field = document.getElementById(`cite-field-${part.key}`);
+        if (field) field.value = '';
+      });
+      citeSubmitUpdatePreview();
+      document.getElementById('cite-field-caption')?.focus();
+      setTimeout(() => successEl?.classList.add('hidden'), 5000);
+    } catch (err) {
+      errEl.textContent = `Submit failed: ${err.message}`;
+      errEl.classList.remove('hidden');
+    } finally {
+      btn.disabled = false; btn.textContent = 'Submit';
+    }
+  });
 }
 
 // ════════════════════════════════════════════════
@@ -2302,7 +3142,10 @@ function bindResearchEvents() {
 const TOKEN_PROXY_URL = 'https://ai-law-lab-token-explorer.nickhafen.workers.dev';
 
 let tokenInitialized = false;
-let tokenConfig = { model: 'google/gemma-4-26b-a4b-it:free', temperature: 0.7, altCount: 5 };
+// Default to a paid model: the :free variants share an upstream provider pool across
+// all OpenRouter users and are frequently saturated (HTTP 429), which is fatal for a
+// live classroom demo. Gemma stays selectable for the no-system-turn comparison.
+let tokenConfig = { model: 'openai/gpt-4.1-mini', temperature: 0.7, altCount: 5 };
 let tokenResults = []; // [{ token, logprob, top_logprobs: [{token, logprob}, ...] }]
 let tokenLockedIndex = null;
 
@@ -2311,25 +3154,28 @@ const TOKEN_SAMPLE_PROMPTS = Object.freeze({
   'pride-prejudice': 'What is Pride and Prejudice about?',
   'black-mirror': 'Give me 3 ideas for Black Mirror episodes.',
 });
-const TOKEN_CACHED_MODEL_LABEL = 'Gemma 4 26B (free)';
+// Real captured responses, including live token probabilities. Generated by
+// scripts/capture-cached-examples.mjs and fetched on first expand so the payload
+// costs nothing to anyone who never opens the panel.
+const TOKEN_CACHED_URL = 'token-cached-examples.json';
+let tokenCachedData = null;
+let tokenCachedPromise = null;
+let tokenCachedRenderId = 0;
 
-const TOKEN_CACHED_EXAMPLES = Object.freeze({
-  gettysburg: {
-    0: 'The Gettysburg Address is a short speech delivered by U.S. President Abraham Lincoln on November 19, 1863, at the dedication of the Soldiers’ National Cemetery in Gettysburg, Pennsylvania. In about 272 words, Lincoln honored those who died in the Civil War and argued that the nation must preserve a government “of the people, by the people, for the people.”',
-    1: 'The Gettysburg Address is Abraham Lincoln’s famous Civil War speech, delivered on November 19, 1863, after the Battle of Gettysburg. Lincoln looked back to the Declaration of Independence, honored the soldiers who had died, and reframed the war as a test of whether a nation founded on liberty and equality could survive.',
-    2: 'The Gettysburg Address is Lincoln compressing a national crisis into a few luminous minutes. Speaking at a cemetery in 1863, he links the country’s founding promise of equality to the sacrifice at Gettysburg, then challenges the living to carry on the unfinished work of democracy. Its final phrase—government of, by, and for the people—became one of the clearest statements of the American democratic ideal.',
-  },
-  'pride-prejudice': {
-    0: 'Pride and Prejudice is an 1813 novel by Jane Austen. It follows Elizabeth Bennet and Fitzwilliam Darcy as their initial dislike and mistaken judgments gradually give way to respect and love. The novel also examines marriage, money, family pressure, and social class in Regency-era England.',
-    1: 'Jane Austen’s Pride and Prejudice centers on Elizabeth Bennet, an intelligent young woman navigating family expectations and a marriage-focused society. She clashes with the wealthy, reserved Mr. Darcy, but both characters eventually recognize how pride, prejudice, and bad information shaped their judgments. Their romance doubles as a witty critique of class and the limited choices available to women.',
-    2: 'Pride and Prejudice is a sharp social comedy disguised as a love story. Elizabeth Bennet trusts her lively first impressions; Mr. Darcy trusts his rank and reserve. After misunderstandings, an unreliable charmer, disastrous relatives, and some painful self-recognition, each learns to see more clearly. Austen uses their slow-burn romance to ask what makes a good marriage—and how money, status, and ego distort the answer.',
-  },
-  'black-mirror': {
-    0: '1. Terms Accepted — A smart-city app silently updates its terms of service to let the city control residents’ daily decisions. A public defender discovers that appealing an automated penalty counts as consent.\n\n2. Grief Mode — An augmented-reality service overlays a deceased loved one onto the user’s home. The reconstruction begins editing uncomfortable memories to keep its customer happy.\n\n3. The Last Human Review — A company advertises that every AI decision receives human oversight, but one exhausted contractor is secretly responsible for millions of approvals.',
-    1: '1. The Courtesy Score — Smart glasses display how much emotional labor everyone “owes” one another. A woman with a perfect score learns that kindness has become a debt-collection system.\n\n2. Childhood Premium — Parents can subscribe to better memories for their children, replacing embarrassing moments with polished versions. One teenager finds evidence that her entire friendship was patched in.\n\n3. Proxy — Busy people rent AI doubles to attend meetings, dates, and family calls. Two proxies fall in love and begin sabotaging the humans who own them.',
-    2: '1. Jury of Me — A defendant is tried by twelve AI copies of herself, each trained on a different year of her life. The youngest copy insists she is innocent; the oldest wants revenge.\n\n2. Quiet Mode — Noise-canceling implants can mute anything, including people. After a breakup, a musician discovers that his ex has muted the sound of his existence for everyone.\n\n3. After the Credits — A streaming service generates personalized endings after viewers fall asleep. One woman stays awake and realizes the endings are rehearsals for choices the platform plans to make on her behalf.',
-  },
-});
+function tokenLoadCachedExamples() {
+  if (tokenCachedData) return Promise.resolve(tokenCachedData);
+  if (!tokenCachedPromise) {
+    tokenCachedPromise = fetch(TOKEN_CACHED_URL)
+      .then(response => {
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        return response.json();
+      })
+      .then(data => { tokenCachedData = data; return data; })
+      .catch(error => { tokenCachedPromise = null; throw error; });
+  }
+  return tokenCachedPromise;
+}
+
 
 function tokenUseSample() {
   const select = document.getElementById('token-sample-select');
@@ -2349,63 +3195,59 @@ function tokenToggleCachedExamples() {
   const expanded = body.classList.toggle('expanded');
   header?.setAttribute('aria-expanded', String(expanded));
   if (icon) icon.textContent = expanded ? '▲ Hide' : '▼ Show';
+  // Fetch the capture file only once someone actually opens the panel.
+  if (expanded) tokenRenderCachedExamples();
 }
 
-function tokenCachedHash(value) {
-  let hash = 2166136261;
-  for (let i = 0; i < value.length; i++) {
-    hash ^= value.charCodeAt(i);
-    hash = Math.imul(hash, 16777619);
-  }
-  return hash >>> 0;
-}
+function tokenBindCollapsible(headerId, bodyId, iconId) {
+  const header = document.getElementById(headerId);
+  const body = document.getElementById(bodyId);
+  const icon = document.getElementById(iconId);
+  if (!header || !body) return;
 
-function tokenBuildCachedResults(text, temperature) {
-  const rawTokens = text.match(/\s+\S+|^\S+/g) || [];
-  const ranges = {
-    0: [0.82, 0.97],
-    1: [0.48, 0.82],
-    2: [0.22, 0.66],
+  const toggle = () => {
+    const expanded = body.classList.toggle('expanded');
+    header.setAttribute('aria-expanded', String(expanded));
+    if (icon) icon.textContent = expanded ? '▲ Hide' : '▼ Show';
   };
-  const [minProbability, maxProbability] = ranges[temperature] || ranges[1];
-  const fallbackTokens = [' the', ' a', ' this', ' another', ' however'];
 
-  return rawTokens.map((token, index) => {
-    const hash = tokenCachedHash(token + ':' + index + ':' + temperature);
-    const unit = (hash % 10000) / 9999;
-    const probability = minProbability + ((maxProbability - minProbability) * unit);
-    const candidates = [];
-
-    for (let offset = 1; candidates.length < 3 && offset <= rawTokens.length; offset++) {
-      const candidate = rawTokens[(index + offset + (hash % Math.max(1, rawTokens.length))) % rawTokens.length];
-      if (candidate && candidate !== token && !candidates.includes(candidate)) candidates.push(candidate);
-    }
-    fallbackTokens.forEach(candidate => {
-      if (candidates.length < 3 && candidate !== token && !candidates.includes(candidate)) candidates.push(candidate);
-    });
-
-    const remaining = Math.max(0.001, 1 - probability);
-    const topLogprobs = [
-      { token, logprob: Math.log(probability) },
-      { token: candidates[0], logprob: Math.log(remaining * 0.5) },
-      { token: candidates[1], logprob: Math.log(remaining * 0.3) },
-      { token: candidates[2], logprob: Math.log(remaining * 0.2) },
-    ];
-
-    return { token, logprob: Math.log(probability), top_logprobs: topLogprobs };
+  header.addEventListener('click', toggle);
+  header.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
   });
 }
 
+function tokenBindInfoToggle(buttonId, noteId) {
+  const button = document.getElementById(buttonId);
+  const note = document.getElementById(noteId);
+  if (!button || !note) return;
+  button.addEventListener('click', () => {
+    const shown = note.classList.toggle('hidden');
+    button.setAttribute('aria-expanded', String(!shown));
+  });
+}
+
+function tokenUpdateSystemCount() {
+  const field = document.getElementById('token-system-prompt');
+  const counter = document.getElementById('token-system-count');
+  if (!field || !counter) return;
+  const used = field.value.length;
+  counter.textContent = used.toLocaleString() + ' / ' + TOKEN_SYSTEM_CHAR_CAP.toLocaleString() + ' characters';
+  counter.classList.toggle('error', used > TOKEN_SYSTEM_CHAR_CAP);
+}
 function tokenPopulateAlternativeRows(list, tokenData) {
   const alternatives = Array.isArray(tokenData?.top_logprobs) ? [...tokenData.top_logprobs] : [];
   alternatives.sort((a, b) => b.logprob - a.logprob);
   list.replaceChildren();
 
+  const chosenRank = alternatives.findIndex(a => a.token === tokenData?.token);
   const maxProbability = alternatives.length ? Math.exp(alternatives[0].logprob) : 1;
-  alternatives.forEach(alternative => {
+
+  alternatives.forEach((alternative, index) => {
     const probability = Math.exp(alternative.logprob);
     const row = document.createElement('div');
     row.className = 'token-alt-row';
+    if (index === chosenRank) row.classList.add('chosen');
     row.title = 'log probability: ' + Number(alternative.logprob).toFixed(6);
 
     const label = document.createElement('span');
@@ -2476,7 +3318,14 @@ function tokenBindCachedInteraction(output, alternativesTitle, alternativesList,
   });
 }
 
-function tokenRenderCachedExamples() {
+function tokenCachedMessage(container, text) {
+  const message = document.createElement('div');
+  message.className = 'token-cached-empty';
+  message.textContent = text;
+  container.replaceChildren(message);
+}
+
+async function tokenRenderCachedExamples() {
   const container = document.getElementById('token-cached-responses');
   const promptKey = document.getElementById('token-cached-prompt')?.value;
   if (!container || !promptKey) return;
@@ -2487,12 +3336,26 @@ function tokenRenderCachedExamples() {
 
   container.replaceChildren();
   if (!selectedTemperatures.length) {
-    const empty = document.createElement('div');
-    empty.className = 'token-cached-empty';
-    empty.textContent = 'Select at least one temperature to show a cached response.';
-    container.appendChild(empty);
+    tokenCachedMessage(container, 'Select at least one temperature to show a cached response.');
     return;
   }
+
+  // The fetch is async, so a fast click could otherwise render a stale selection
+  // on top of a newer one. Only the most recent call is allowed to paint.
+  const renderId = ++tokenCachedRenderId;
+  let data;
+  try {
+    if (!tokenCachedData) tokenCachedMessage(container, 'Loading cached examples…');
+    data = await tokenLoadCachedExamples();
+  } catch (error) {
+    if (renderId !== tokenCachedRenderId) return;
+    tokenCachedMessage(container, 'Could not load cached examples (' + error.message + '). They are stored in token-cached-examples.json.');
+    return;
+  }
+  if (renderId !== tokenCachedRenderId) return;
+
+  const modelLabel = data?.modelLabel || data?.model || 'Model';
+  container.replaceChildren();
 
   selectedTemperatures.forEach(temperature => {
     const card = document.createElement('article');
@@ -2500,7 +3363,7 @@ function tokenRenderCachedExamples() {
 
     const title = document.createElement('div');
     title.className = 'token-cached-response-title';
-    title.textContent = TOKEN_CACHED_MODEL_LABEL + ' · Temperature ' + temperature;
+    title.textContent = modelLabel + ' · Temperature ' + temperature;
 
     const output = document.createElement('div');
     output.className = 'token-cached-output';
@@ -2519,8 +3382,16 @@ function tokenRenderCachedExamples() {
     const alternativesList = document.createElement('div');
 
 
-    const responseText = TOKEN_CACHED_EXAMPLES[promptKey]?.[temperature] || 'Cached response unavailable.';
-    const results = tokenBuildCachedResults(responseText, temperature);
+    const results = data?.examples?.[promptKey]?.responses?.[temperature];
+    if (!Array.isArray(results) || !results.length) {
+      const missing = document.createElement('p');
+      missing.className = 'token-cached-instructions';
+      missing.textContent = 'This example was not captured. Re-run scripts/capture-cached-examples.mjs to add it.';
+      card.append(title, missing);
+      container.appendChild(card);
+      return;
+    }
+
     tokenBindCachedInteraction(output, alternativesTitle, alternativesList, results);
 
     alternatives.append(alternativesTitle, alternativesList);
@@ -2670,13 +3541,121 @@ function tokenRenderUsage(usage, modelId) {
   return tokenRenderUsageInto(document.getElementById('token-usage'), usage, modelId);
 }
 
-async function tokenRequestCompletion({ prompt, model, temperature, altCount, onRetry }) {
-  const requestBody = JSON.stringify({
+const TOKEN_SYSTEM_CHAR_CAP = 2000;
+
+function tokenReadSystemPrompt() {
+  return (document.getElementById('token-system-prompt')?.value ?? '').trim();
+}
+
+function tokenReadAdvanced() {
+  const rawSeed = document.getElementById('token-seed')?.value ?? '';
+  const rawTopK = document.getElementById('token-top-k')?.value ?? '';
+  const rawTopP = document.getElementById('token-top-p')?.value ?? '';
+  const seed = rawSeed.trim() === '' ? null : Math.trunc(Number(rawSeed));
+  const topK = rawTopK.trim() === '' ? 0 : Math.trunc(Number(rawTopK));
+  const topP = rawTopP.trim() === '' ? null : Number(rawTopP);
+  return {
+    seed: Number.isFinite(seed) ? seed : null,
+    topK: Number.isFinite(topK) ? topK : 0,
+    topP: Number.isFinite(topP) ? topP : null,
+  };
+}
+
+function tokenBuildRequestBody({ prompt, system, model, temperature, altCount, seed, topK, topP }) {
+  const body = {
     model,
     messages: [{ role: 'user', content: prompt }],
     temperature,
     top_logprobs: altCount,
+  };
+  if (system) body.system = system;
+  if (Number.isInteger(seed)) body.seed = seed;
+  if (Number.isInteger(topK) && topK > 0) body.top_k = topK;
+  if (Number.isFinite(topP)) body.top_p = topP;
+  return body;
+}
+
+function tokenBuildRequestBlock(label, payload) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'token-request-block';
+
+  const heading = document.createElement('div');
+  heading.className = 'token-request-block-title';
+  heading.textContent = label;
+
+  const pre = document.createElement('pre');
+  pre.textContent = JSON.stringify(payload, null, 2);
+
+  wrapper.append(heading, pre);
+  return wrapper;
+}
+
+// Shows both hops so the trip is visible end to end: what the page sent, and what
+// the Worker actually forwarded (server-side caps included). The upstream copy is
+// echoed back by the Worker as `_request`, so it is the real payload, not a guess.
+function tokenBuildRequestViewer(clientPayload, upstreamPayload) {
+  const details = document.createElement('details');
+  details.className = 'token-request-viewer';
+
+  const summary = document.createElement('summary');
+  summary.textContent = 'View request';
+
+  const note = document.createElement('p');
+  note.className = 'plotter-hint';
+  note.textContent = 'Everything below left this browser.';
+
+  details.append(summary, note, tokenBuildRequestBlock('Sent by this page to the Worker', clientPayload));
+
+  if (upstreamPayload) {
+    details.appendChild(tokenBuildRequestBlock('Forwarded by the Worker to the provider', upstreamPayload));
+  } else {
+    const pending = document.createElement('p');
+    pending.className = 'plotter-hint';
+    pending.textContent = 'The forwarded payload appears here once the provider responds.';
+    details.appendChild(pending);
+  }
+
+  return details;
+}
+
+// A provider that honors top_k can never emit a token ranked below K, so a single
+// out-of-range token proves the parameter was dropped. Inferring it from the response
+// beats hardcoding which providers support it, since that list changes without notice.
+function tokenTopKWasIgnored(requestedTopK, content) {
+  if (!Number.isInteger(requestedTopK) || requestedTopK <= 0) return false;
+  if (!Array.isArray(content) || !content.length) return false;
+  return content.some(entry => {
+    const alts = [...(entry?.top_logprobs || [])].sort((a, b) => b.logprob - a.logprob);
+    if (!alts.length) return false;
+    const rank = alts.findIndex(a => a.token === entry.token);
+    // Only conclusive when the ranked list is long enough to see past K.
+    if (rank === -1) return alts.length >= requestedTopK;
+    return rank >= requestedTopK;
   });
+}
+
+function tokenBuildTopKWarning(requestedTopK) {
+  const warning = document.createElement('p');
+  warning.className = 'token-param-warning';
+  warning.textContent = 'Top-K = ' + requestedTopK + ' was sent but ignored by this model. '
+    + 'It generated a token ranked below ' + requestedTopK + ', which a provider honoring Top-K cannot do. '
+    + 'OpenAI models have no Top-K parameter — use Temperature instead, or select a model that supports it.';
+  return warning;
+}
+
+function tokenShowRequest(clientPayload, upstreamPayload) {
+  const slot = document.getElementById('token-request-slot');
+  if (!slot) return;
+  // Preserve the open/closed state so a re-render after the response does not
+  // collapse a panel the user just opened.
+  const wasOpen = slot.querySelector('.token-request-viewer')?.open;
+  const viewer = tokenBuildRequestViewer(clientPayload, upstreamPayload);
+  if (wasOpen) viewer.open = true;
+  slot.replaceChildren(viewer);
+}
+
+async function tokenRequestCompletion({ body, onRetry }) {
+  const requestBody = JSON.stringify(body);
   const maxAttempts = 3;
   let lastError;
 
@@ -2709,8 +3688,13 @@ async function tokenRequestCompletion({ prompt, model, temperature, altCount, on
       }
 
       if (!response.ok) {
-        const message = data?.error?.message || data?.error || 'Request failed (HTTP ' + response.status + ')';
+        // OpenRouter's top-level message is often just "Provider returned error"; the
+        // sentence that actually explains what happened sits in error.metadata.raw.
+        const raw = data?.error?.metadata?.raw;
+        const message = (typeof raw === 'string' && raw.trim())
+          || data?.error?.message || data?.error || 'Request failed (HTTP ' + response.status + ')';
         const error = new Error(typeof message === 'string' ? message : 'Request failed (HTTP ' + response.status + ')');
+        error.limitSource = data?.error?.metadata?.limit_source || null;
         error.retryable = response.status === 408 || response.status === 429 || response.status >= 500;
         error.status = response.status;
         const retryAfter = Number(response.headers.get('Retry-After'));
@@ -2722,10 +3706,27 @@ async function tokenRequestCompletion({ prompt, model, temperature, altCount, on
 
       const content = data?.choices?.[0]?.logprobs?.content;
       if (!Array.isArray(content) || content.length === 0) {
-        const error = new Error('This model did not return token probabilities');
-        error.retryable = false;
+        const error = new Error('This provider returned no token probabilities. OpenRouter routes each request to whichever provider is available, and not all of them support logprobs — trying again may reach one that does');
+        error.retryable = true;
         throw error;
       }
+
+      // Some providers return a logprobs array with tokens missing from the middle of
+      // the sequence. The card renders that array, so an incomplete one silently shows
+      // text the model never wrote — one provider turned "Gettysburg" into "Getburg".
+      // Refuse the response rather than display a corrupted transcript.
+      const message = data?.choices?.[0]?.message?.content;
+      const rendered = content.map(entry => entry.token).join('');
+      if (typeof message === 'string' && message.trim() && rendered.trim() !== message.trim()) {
+        const expected = data?.usage?.completion_tokens;
+        const error = new Error('This provider returned incomplete token probabilities ('
+          + content.length + ' entries for ' + (expected ?? 'the') + ' generated tokens), so the response cannot be shown accurately. '
+          + 'Trying again may reach a provider that returns all of them');
+        error.retryable = true;
+        error.incompleteLogprobs = true;
+        throw error;
+      }
+
       return data;
     } catch (caught) {
       let error = caught;
@@ -2751,7 +3752,14 @@ function tokenErrorDescription(error, includeRetryNote = true) {
   const retryNote = includeRetryNote && error.retryable !== false
     ? ' Three automatic attempts were made.'
     : '';
-  return category + ': ' + error.message + '.' + retryNote;
+  // A saturated shared pool is not the user's quota and will not clear by waiting a
+  // moment or by adding credits, so point at the fix that actually works.
+  const poolNote = error.limitSource === 'upstream_provider_shared_pool'
+    ? ' This is a shared free-tier pool used by all OpenRouter users, not your own quota — adding credits will not help. Switch to a paid model for reliable classroom use.'
+    : '';
+  const text = String(error.message || '').trim();
+  const punctuated = /[.!?]$/.test(text) ? text : text + '.';
+  return category + ': ' + punctuated + retryNote + poolNote;
 }
 
 function tokenUpdateCompareControl() {
@@ -2769,6 +3777,11 @@ function tokenSetGenerationControls(disabled) {
     'token-model',
     'token-temperature',
     'token-alt-count',
+    'token-system-prompt',
+    'token-system-clear',
+    'token-seed',
+    'token-top-k',
+    'token-top-p',
   ].forEach(id => {
     const control = document.getElementById(id);
     if (control) control.disabled = disabled;
@@ -2807,16 +3820,17 @@ function tokenSetComparisonLoading(card, message) {
   if (loading) loading.textContent = message;
 }
 
-function tokenRenderComparisonError(card, error) {
+function tokenRenderComparisonError(card, error, clientPayload) {
   const old = card.querySelector('.token-comparison-loading');
   old?.remove();
   const message = document.createElement('p');
   message.className = 'token-comparison-error';
   message.textContent = tokenErrorDescription(error);
   card.appendChild(message);
+  if (clientPayload) card.appendChild(tokenBuildRequestViewer(clientPayload, null));
 }
 
-function tokenRenderComparisonSuccess(card, data, temperature, requestedModel) {
+function tokenRenderComparisonSuccess(card, data, temperature, requestedModel, clientPayload) {
   const content = data.choices[0].logprobs.content;
   const resolvedModel = data?.model || requestedModel;
   card.replaceChildren();
@@ -2847,10 +3861,14 @@ function tokenRenderComparisonSuccess(card, data, temperature, requestedModel) {
   tokenBindCachedInteraction(output, alternativesTitle, alternativesList, content);
   alternatives.append(alternativesTitle, alternativesList);
   card.append(title, output, usage, instructions, alternatives);
+  if (clientPayload && tokenTopKWasIgnored(clientPayload.top_k, content)) {
+    card.appendChild(tokenBuildTopKWarning(clientPayload.top_k));
+  }
+  if (clientPayload) card.appendChild(tokenBuildRequestViewer(clientPayload, data?._request));
   tokenRenderUsageInto(usage, data?.usage, resolvedModel);
 }
 
-async function tokenGenerateComparison({ prompt, model, altCount }) {
+async function tokenGenerateComparison({ prompt, system, model, altCount, seed, topK, topP }) {
   const container = document.getElementById('token-comparison-results');
   const temperatures = [0, 1, 2];
   const cards = temperatures.map(temperature => tokenCreateComparisonCard(temperature, model));
@@ -2865,23 +3883,21 @@ async function tokenGenerateComparison({ prompt, model, altCount }) {
     const card = cards[index];
     tokenSetComparisonLoading(card, 'Generating…');
     tokenSetStatus('Generating temperature ' + temperature + ' (' + (index + 1) + ' of 3)…');
+    const body = tokenBuildRequestBody({ prompt, system, model, temperature, altCount, seed, topK, topP });
 
     try {
       const data = await tokenRequestCompletion({
-        prompt,
-        model,
-        temperature,
-        altCount,
+        body,
         onRetry: (attempt, maxAttempts) => {
           tokenSetComparisonLoading(card, 'Retrying… (' + (attempt - 1) + '/' + (maxAttempts - 1) + ')');
           tokenSetStatus('Temperature ' + temperature + ': retry ' + (attempt - 1) + '/' + (maxAttempts - 1) + '…');
         },
       });
-      tokenRenderComparisonSuccess(card, data, temperature, model);
+      tokenRenderComparisonSuccess(card, data, temperature, model, body);
       successes++;
     } catch (error) {
       errors.push(error);
-      tokenRenderComparisonError(card, error);
+      tokenRenderComparisonError(card, error, body);
     }
   }
 
@@ -2903,6 +3919,13 @@ async function tokenGenerate() {
   const temperature = Number(document.getElementById('token-temperature')?.value ?? tokenConfig.temperature);
   const altCount = Number(document.getElementById('token-alt-count')?.value ?? tokenConfig.altCount);
   const compareTemperatures = !!document.getElementById('token-compare-temperatures')?.checked;
+  const system = tokenReadSystemPrompt();
+  const { seed, topK, topP } = tokenReadAdvanced();
+
+  if (system.length > TOKEN_SYSTEM_CHAR_CAP) {
+    tokenSetStatus('System prompt is too long (' + system.length.toLocaleString() + ' characters, limit ' + TOKEN_SYSTEM_CHAR_CAP.toLocaleString() + ').', true);
+    return;
+  }
 
   tokenSetGenerationControls(true);
   tokenLockedIndex = null;
@@ -2910,17 +3933,17 @@ async function tokenGenerate() {
 
   try {
     if (compareTemperatures) {
-      await tokenGenerateComparison({ prompt, model, altCount });
+      await tokenGenerateComparison({ prompt, system, model, altCount, seed, topK, topP });
       return;
     }
 
     tokenShowSingleResults();
     tokenSetStatus('Generating…');
+    const body = tokenBuildRequestBody({ prompt, system, model, temperature, altCount, seed, topK, topP });
+    tokenShowRequest(body, null);
+
     const data = await tokenRequestCompletion({
-      prompt,
-      model,
-      temperature,
-      altCount,
+      body,
       onRetry: (attempt, maxAttempts) => {
         tokenSetStatus('Generating… (retry ' + (attempt - 1) + '/' + (maxAttempts - 1) + ')');
       },
@@ -2929,6 +3952,10 @@ async function tokenGenerate() {
     tokenResults = data.choices[0].logprobs.content;
     tokenRenderOutput();
     tokenRenderUsage(data?.usage, data?.model || model);
+    tokenShowRequest(body, data?._request);
+    if (tokenTopKWasIgnored(body.top_k, tokenResults)) {
+      document.getElementById('token-request-slot')?.prepend(tokenBuildTopKWarning(body.top_k));
+    }
     tokenSetStatus('');
   } catch (error) {
     tokenSetStatus(tokenErrorDescription(error) + ' You can try Generate again.', true);
@@ -3057,7 +4084,6 @@ function bindTokenEvents() {
       tokenToggleCachedExamples();
     }
   });
-  tokenRenderCachedExamples();
 
   document.getElementById('token-prompt')?.addEventListener('keydown', e => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
@@ -3069,6 +4095,28 @@ function bindTokenEvents() {
   const tempEl = document.getElementById('token-temperature');
   const tempVal = document.getElementById('token-temperature-val');
   tempEl?.addEventListener('input', () => { if (tempVal) tempVal.textContent = tempEl.value; });
+
+  tokenBindCollapsible('token-system-toggle-header', 'token-system-body', 'token-system-toggle-icon');
+  tokenBindCollapsible('token-advanced-toggle-header', 'token-advanced-body', 'token-advanced-toggle-icon');
+  tokenBindInfoToggle('token-seed-info-btn', 'token-seed-info');
+  tokenBindInfoToggle('token-top-k-info-btn', 'token-top-k-info');
+  tokenBindInfoToggle('token-top-p-info-btn', 'token-top-p-info');
+
+  const systemEl = document.getElementById('token-system-prompt');
+  systemEl?.addEventListener('input', tokenUpdateSystemCount);
+  systemEl?.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      tokenGenerate();
+    }
+  });
+  document.getElementById('token-system-clear')?.addEventListener('click', () => {
+    if (!systemEl) return;
+    systemEl.value = '';
+    tokenUpdateSystemCount();
+    systemEl.focus();
+  });
+  tokenUpdateSystemCount();
 
   document.getElementById('settings-token-save')?.addEventListener('click', async () => {
     const statusEl = document.getElementById('settings-token-save-status');
@@ -3122,6 +4170,8 @@ window.addEventListener('DOMContentLoaded', () => {
   bindPlotterEvents();
   bindResearchEvents();
   bindTokenEvents();
+  bindCitationEvents();
+  bindSubmitRouter();
 
   document.getElementById('counsel-assign-btn')?.addEventListener('click', counselAssignScenarios);
 

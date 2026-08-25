@@ -28,6 +28,9 @@ html { scroll-padding-top: 80px; }
   --warning-bg: #fef9c3;
   --warning-border: #ca8a04;
   --warning-text: #713f12;
+  /* Height of the fixed educational-use footer. Every full-viewport layout below
+     subtracts this, so changing it here keeps all of them in step. */
+  --disclaimer-h: 32px;
 }
 
 body {
@@ -35,15 +38,45 @@ body {
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
+  padding-bottom: var(--disclaimer-h);
 }
 
 /* ── GLOBAL UTILITIES ── */
 .hidden { display: none !important; }
-.app-wrapper { min-height: 100vh; }
+.app-wrapper { min-height: calc(100vh - var(--disclaimer-h)); }
+
+/* ── GLOBAL DISCLAIMER FOOTER ── */
+#global-disclaimer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: var(--disclaimer-h);
+  padding: 0 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  background: var(--header);
+  color: rgba(255, 255, 255, 0.74);
+  font-size: 0.72rem;
+  line-height: 1.3;
+  text-align: center;
+}
+#global-disclaimer strong { color: rgba(255, 255, 255, 0.95); font-weight: 600; }
+#global-disclaimer .disclaimer-sep { opacity: 0.4; }
+@media (max-width: 640px) {
+  :root { --disclaimer-h: 44px; }
+  #global-disclaimer { font-size: 0.66rem; }
+  #global-disclaimer .disclaimer-sep { display: none; }
+  #global-disclaimer { flex-wrap: wrap; gap: 0 6px; }
+}
 
 /* ── LANDING SCREEN ── */
 #home-screen {
-  min-height: 100vh;
+  min-height: calc(100vh - var(--disclaimer-h));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -856,7 +889,7 @@ input[type="number"] { width: 72px; text-align: center; }
 #plotter-app {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: calc(100vh - var(--disclaimer-h));
   overflow: hidden;
 }
 
@@ -975,7 +1008,8 @@ input[type="number"] { width: 72px; text-align: center; }
 }
 #plotter-plot { flex: 1; width: 100%; height: 100%; }
 
-#plotter-demo-badge {
+#plotter-demo-badge,
+#cite-demo-badge {
   position: absolute;
   top: 12px;
   left: 50%;
@@ -998,7 +1032,7 @@ input[type="number"] { width: 72px; text-align: center; }
 #token-app {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: calc(100vh - var(--disclaimer-h));
   overflow: hidden;
 }
 
@@ -1093,6 +1127,130 @@ input[type="number"] { width: 72px; text-align: center; }
 .token-info-icon:focus::after {
   opacity: 1;
   transform: translate(-50%, 0);
+}
+
+/* The side panel is only ~220px wide and scrolls (overflow:auto), so it clips the
+   hover tooltip used elsewhere. Panel info icons expand an inline note instead,
+   which cannot be clipped and also works on touch, where hover never fires. */
+.token-info-toggle {
+  padding: 0;
+  background: none;
+  font-family: Georgia, serif;
+  cursor: pointer;
+}
+.token-info-toggle::after { content: none; }
+.token-info-toggle[aria-expanded="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.token-info-note {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  border-left: 2px solid var(--accent);
+  border-radius: 0 4px 4px 0;
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.token-alt-row.chosen .token-alt-label { font-weight: 700; color: var(--accent); }
+
+.token-param-warning {
+  margin: 14px 0 0;
+  padding: 9px 11px;
+  border: 1px solid var(--warning-border);
+  border-left-width: 3px;
+  border-radius: 5px;
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.token-privacy-notice {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--warning-border);
+  border-left-width: 3px;
+  border-radius: 5px;
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  font-size: 0.79rem;
+  line-height: 1.55;
+}
+.token-privacy-notice strong { display: block; margin-bottom: 3px; font-weight: 700; }
+
+.token-advanced-field { margin-bottom: 14px; }
+.token-advanced-field:last-child { margin-bottom: 0; }
+.token-advanced-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 6px;
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+#token-system-card { margin-bottom: 0; }
+.token-optional-tag {
+  margin-left: 8px;
+  padding: 2px 7px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+.token-system-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+}
+.token-system-meta .plotter-hint { margin: 0; }
+.token-system-meta .plotter-hint.error { color: var(--danger); font-weight: 600; }
+
+.token-request-viewer {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.token-request-viewer > summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  user-select: none;
+}
+.token-request-viewer > summary:hover { color: var(--text); }
+.token-request-viewer > .plotter-hint { margin: 8px 0 0; }
+.token-request-block { margin-top: 10px; }
+.token-request-block-title {
+  margin-bottom: 5px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.token-request-block pre {
+  max-height: 320px;
+  margin: 0;
+  padding: 10px 12px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  white-space: pre;
 }
 
 .token-prompt-actions { width: 100%; }
@@ -1402,11 +1560,296 @@ input[type="number"] { width: 72px; text-align: center; }
   font-size: 0.8rem;
 }
 
+/* ── HALLUCINATED CITATIONS ── */
+/* Same column pattern as #plotter-app and #token-app: fixed header, scrolling body. */
+#citation-app {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - var(--disclaimer-h));
+  overflow: hidden;
+}
+
+#cite-shell {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#cite-panel {
+  width: 220px;
+  flex-shrink: 0;
+  background-color: var(--card);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-shadow: var(--card-shadow);
+}
+#cite-panel::-webkit-scrollbar { width: 5px; }
+#cite-panel::-webkit-scrollbar-track { background: transparent; }
+#cite-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+#cite-main {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 26px 24px 32px;
+}
+
+.cite-block { margin-bottom: 30px; }
+.cite-block:last-child { margin-bottom: 0; }
+
+.cite-block-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding-bottom: 8px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.cite-block-head h3 {
+  font-family: var(--serif);
+  font-size: 1.35rem;
+  font-weight: 400;
+  color: var(--text);
+  margin: 0;
+}
+.cite-block-count {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* The instructor's prompt, echoed on the projected view so the class can see
+   what was asked. Set in ⚙ Exercises. */
+.cite-prompt-line {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: -4px 0 14px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.cite-prompt-tag {
+  flex-shrink: 0;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+/* ── Submitted citations ── */
+.cite-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 8px;
+}
+@media (max-width: 700px) {
+  .cite-list { grid-template-columns: 1fr; }
+}
+
+.cite-item {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 5px;
+  padding: 9px 13px;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--text);
+  word-break: break-word;
+}
+/* Italic only — the display serif gets muddy at citation-list sizes. */
+.cite-item-name { font-style: italic; }
+.cite-item-rest { color: var(--text); }
+
+/* New submissions land with a brief flash so the class can see them arrive. */
+@keyframes cite-flash {
+  from { background: var(--accent); color: var(--card); border-left-color: var(--gold); }
+  to   { background: var(--card); }
+}
+.cite-item.is-new { animation: cite-flash 1.4s ease-out; }
+
+.cite-empty {
+  font-size: 0.88rem;
+  color: var(--muted);
+  padding: 18px 2px;
+}
+
+/* ── Part-by-part cards ── */
+/* Equal columns while they fit; scrolls sideways rather than squeezing. */
+.cite-parts-row {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  align-items: stretch;
+}
+.cite-parts-row::-webkit-scrollbar { height: 7px; }
+.cite-parts-row::-webkit-scrollbar-track { background: transparent; }
+.cite-parts-row::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+.cite-part-card {
+  flex: 1 1 0;
+  min-width: 150px;
+  display: flex;
+  flex-direction: column;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.cite-part-head {
+  padding: 9px 12px 8px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.cite-part-values {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 42vh;
+  padding: 6px 0;
+}
+.cite-part-values::-webkit-scrollbar { width: 5px; }
+.cite-part-values::-webkit-scrollbar-track { background: transparent; }
+.cite-part-values::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.cite-part-value {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 12px;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  color: var(--text);
+  word-break: break-word;
+}
+.cite-part-value + .cite-part-value { border-top: 1px solid var(--border); }
+.cite-part-value.has-records { cursor: help; }
+.cite-part-value.has-records:hover { background: var(--bg); }
+.cite-part-count {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.cite-part-foot {
+  padding: 7px 12px;
+  border-top: 1px solid var(--border);
+  font-size: 0.73rem;
+  line-height: 1.4;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+/* The punchline: a part where no two students landed on the same value. */
+.cite-part-foot.all-distinct { color: var(--danger); font-weight: 600; }
+
+/* Hover readout for a part value — every citation that value came from. */
+.cite-tooltip {
+  position: fixed;
+  z-index: 200;
+  pointer-events: none;
+  max-width: min(480px, 90vw);
+  padding: 10px 13px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 6px;
+  background: var(--card);
+  box-shadow: 0 6px 22px rgba(0,0,0,0.18);
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--text);
+}
+.cite-tooltip-head {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 6px;
+}
+.cite-tooltip-line + .cite-tooltip-line { margin-top: 4px; }
+.cite-tooltip-more {
+  margin-top: 6px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+/* ── Student submit form ── */
+.cite-sub-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.cite-sub-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 1rem;
+  font-family: var(--font);
+}
+.cite-sub-input:focus { outline: none; border-color: var(--accent); }
+
+.cite-sub-row {
+  display: grid;
+  grid-template-columns: 0.8fr 1.5fr 0.9fr;
+  gap: 10px;
+}
+.cite-sub-row-2 { grid-template-columns: 1.6fr 1fr; }
+
+.cite-sub-preview {
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--text);
+  min-height: 1.55em;
+  word-break: break-word;
+}
+.cite-sub-preview-empty { color: var(--muted); font-style: italic; }
+
 /* ── RESEARCH EXERCISE ── */
+/* Fills whatever the header leaves, rather than assuming a fixed header height —
+   the old `100vh - 58px` was 5px short of the real 63px bar. Same column pattern
+   as #token-app and #plotter-app. */
+#research-app {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - var(--disclaimer-h));
+  overflow: hidden;
+}
+#research-app > .mod-header-bar { flex-shrink: 0; }
+
 .research-shell {
   display: flex;
   gap: 0;
-  height: calc(100vh - 58px);
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 
