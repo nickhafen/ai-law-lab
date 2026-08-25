@@ -2345,7 +2345,13 @@ const CITE_PARTS = [
   { key: 'court',    label: 'Court'      },
   { key: 'year',     label: 'Year'       },
 ];
-const CITE_MAXLEN = { caption: 120, volume: 8, reporter: 40, page: 8, court: 40, year: 8 };
+const CITE_MAXLEN = { caption: 120, volume: 8, reporter: 40, page: 8, court: 40, year: 8, student: 60 };
+
+// The student's name rides along with the record but is deliberately not a
+// CITE_PART: it is never assembled into the citation, never broken into a part
+// card, and never drawn on the projected board — it exists for the CSV export
+// so the instructor can tell who submitted what.
+const CITE_STUDENT_KEY = 'student';
 
 let citationInitialized = false;
 let citeData         = [];     // normalized live submissions, oldest first
@@ -2440,6 +2446,7 @@ function citeClean(value, key) {
 function citeNormalize(id, raw) {
   if (!raw || typeof raw !== 'object') return null;
   const rec = { id, ts: Number(raw.ts) || 0 };
+  rec[CITE_STUDENT_KEY] = citeClean(raw[CITE_STUDENT_KEY], CITE_STUDENT_KEY);
   for (const part of CITE_PARTS) rec[part.key] = citeClean(raw[part.key], part.key);
   return CITE_PARTS.some(p => rec[p.key]) ? rec : null;
 }
@@ -2548,6 +2555,8 @@ async function citeHandleClear() {
 function citeCsvRow(sessionLabel, prompt, rec) {
   return csvRow([
     sessionLabel, prompt,
+    // Rounds archived before the form asked for a name have no student field.
+    rec[CITE_STUDENT_KEY] ?? '',
     ...CITE_PARTS.map(p => rec[p.key] ?? ''),
     rec.ts ? new Date(Number(rec.ts)).toISOString() : '',
   ]);
@@ -2563,7 +2572,7 @@ async function citeHandleExport() {
       _fbDB.ref(CITE_ARCHIVE_PATH).once('value'),
     ]);
 
-    const header = csvRow(['session', 'prompt', ...CITE_PARTS.map(p => p.label), 'submitted_at']);
+    const header = csvRow(['session', 'prompt', 'Student', ...CITE_PARTS.map(p => p.label), 'submitted_at']);
     const rows = [];
 
     // Archived rounds first, oldest session first, then the current board.
@@ -2914,6 +2923,19 @@ function citeSubmitTally(n) {
   if (el) el.textContent = n ? `You've submitted ${n} citation${n !== 1 ? 's' : ''}.` : '';
 }
 
+// The name survives a submission — a student sending a second citation should
+// not have to type it again — so it is kept out of the per-round field reset
+// and restored on the next visit.
+function citeSubmitStudent() {
+  return citeClean(document.getElementById('cite-field-student')?.value, CITE_STUDENT_KEY);
+}
+function citeRememberStudent(name) {
+  try { localStorage.setItem('citations_student', name); } catch {}
+}
+function citeRecallStudent() {
+  try { return localStorage.getItem('citations_student') || ''; } catch { return ''; }
+}
+
 function citeSubmitFields() {
   const rec = {};
   for (const part of CITE_PARTS) {
@@ -2955,13 +2977,23 @@ function citeInitSubmitView() {
   citeSubmitUpdatePreview();
   citeSubmitTally(citeSubmitCount());
 
+  const studentField = document.getElementById('cite-field-student');
+  if (studentField) studentField.value = citeRecallStudent();
+
   document.getElementById('cite-submit-form').addEventListener('submit', async e => {
     e.preventDefault();
-    const errEl = document.getElementById('cite-submit-error');
-    const btn   = document.getElementById('cite-submit-btn');
-    const rec   = citeSubmitFields();
+    const errEl   = document.getElementById('cite-submit-error');
+    const btn     = document.getElementById('cite-submit-btn');
+    const rec     = citeSubmitFields();
+    const student = citeSubmitStudent();
 
     errEl.classList.add('hidden'); errEl.textContent = '';
+    if (!student) {
+      errEl.textContent = 'Please enter your name.';
+      errEl.classList.remove('hidden');
+      document.getElementById('cite-field-student')?.focus();
+      return;
+    }
     const missing = CITE_PARTS.filter(p => !rec[p.key]);
     if (missing.length) {
       errEl.textContent = `Please fill in every part — missing: ${missing.map(p => p.label.toLowerCase()).join(', ')}.`;
@@ -2972,7 +3004,8 @@ function citeInitSubmitView() {
 
     btn.disabled = true; btn.textContent = 'Submitting…';
     try {
-      await _fbDB.ref(CITE_LIVE_PATH).push({ ...rec, ts: Date.now() });
+      await _fbDB.ref(CITE_LIVE_PATH).push({ ...rec, [CITE_STUDENT_KEY]: student, ts: Date.now() });
+      citeRememberStudent(student);
       const { name, rest } = citeFormat(rec);
       const confirmEl = document.getElementById('cite-submit-confirm-text');
       const successEl = document.getElementById('cite-submit-success');

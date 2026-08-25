@@ -344,7 +344,7 @@
 
       <div class="token-help-note">
         <strong>Clearing and exporting.</strong>
-        <em>Clear</em> archives the current class and empties the board — it is not a delete. <em>Export</em> downloads one CSV of every citation ever collected: each archived round plus whatever is on the board now, one row per citation, tagged with its session and the prompt that was in effect. Aggregate across classes in a spreadsheet without keeping anything on screen.
+        <em>Clear</em> archives the current class and empties the board — it is not a delete. <em>Export</em> downloads one CSV of every citation ever collected: each archived round plus whatever is on the board now, one row per citation, tagged with its session, the prompt that was in effect, and the student who submitted it. Names are collected on the form but never shown on the board — they only appear in the export. Aggregate across classes in a spreadsheet without keeping anything on screen.
       </div>
 
       <div class="token-help-note">
@@ -424,7 +424,7 @@
       <div class="exercise-card" onclick="showCitationApp()">
         <div class="exercise-card-eyebrow">Experiment</div>
         <div class="exercise-card-title">Hallucinated Citations</div>
-        <div class="exercise-card-desc">Invent a case citation the way a model does — from patterns in what you've seen. The class's fake cites are collected anonymously and split apart, part by part.</div>
+        <div class="exercise-card-desc">Invent a case citation the way a model does — from patterns in what you've seen. The class's fake cites go up on the board without names and are split apart, part by part.</div>
         <div class="exercise-card-arrow">Open →</div>
       </div>
     </div>
@@ -1337,6 +1337,11 @@
     <form id="cite-submit-form" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;display:flex;flex-direction:column;gap:16px;">
 
       <div>
+        <label for="cite-field-student" class="cite-sub-label">Your name</label>
+        <input id="cite-field-student" type="text" maxlength="60" autocomplete="name" autocapitalize="words" placeholder="First Last" class="cite-sub-input">
+      </div>
+
+      <div>
         <label for="cite-field-caption" class="cite-sub-label">Case name</label>
         <input id="cite-field-caption" type="text" maxlength="120" autocomplete="off" autocapitalize="words" class="cite-sub-input">
       </div>
@@ -1381,7 +1386,7 @@
 
       <button type="submit" id="cite-submit-btn" class="btn btn-primary" style="width:100%;padding:12px;">Submit</button>
       <div id="cite-submit-tally" style="font-size:0.78rem;color:var(--muted);text-align:center;"></div>
-      <div style="font-size:0.75rem;color:var(--muted);text-align:center;line-height:1.5;">Submitted anonymously — no name is collected. Your citation is shown to the whole class, so don't type anyone's real name.</div>
+      <div style="font-size:0.75rem;color:var(--muted);text-align:center;line-height:1.5;">Your name goes to your instructor only — the class board shows the citation without it. Your citation is shown to the whole class, so don't type anyone's real name.</div>
     </form>
   </div>
 </div>
