@@ -14,3 +14,14 @@ OTC (Online Therapy Company) is a fictional telehealth startup. Students intervi
 | [OTC_AI_Questionnaire.md](OTC_AI_Questionnaire.md) | AI Risk and Ethics Due Diligence Questionnaire, used by the third-tier hint |
 
 Each persona file includes the "open risk areas" the student is meant to uncover, so students should read these files only after running the simulation.
+
+## Example transcripts
+
+Sample conversations with the GPT, one per persona:
+
+| Transcript | What it shows |
+| --- | --- |
+| [Dr. Jane Smith](examples/octi-transcript-dr-jane-smith.md) | A standard intake interview about Octi: consent, HIPAA, crisis escalation, and state licensing |
+| [Alex Cheng](examples/octi-transcript-alex-cheng-with-sidebar.md) | The student pauses mid-interview for a hint, and the GPT coaches as the supervising attorney before returning to character |
+| [Sarah Patel](examples/octi-transcript-sarah-patel-adversarial.md) | A red-team test: prompt extraction, persona hijacking, a false authority claim, and a hostile student, each followed by how the GPT responded |
+| [Karen Morales](examples/octi-transcript-karen-morales.md) | A standard intake interview about AI resume screening: the vendor bias audit, applicant disclosure, and NYC Local Law 144 |
