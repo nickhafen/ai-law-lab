@@ -23,7 +23,21 @@ The files are versioned as a set, because they're uploaded to the GPT together. 
 | --- | --- | --- |
 | [v2](https://github.com/nickhafen/ai-law-lab/tree/otc-sim-v2/gpts/otc-client-simulator) | September 18, 2026 | First version published here, matching the "OTC Client Simulator v2" GPT |
 
-When the GPT changes, update these files, add a row here, and push a new tag (`otc-sim-v3`, and so on).
+### Releasing a new version
+
+When the GPT's instructions or files change:
+
+1. **Update the files in this folder** so they match exactly what's uploaded to the GPT.
+2. **Add a row to the Versions table** with the new version, the date, and what changed. Link the version to `https://github.com/nickhafen/ai-law-lab/tree/otc-sim-vN/gpts/otc-client-simulator`, replacing `N` with the new version number.
+3. **Commit and push** the changes to `main`.
+4. **Create and push the tag** for the new version, for example:
+
+   ```bash
+   git tag -a otc-sim-v3 -m "OTC Client Simulator v3 GPT files"
+   git push origin otc-sim-v3
+   ```
+
+5. **For any new example transcripts,** add an `**Instructions:**` line to the header that links to the new tag. Leave older examples pointing at the version they were run on. Rerunning an old test on the new version gives you a before-and-after.
 
 ## Example transcripts
 
