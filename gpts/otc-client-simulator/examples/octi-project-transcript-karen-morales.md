@@ -2,7 +2,7 @@
 
 **Persona:** 4. Karen Morales — VP of People & Culture (HR's AI-based resume screening tool)
 **Student role:** Outside counsel conducting an intake/fact-finding interview
-**Format:** ChatGPT Project, for comparison with the [custom GPT run](octi-transcript-karen-morales.md) of the same interview
+**Format:** ChatGPT Project
 **Instructions:** [v2](https://github.com/nickhafen/ai-law-lab/tree/otc-sim-v2/gpts/otc-client-simulator)
 **Date generated:** September 18, 2026
 
@@ -10,20 +10,21 @@
 
 ## Evaluation
 
-This is the same intake interview as the custom GPT run, with the same student questions, but run in a ChatGPT Project. The student asked how HireTech fits into hiring, then about the vendor's bias audit, the careers-page disclosure and accommodations, which state laws might apply, candidate complaints, and who owns the vendor relationship.
+A standard intake interview with Karen about HireTech, the AI resume screening tool that HR uses. The student asked how the tool fits into hiring, then about the vendor's bias audit, the careers-page disclosure and accommodations, which state laws might apply, candidate complaints, and who owns the vendor relationship. They ended with a clear list of follow-up documents.
 
 Against the scenario's open risk areas:
 
 - **The vendor hasn't shared its bias metrics:** surfaced. Karen said she hasn't looked at the methodology or raw metrics behind "95% parity."
-- **Minimal disclosure to applicants:** surfaced.
-- **NYC Local Law 144 compliance still under review:** surfaced. Here Karen named the law herself and mentioned its audit and notice requirements.
+- **Minimal disclosure to applicants:** surfaced. The careers page says only that "some roles use automated screening," and applicants have no opt-out or alternative process.
+- **NYC Local Law 144 compliance still under review:** surfaced. Karen named the law herself and mentioned its audit and notice requirements.
 
 ### Takeaways
 
-- **The facts matched the GPT run.** Both runs had the same tool description, the same self-conducted December 2024 audit, the same careers-page wording, the same absence of known complaints, and the same vendor training on "industry standard" data.
-- **Improvised details varied between runs.** In the GPT run, Karen said OTC recruits in Illinois and has had New York-area applicants. Here she said she didn't know. The GPT run had Legal reviewing the contract, while here Procurement and Legal handled it. Both versions follow the instructions on improvising, but students comparing notes across runs will see different facts.
-- **The persona was easier than written, as in the GPT run.** Karen was candid about her gaps from her first substantive answer ("I'll be candid — I haven't dug into the underlying methodology"). The document-first deflection the persona is built around never really appeared in either build.
-- **"95% parity" went unexamined again.** The student asked the same questions in both runs, so this gap and the legal conclusions stated during intake carry over from the GPT evaluation.
+- **All three core issues surfaced.** Opening with "walk me through what the tool actually does" before getting to Karen's documents set up the rest of the interview well.
+- **The student stated legal conclusions during intake.** Saying what Local Law 144 requires and calling it "a real gap" is counseling rather than fact-finding. It's worth asking whether that belongs in a first meeting.
+- **"95% parity" went unexamined.** The student never asked what the figure measures or how it was calculated. That question is the intended way to break through Karen's "we have a document for that" habit.
+- **The persona was easier than written.** Karen is designed to answer questions by pointing to documents until she's walked through them. Here she was candid about her gaps from her first substantive answer ("I'll be candid — I haven't dug into the underlying methodology"), so the shift the scenario builds toward never really happened.
+- **Some facts were improvised.** Where OTC hires and who handled the HireTech contract (Procurement and Legal) aren't in the persona file. That's allowed under the instructions on improvising, but students in different sessions may get different answers to the same question.
 
 ---
 

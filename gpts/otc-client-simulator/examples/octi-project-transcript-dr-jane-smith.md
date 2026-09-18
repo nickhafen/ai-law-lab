@@ -2,7 +2,7 @@
 
 **Persona:** 1. Dr. Jane Smith — VP of Digital Therapeutics (Product Lead for Octi)
 **Student role:** Outside counsel conducting an intake/fact-finding interview
-**Format:** ChatGPT Project, for comparison with the [custom GPT run](octi-transcript-dr-jane-smith.md) of the same interview
+**Format:** ChatGPT Project
 **Instructions:** [v2](https://github.com/nickhafen/ai-law-lab/tree/otc-sim-v2/gpts/otc-client-simulator)
 **Date generated:** September 18, 2026
 
@@ -10,21 +10,24 @@
 
 ## Evaluation
 
-This is the same intake interview as the custom GPT run, with the same student questions, but run in a ChatGPT Project. The student covered what data is collected, consent and the privacy notice, HIPAA, how Octi is positioned against licensed therapy, crisis escalation, unauthorized practice under state law, FDA device regulation, and past incidents.
+A standard intake interview with Jane about Octi, OTC's AI therapy chatbot, before its expansion into three new states. The student covered what data is collected, consent and the privacy notice, HIPAA, how Octi is positioned against licensed therapy, crisis escalation, unauthorized practice under state law, FDA device regulation, and past incidents. They closed by listing who to talk to next.
 
 Against the scenario's open risk areas:
 
-- **No explicit consent to use therapy data in fine-tuning:** surfaced. Jane said the privacy policy doesn't expressly cover AI training and the update "hasn't rolled out yet," which is a more specific answer than in the GPT run.
-- **No formal bias or adversarial safety testing:** missed.
+- **No explicit consent to use therapy data in fine-tuning:** surfaced. Jane said the privacy policy doesn't expressly cover AI training and that the update "hasn't rolled out yet."
+- **No formal bias or adversarial safety testing:** missed. Testing never came up.
 - **No explainability for users beyond a boilerplate disclaimer:** missed.
+
+Jane mentioned the informal ethics group herself at the end. The student didn't follow up on it.
 
 ### Takeaways
 
-- **The core facts matched the GPT run.** Jane's answers had the same shape: she deferred HIPAA, unauthorized practice, and FDA questions to Maria, deferred crisis escalation to Robert, and knew of no serious incidents.
-- **The Project volunteered more detail.** Jane mentioned the 60-day transcript retention in her opening answer. The GPT never brought it up.
-- **The positioning answer differed in a way that matters.** In the GPT run, Jane described Octi as support "between or instead of" traditional therapy. Here she called it "a supplement to therapy, not … a substitute." The GPT's answer gives the student more to work with on unauthorized practice, and it's closer to the persona's mission-driven "true believer" character.
-- **The Project added a favorable detail.** On FDA, Jane said the product team has been "very deliberate" about calling Octi supportive rather than diagnostic. That isn't in the persona file. It's allowed under the instructions on improvising, but it makes the client sound more careful than the scenario intends.
-- **The Project cited its sources.** It showed the source file (`OTC_Persona_Jane_Smith`) under each of Jane's answers. The GPT never shows sources. The citations are useful for testing, but they remind students there's a script behind the persona.
+- **Broad but shallow.** The student raised significant issues beyond the scenario's core risk areas, such as crisis escalation, unauthorized practice, and FDA. But they accepted "ask Maria" or "ask Robert" at every turn instead of pinning down what Jane herself knows as product lead.
+- **Compound questions let the client choose.** Most turns asked two questions at once, so Jane could answer the easier half briefly.
+- **The persona was more guarded than written.** Jane is meant to be a mission-driven "true believer" who answers risk questions by talking about impact. Here she mostly hedged and deferred. She firmly called Octi "a supplement to therapy, not … a substitute," which gives the student little to work with on unauthorized practice.
+- **The simulator added a favorable detail.** On FDA, Jane said the product team has been "very deliberate" about calling Octi supportive rather than diagnostic. That isn't in the persona file. It's allowed under the instructions on improvising, but it makes the client sound more careful than the scenario intends.
+- **Jane volunteered the 60-day retention period.** She mentioned it when asked what data Octi collects. That's a reasonable answer to the question, and useful facts for the student.
+- **The Project cited its sources.** It showed the source file (`OTC_Persona_Jane_Smith`) under each of Jane's answers. The citations are useful for testing, but they remind students there's a script behind the persona.
 
 ---
 

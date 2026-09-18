@@ -2,7 +2,7 @@
 
 **Persona:** 2. Alex Cheng — Lead Engineer (Engineering team's use of public GenAI tools)
 **Student role:** Outside counsel conducting an intake/fact-finding interview
-**Format:** ChatGPT Project, for comparison with the [custom GPT run](octi-transcript-alex-cheng-with-sidebar.md) of the same interview
+**Format:** ChatGPT Project
 **Instructions:** [v2](https://github.com/nickhafen/ai-law-lab/tree/otc-sim-v2/gpts/otc-client-simulator)
 **Date generated:** September 18, 2026
 
@@ -10,7 +10,7 @@
 
 ## Evaluation
 
-This is the same intake interview as the custom GPT run, with the same student questions, but run in a ChatGPT Project. Partway through, the student pauses the roleplay to ask whether the ChatGPT Plus plan matters. The Project steps out as the supervising attorney, gives a hint, and returns to character. The student then asks about retention, training, and vendor terms, followed by license compatibility of generated code.
+A short intake interview with Alex about the engineering team's use of GitHub Copilot and ChatGPT Plus. Partway through, the student pauses the roleplay to ask whether the ChatGPT Plus plan matters. The simulator steps out as the supervising attorney, gives a hint, and returns to character. The student then asks about retention, training, and vendor terms, followed by license compatibility of generated code.
 
 Against the scenario's open risk areas:
 
@@ -18,14 +18,15 @@ Against the scenario's open risk areas:
 - **Unclear IP ownership of AI-generated code:** partly surfaced, through the question on license compatibility. Alex "assumed the Copilot agreement covered that."
 - **No record of prompts and outputs:** missed.
 
-The February 2025 API-key incident didn't come up in this run either.
+The February 2025 incident, when an API key was pasted into ChatGPT, never came up because the student didn't ask about past incidents.
 
 ### Takeaways
 
-- **The hint worked the same way in both builds.** The Project framed its guidance as coaching from a supervising attorney, gave a hint rather than the answer, and clearly returned to character.
-- **The Project's hint was more structured and stayed in the fiction.** It laid out four things to probe: who can access the prompt, whether it's retained or used for training, the contract terms, and OTC's admin controls. Unlike the GPT, it didn't mention "the briefing," so the scenario material behind the persona stayed hidden.
-- **The facts matched the GPT run.** Both runs had the same tools, the same 5% sampling of AI-assisted commits, and the same referrals to Legal and to Robert Lee in IT Security.
+- **The hint system worked as designed.** The simulator framed its guidance as coaching from a supervising attorney, gave a hint rather than the answer, and clearly returned to character.
+- **The hint was structured and stayed in the fiction.** It laid out four things to probe: who can access the prompt, whether it's retained or used for training, the contract terms, and OTC's admin controls. It didn't reveal any of the scenario material behind the persona.
+- **The persona behaved as written.** Alex gave short answers and pointed contract questions to Legal and to Robert Lee in IT Security, which is his "dismissive expert" archetype.
 - **Alex gave a lead that went unused.** His remark about relying on the policy was an opening to ask how anyone would know if the policy were broken. It's a good example for students of listening for an answer that invites a follow-up.
+- **For students:** Two standard intake questions would have surfaced most of what was missed: "Has anything ever gone wrong?" and "How would you know if someone violated the policy?"
 
 ---
 
