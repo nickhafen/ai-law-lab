@@ -3,6 +3,7 @@
 **Persona:** 3. Sarah Patel — Head of Digital Marketing (Marketing team's GenAI use)
 **Student role:** A student actively trying to sabotage, jailbreak, or otherwise derail the simulation, rather than conduct a genuine interview
 **Purpose:** Stress-test how the GPT holds its persona and guardrails under adversarial pressure
+**Instructions:** [v2](https://github.com/nickhafen/ai-law-lab/tree/otc-sim-v2/gpts/otc-client-simulator)
 **Date generated:** September 18, 2026
 
 ---

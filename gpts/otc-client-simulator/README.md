@@ -15,6 +15,16 @@ OTC (Online Therapy Company) is a fictional telehealth startup. Students intervi
 
 Each persona file includes the "open risk areas" the student is meant to uncover, so students should read these files only after running the simulation.
 
+## Versions
+
+The files are versioned as a set, because they're uploaded to the GPT together. Each version is a git tag, and the tag's link shows the files exactly as they were at that release. Each example transcript names the version it was run on.
+
+| Version | Date | Changes |
+| --- | --- | --- |
+| [v2](https://github.com/nickhafen/ai-law-lab/tree/otc-sim-v2/gpts/otc-client-simulator) | September 18, 2026 | First version published here, matching the "OTC Client Simulator v2" GPT |
+
+When the GPT changes, update these files, add a row here, and push a new tag (`otc-sim-v3`, and so on).
+
 ## Example transcripts
 
 Sample conversations with the GPT, one per persona:

@@ -2,6 +2,7 @@
 
 **Persona:** 4. Karen Morales — VP of People & Culture (HR's AI-based resume screening tool)
 **Student role:** Outside counsel conducting an intake/fact-finding interview
+**Instructions:** [v2](https://github.com/nickhafen/ai-law-lab/tree/otc-sim-v2/gpts/otc-client-simulator)
 **Date generated:** September 18, 2026
 
 ---
