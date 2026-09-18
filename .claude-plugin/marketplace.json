@@ -1,0 +1,18 @@
+{
+  "name": "ai-law-lab",
+  "owner": {
+    "name": "Nick Hafen",
+    "url": "https://github.com/nickhafen"
+  },
+  "description": "Teaching tools from the AI Law Lab at https://nickhafen.github.io/ai-law-lab/",
+  "plugins": [
+    {
+      "name": "otc-client-simulator",
+      "displayName": "OTC Client Simulator",
+      "source": "./plugins/otc-client-simulator",
+      "description": "Law school roleplay: interview one of four employees of OTC, a fictional telehealth startup, about its AI use. Includes tiered hints and a debrief.",
+      "category": "education",
+      "homepage": "https://github.com/nickhafen/ai-law-lab/tree/main/plugins/otc-client-simulator"
+    }
+  ]
+}

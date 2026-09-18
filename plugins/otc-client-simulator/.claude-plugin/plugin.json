@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "otc-client-simulator",
+  "displayName": "OTC Client Simulator",
+  "version": "3.0.0",
+  "description": "Law school roleplay: interview one of four employees of OTC, a fictional telehealth startup, about its AI use. Includes tiered hints and a debrief.",
+  "author": {
+    "name": "Nick Hafen",
+    "url": "https://github.com/nickhafen"
+  },
+  "homepage": "https://nickhafen.github.io/ai-law-lab/",
+  "repository": "https://github.com/nickhafen/ai-law-lab",
+  "license": "MIT",
+  "keywords": ["law", "legal-education", "ai-law", "client-interview", "roleplay", "simulation"]
+}
