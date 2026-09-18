@@ -235,6 +235,32 @@ body {
   color: var(--accent);
 }
 
+/* Card with a secondary link beside the primary "Open" action */
+.exercise-card-footer {
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.exercise-card-footer .exercise-card-arrow {
+  margin-top: 0;
+  text-decoration: none;
+}
+
+.exercise-card-source {
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.exercise-card-source:hover {
+  color: var(--accent);
+}
+
 /* ── SHARED HEADER BAR ── */
 .mod-header-bar {
   background: var(--card);
