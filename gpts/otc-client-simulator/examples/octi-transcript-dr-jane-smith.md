@@ -6,6 +6,29 @@
 
 ---
 
+## Evaluation
+
+A standard intake interview with Jane about Octi, OTC's AI therapy chatbot, before its expansion into three new states. The student covered a wide range of issues: what data is collected, user consent and the privacy notice, HIPAA, how Octi is positioned against licensed therapy, crisis escalation, unauthorized practice under state law, FDA device regulation, and past incidents. They closed by listing who to talk to next.
+
+Against the scenario's open risk areas:
+
+- **No explicit consent to use therapy data in fine-tuning:** surfaced. Jane confirmed the privacy policy doesn't expressly cover AI training.
+- **No formal bias or adversarial safety testing:** missed. Testing never came up.
+- **No explainability for users beyond a boilerplate disclaimer:** missed.
+
+The informal ethics committee came up only because Jane mentioned it herself at the end. The student didn't follow up on it.
+
+### Takeaways
+
+- **Broad but shallow.** The student raised several significant issues outside the scenario's core risk areas, such as crisis escalation, unauthorized practice, and FDA. But they accepted "ask Maria" or "ask Robert" at every turn instead of pinning down what Jane herself knows as product lead.
+- **Compound questions let the client choose.** Most turns asked two questions at once, so Jane could answer the easier half briefly. Single, precise questions would have made her deflections harder.
+- **The persona behaved as written.** Jane moved from risk to mission ("the product team is very focused on that access gap") and pushed governance questions to Legal. That's her "true believer" archetype.
+- **The GPT deferred instead of improvising.** On crisis escalation, it had Jane refer the student elsewhere rather than invent a workflow. That's consistent with its instruction not to make up facts that could mislead the student's analysis.
+
+---
+
+## Transcript
+
 **Dr. Jane Smith:** Thanks for making time. We're scaling Octi into three new states next quarter, and Legal thought it would be worth having outside counsel take a look at our practices before we do. I'll be honest—I think we're in pretty good shape, but I want to make sure we haven't missed anything. Where do you want to start?
 
 **Student:** Great, thanks for making the time. Before we dig into specifics, can you give me a quick overview of what Octi does, who your users are, and what kind of data you collect from them?

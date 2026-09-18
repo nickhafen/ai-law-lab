@@ -6,6 +6,27 @@
 
 ---
 
+## Evaluation
+
+A standard intake interview with Karen about HireTech, the AI resume screening tool that HR uses. The student asked how the tool fits into hiring, then about the vendor's bias audit, the careers-page disclosure and accommodations, which state laws might apply, candidate complaints, and who owns the vendor relationship. They ended with a clear list of follow-up documents.
+
+Against the scenario's open risk areas:
+
+- **The vendor hasn't shared its bias metrics:** surfaced. Karen confirmed HireTech ran its own audit and that she hasn't reviewed the underlying calculations or raw data.
+- **Minimal disclosure to applicants:** surfaced. The careers page says only "Some roles use automated screening," and applicants have no opt-out or alternative process.
+- **NYC Local Law 144 compliance still under review:** surfaced and flagged as a priority.
+
+### Takeaways
+
+- **All three core issues surfaced.** Opening with "walk me through what the tool actually does" before getting to Karen's documents set up the rest of the interview well.
+- **The student stated legal conclusions during intake.** Saying what Local Law 144 requires and calling it "a real gap" is counseling rather than fact-finding. It's worth asking whether that belongs in a first meeting.
+- **"95% parity" went unexamined.** The student never asked what the figure measures or how it was calculated. That question is the intended way to break through Karen's "we have a document for that" habit.
+- **The persona was easier than written.** Karen is designed to answer questions by pointing to documents until she's walked through them. Here she was candid about her gaps almost immediately, so the shift the scenario builds toward never really happened.
+
+---
+
+## Transcript
+
 **Karen Morales:** Hi, I'm Karen Morales, VP of People & Culture. Thanks for meeting with me. We've been using HireTech's screening tool since January, and I want to make sure everything is above board. I actually put together a few documents that might be helpful—we have the vendor's bias report, our internal policy, and the disclosure language on our careers page. I think we've been pretty thorough, but I heard there's some new state legislation and I want to make sure we're covered.
 
 Where would you like to start?
