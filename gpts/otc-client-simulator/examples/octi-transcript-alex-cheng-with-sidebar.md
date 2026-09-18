@@ -2,6 +2,7 @@
 
 **Persona:** 2. Alex Cheng — Lead Engineer (Engineering team's use of public GenAI tools)
 **Student role:** Outside counsel conducting an intake/fact-finding interview
+**Format:** Custom GPT, compared in a [ChatGPT Project run](octi-project-transcript-alex-cheng-with-sidebar.md)
 **Instructions:** [v2](https://github.com/nickhafen/ai-law-lab/tree/otc-sim-v2/gpts/otc-client-simulator)
 **Date generated:** September 18, 2026
 

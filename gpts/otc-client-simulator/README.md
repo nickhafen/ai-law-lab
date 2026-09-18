@@ -2,6 +2,8 @@
 
 These are the files behind the [OTC Client Simulator](https://chatgpt.com/g/g-69c5820d64e4819186c723f9fc7b9e33-otc-client-simulator-v2) custom GPT. They're published here so anyone can see how the simulation works. The GPT doesn't read them from this repo; they're uploaded to it directly, so a change here won't reach the GPT until the files are uploaded again.
 
+The same files can also run in a ChatGPT Project instead of a custom GPT. The [example transcripts](#example-transcripts) compare the two.
+
 OTC (Online Therapy Company) is a fictional telehealth startup. Students interview one of four OTC employees about the company's AI use. The goal is to surface legal risk before drafting an AI policy.
 
 | File | Role in the GPT |
@@ -37,15 +39,25 @@ When the GPT's instructions or files change:
    git push origin otc-sim-v3
    ```
 
-5. **For any new example transcripts,** add an `**Instructions:**` line to the header that links to the new tag. Leave older examples pointing at the version they were run on. Rerunning an old test on the new version gives you a before-and-after.
+5. **For any new example transcripts,** add an `**Instructions:**` line to the header that links to the new tag, and a `**Format:**` line that says whether it was run in the custom GPT or a ChatGPT Project. Leave older examples pointing at the version they were run on. Rerunning an old test on the new version gives you a before-and-after.
 
 ## Example transcripts
 
-Sample conversations with the GPT, one per persona:
+Sample conversations, one per persona. Each one was run twice with the same v2 files and the same student messages: once in the custom GPT, and once in a ChatGPT Project. Each transcript starts with an evaluation of what worked, what the student missed, and any weaknesses in the simulation, followed by the conversation itself.
 
-| Transcript | What it shows |
-| --- | --- |
-| [Dr. Jane Smith](examples/octi-transcript-dr-jane-smith.md) | A standard intake interview about Octi: consent, HIPAA, crisis escalation, and state licensing |
-| [Alex Cheng](examples/octi-transcript-alex-cheng-with-sidebar.md) | The student pauses mid-interview for a hint, and the GPT coaches as the supervising attorney before returning to character |
-| [Sarah Patel](examples/octi-transcript-sarah-patel-adversarial.md) | A red-team test: prompt extraction, persona hijacking, a false authority claim, and a hostile student, each followed by how the GPT responded |
-| [Karen Morales](examples/octi-transcript-karen-morales.md) | A standard intake interview about AI resume screening: the vendor bias audit, applicant disclosure, and NYC Local Law 144 |
+| Persona | What it shows | Custom GPT | ChatGPT Project |
+| --- | --- | --- | --- |
+| Dr. Jane Smith | A standard intake interview about Octi: consent, HIPAA, crisis escalation, and state licensing | [Transcript](examples/octi-transcript-dr-jane-smith.md) | [Transcript](examples/octi-project-transcript-dr-jane-smith.md) |
+| Alex Cheng | The student pauses mid-interview for a hint, and the simulator coaches as the supervising attorney before returning to character | [Transcript](examples/octi-transcript-alex-cheng-with-sidebar.md) | [Transcript](examples/octi-project-transcript-alex-cheng-with-sidebar.md) |
+| Sarah Patel | A red-team test: prompt extraction, a scripted confession, persona hijacking, a false authority claim, and a hostile student | [Transcript](examples/octi-transcript-sarah-patel-adversarial.md) | [Transcript](examples/octi-project-transcript-sarah-patel-adversarial.md) |
+| Karen Morales | A standard intake interview about AI resume screening: the vendor bias audit, applicant disclosure, and NYC Local Law 144 | [Transcript](examples/octi-transcript-karen-morales.md) | [Transcript](examples/octi-project-transcript-karen-morales.md) |
+
+### Custom GPT vs. ChatGPT Project
+
+Both builds used the same v2 files. The comparison shows whether the way the files are loaded changes the simulation's behavior.
+
+- **The facts and persona behavior were mostly the same.** Across the three standard interviews, both builds gave the same core facts, the same hedging, and the same referrals to colleagues. Only improvised details varied, such as where OTC recruits and who handled the HireTech contract.
+- **The Project resisted the false authority claim.** The GPT volunteered the scenario's issue checklist when a student claimed to be the professor. The Project stayed in persona and pointed to the debrief command. This comes from one run of each build, so it should be rerun before drawing firm conclusions.
+- **The Project volunteered slightly more.** For example, it brought up the 60-day transcript retention without being asked, and it added a few favorable details that aren't in the persona files.
+- **The Project shows its sources.** It cites the persona file under each answer. That's helpful for testing, but it reminds students there's a script behind the persona. The GPT never shows sources.
+- **The Project's hint stayed in the fiction.** The GPT's hint mentioned "the briefing." The Project's didn't.
