@@ -26,6 +26,7 @@ Keep instructions concrete and ordered — assume the tester will follow them to
 - Plotter and citations both split into `live` and `archive` under their one permitted path — `/plotter/live/{pushId}` + `/plotter/archive/{sessionId}/{records,axes,archivedAt}`, `/citations/live/{pushId}` + `/citations/archive/{sessionId}/{records,prompt,archivedAt}`. Clearing archives the round instead of deleting it, and the CSV export reads live and archive together. No extra Firebase rule is needed, since rules cascade to children
 - Shared CSV helpers (`csvCell`, `csvRow`, `csvDownload`, `csvDateStamp`) live in SHARED UTILITIES — reuse them for any new export
 - Generic helpers `saveExerciseConfig(exercise, config)` and `onExerciseConfig(exercise, callback)` should be reused for any new interactive exercise
+- The Input · Function · Output board (`#iof-app`, `iof*` functions) is instructor-only presentation: it saves to `localStorage` (`iofBoard`, `iofTextSize`) and never touches Firebase, so it needs no rule. Cards drag with pointer events, not native HTML5 drag-and-drop, so touchscreens work. Arrows between cards are drawn on an SVG layer under the cards from live DOM positions; a ResizeObserver on each card redraws them, so anything that moves a card without resizing it must call `iofDrawLinks()` / `iofScheduleLinks()`
 
 ## Firebase Rules
 Any new Firebase path needs a corresponding rule in the Firebase console (Realtime Database → Rules) before it will work. Current allowed paths: `plotter`, `configs`, `citations`.

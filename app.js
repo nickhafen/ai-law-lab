@@ -11,6 +11,7 @@ function showHomeScreen() {
   document.getElementById('research-app').classList.add('hidden');
   document.getElementById('token-app').classList.add('hidden');
   document.getElementById('citation-app').classList.add('hidden');
+  document.getElementById('iof-app').classList.add('hidden');
   document.getElementById('home-screen').classList.remove('hidden');
 }
 
@@ -21,6 +22,7 @@ function showPlotterApp() {
   document.getElementById('research-app').classList.add('hidden');
   document.getElementById('token-app').classList.add('hidden');
   document.getElementById('citation-app').classList.add('hidden');
+  document.getElementById('iof-app').classList.add('hidden');
   document.getElementById('plotter-app').classList.remove('hidden');
   if (!plotterInitialized) {
     plotterInitialized = true;
@@ -36,6 +38,7 @@ function showResearchApp() {
   document.getElementById('plotter-app').classList.add('hidden');
   document.getElementById('token-app').classList.add('hidden');
   document.getElementById('citation-app').classList.add('hidden');
+  document.getElementById('iof-app').classList.add('hidden');
   document.getElementById('research-app').classList.remove('hidden');
   const roster = document.getElementById('settings-roster');
   if (roster && roster.value.trim()) document.getElementById('research-names').value = roster.value;
@@ -48,6 +51,7 @@ function showTokenApp() {
   document.getElementById('plotter-app').classList.add('hidden');
   document.getElementById('research-app').classList.add('hidden');
   document.getElementById('citation-app').classList.add('hidden');
+  document.getElementById('iof-app').classList.add('hidden');
   document.getElementById('token-app').classList.remove('hidden');
   if (!tokenInitialized) {
     tokenInitialized = true;
@@ -62,11 +66,27 @@ function showCitationApp() {
   document.getElementById('plotter-app').classList.add('hidden');
   document.getElementById('research-app').classList.add('hidden');
   document.getElementById('token-app').classList.add('hidden');
+  document.getElementById('iof-app').classList.add('hidden');
   document.getElementById('citation-app').classList.remove('hidden');
   if (!citationInitialized) {
     citationInitialized = true;
     citeStartListener();
     citeBuildQR();
+  }
+}
+
+function showIofApp() {
+  document.getElementById('home-screen').classList.add('hidden');
+  document.getElementById('panel-app').classList.add('hidden');
+  document.getElementById('counsel-app').classList.add('hidden');
+  document.getElementById('plotter-app').classList.add('hidden');
+  document.getElementById('research-app').classList.add('hidden');
+  document.getElementById('token-app').classList.add('hidden');
+  document.getElementById('citation-app').classList.add('hidden');
+  document.getElementById('iof-app').classList.remove('hidden');
+  if (!iofInitialized) {
+    iofInitialized = true;
+    iofInit();
   }
 }
 
@@ -77,6 +97,7 @@ function showPanelApp() {
   document.getElementById('home-screen').classList.add('hidden');
   document.getElementById('counsel-app').classList.add('hidden');
   document.getElementById('research-app').classList.add('hidden');
+  document.getElementById('iof-app').classList.add('hidden');
   document.getElementById('panel-app').classList.remove('hidden');
   const roster = document.getElementById('settings-roster');
   if (roster && roster.value.trim()) $namesTextarea.value = roster.value;
@@ -90,6 +111,7 @@ function showCounselApp() {
   document.getElementById('home-screen').classList.add('hidden');
   document.getElementById('panel-app').classList.add('hidden');
   document.getElementById('research-app').classList.add('hidden');
+  document.getElementById('iof-app').classList.add('hidden');
   document.getElementById('counsel-app').classList.remove('hidden');
   const roster = document.getElementById('settings-roster');
   if (roster && roster.value.trim()) document.getElementById('counsel-names').value = roster.value;
@@ -900,6 +922,7 @@ function renderHelpModal() {
   const onCounsel = !document.getElementById('counsel-app').classList.contains('hidden');
   const onToken   = !document.getElementById('token-app').classList.contains('hidden');
   const onCites   = !document.getElementById('citation-app').classList.contains('hidden');
+  const onIof     = !document.getElementById('iof-app').classList.contains('hidden');
   const onPanelSetup    = onPanel   && document.getElementById('setup-screen').classList.contains('active');
   const onPanelMod      = onPanel   && document.getElementById('mod-screen').classList.contains('active');
   const onCounselSetup  = onCounsel && document.getElementById('counsel-setup').classList.contains('active');
@@ -912,6 +935,7 @@ function renderHelpModal() {
   show('help-section-counsel-mod',   onCounselMod);
   show('help-section-token',         onToken);
   show('help-section-citations',     onCites);
+  show('help-section-iof',           onIof);
 }
 
 function bindHelpEvents() {
@@ -942,7 +966,7 @@ function bindKeyboardShortcuts() {
     }
 
     const tag = e.target.tagName;
-    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target.isContentEditable) return;
 
     // ── Global shortcuts (fire on every screen) ──
     if (e.key === 's' || e.key === 'S') { openSettings(); return; }
@@ -956,6 +980,9 @@ function bindKeyboardShortcuts() {
     if (e.key === '?') { renderHelpModal(); openModal($helpModal); return; }
 
     if (document.querySelector('.modal-overlay.open')) return;
+
+    // ── Input · Function · Output shortcuts ──
+    if (!document.getElementById('iof-app').classList.contains('hidden')) { iofHandleKey(e); return; }
 
     // ── Citation-only shortcuts ──
     if (!document.getElementById('citation-app').classList.contains('hidden')) {
@@ -4223,6 +4250,891 @@ function bindTokenEvents() {
 }
 
 // ════════════════════════════════════════════════
+//  INPUT · FUNCTION · OUTPUT
+// ════════════════════════════════════════════════
+// A presentation board for breaking a legal task into what goes in, what is
+// done with it, and what comes out. Instructor-only: nothing touches Firebase.
+// The board lives in localStorage so it survives a refresh on the classroom
+// machine, and it stays on that machine.
+//
+// Cards are stored in one array in display order; each card's `col` says which
+// column it sits in. A card can be a sub-process — itself the product of another
+// input → function → output chain (Claims is an input to a complaint, but also
+// the output of researching and choosing claims). `subText` names that chain and
+// `sub` says whether its line is showing. A card is a sub-process while its line
+// is showing or it has a `subText`, so collapsing a named one keeps the stack
+// and icon; collapsing an unnamed one unmarks it. `links` holds the arrows
+// drawn between cards (see "Arrows between cards" below).
+const IOF_STORAGE_KEY = 'iofBoard';
+const IOF_SIZE_KEY    = 'iofTextSize';
+const IOF_COLS        = ['in', 'fn', 'out'];
+const IOF_MAXLEN      = { text: 160, subText: 240, title: 80 };
+
+// Loaded by the Example button — a board to rehearse with, not a model answer.
+const IOF_EXAMPLE = {
+  title: 'Drafting a complaint',
+  cards: [
+    { col: 'in',  text: "Client's story and documents" },
+    { col: 'in',  text: 'Claims', sub: true, subText: 'Research possible claims → legal judgment → choose which to plead' },
+    { col: 'in',  text: 'Parties' },
+    { col: 'in',  text: 'Jurisdiction and venue', sub: true, subText: 'Research the forum options → weigh them → choose a court' },
+    { col: 'in',  text: 'Relief sought', sub: true, subText: 'Client goals → counseling → choose remedies' },
+    { col: 'in',  text: 'FRCP 8, 10, and 11; local rules' },
+    { col: 'fn',  text: 'Organize the facts into a narrative' },
+    { col: 'fn',  text: 'Match the facts to each element of each claim' },
+    { col: 'fn',  text: 'Draft the caption, allegations, counts, and prayer' },
+    { col: 'fn',  text: 'Rule 11 check' },
+    { col: 'out', text: 'Complaint' },
+    { col: 'out', text: 'Civil cover sheet and summons' },
+  ],
+  // [from, to] as indexes into `cards` above.
+  links: [[0, 6], [6, 7], [1, 7], [7, 8], [2, 8], [3, 8], [4, 8], [5, 8], [8, 9], [5, 9], [9, 10], [2, 11]],
+};
+
+let iofInitialized  = false;
+let iofState        = { title: '', cards: [], links: [] };
+let iofSelectedId   = null;
+let iofEditingId    = null;
+let iofEditSnapshot = null;   // { text, subText, sub, isNew } — restored on Escape
+let iofUndoState    = null;   // one level: the board as it was before the last delete / clear / example
+let iofDrag         = null;   // pointer drag in progress
+let _iofToastTimer  = null;
+let _iofAddArmed    = false;  // set on pointerdown so finishing an edit by clicking away doesn't also add a card
+
+function iofNewId() {
+  return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+function iofNormalizeCard(c) {
+  return {
+    id:      IOF_ID_RE.test(c.id ?? '') ? c.id : iofNewId(),   // ids are interpolated into selectors and SVG
+    col:     IOF_COLS.includes(c.col) ? c.col : 'in',
+    text:    String(c.text ?? '').slice(0, IOF_MAXLEN.text),
+    sub:     !!c.sub,
+    subText: String(c.subText ?? '').slice(0, IOF_MAXLEN.subText),
+  };
+}
+
+function iofLoad() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(IOF_STORAGE_KEY) || 'null');
+    if (saved && Array.isArray(saved.cards)) {
+      const cards = saved.cards.map(iofNormalizeCard).filter(c => c.text);
+      iofState = {
+        title: String(saved.title ?? '').slice(0, IOF_MAXLEN.title),
+        cards,
+        links: iofNormalizeLinks(saved.links, new Set(cards.map(c => c.id))),
+      };
+    }
+  } catch { /* storage blocked or corrupt — start empty */ }
+}
+
+function iofSave() {
+  try { localStorage.setItem(IOF_STORAGE_KEY, JSON.stringify(iofState)); } catch { /* private window */ }
+}
+
+function iofFind(id) { return iofState.cards.find(c => c.id === id); }
+function iofNode(id) { return document.querySelector(`#iof-board .iof-card[data-id="${id}"]`); }
+
+// ── Rendering ────────────────────────────────────
+function iofRender() {
+  document.querySelectorAll('#iof-board .iof-list').forEach(list => {
+    list.replaceChildren(...iofState.cards.filter(c => c.col === list.dataset.col).map(iofCardEl));
+  });
+  iofObserveCards();
+  iofDrawLinks();
+}
+
+function iofCardEl(card) {
+  const el = document.createElement('article');
+  el.className = 'iof-card' + (card.id === iofSelectedId ? ' is-selected' : '');
+  el.dataset.id = card.id;
+  el.innerHTML = `
+    <div class="iof-card-text" data-placeholder="Name this part…"></div>
+    <div class="iof-card-sub">
+      <span class="iof-glyph" title="Its own input → function → output"><i></i><b></b><i></i><b></b><i></i></span>
+      <div class="iof-card-sub-text" data-placeholder="The process that produces it…"></div>
+      <button type="button" class="iof-card-btn iof-sub-remove" data-act="unsub" title="Remove the sub-process from this card">Remove</button>
+    </div>
+    <div class="iof-card-actions">
+      <button type="button" class="iof-card-btn" data-act="sub" title="Show / hide the sub-process — this part is its own process"
+        aria-label="Show or hide the sub-process">⧉</button>
+      <button type="button" class="iof-card-btn" data-act="delete" title="Delete (Del)" aria-label="Delete card">×</button>
+    </div>
+    <span class="iof-link-handle" title="Click, then click another card to draw an arrow"></span>`;
+  el.querySelector('.iof-card-text').textContent = card.text;
+  el.querySelector('.iof-card-sub-text').textContent = card.subText;
+  iofSubClasses(el, card.sub, card.subText);
+  return el;
+}
+
+function iofSubClasses(el, open, subText) {
+  el.classList.toggle('is-sub', open || !!subText);
+  el.classList.toggle('is-sub-open', open);
+  el.querySelector('.iof-card-actions [data-act="sub"]').setAttribute('aria-pressed', open);
+}
+
+function iofSelect(id) {
+  iofSelectedId = id;
+  iofSelectedLinkId = null;
+  document.querySelectorAll('#iof-board .iof-card').forEach(el => {
+    el.classList.toggle('is-selected', el.dataset.id === id);
+  });
+  iofDrawLinks();   // the selected card's arrows are drawn highlighted
+}
+
+// ── Editing ──────────────────────────────────────
+function iofMakeEditable(node) {
+  try { node.contentEditable = 'plaintext-only'; } catch { node.contentEditable = 'true'; }
+}
+
+function iofFocusEnd(node) {
+  node.focus();
+  const range = document.createRange();
+  range.selectNodeContents(node);
+  range.collapse(false);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+
+function iofStartEdit(id, { isNew = false, focusSub = false, at = null } = {}) {
+  if (iofEditingId) iofFinishEdit(false);
+  const card = iofFind(id);
+  const el = iofNode(id);
+  if (!card || !el) return;
+  iofEditingId = id;
+  iofEditSnapshot = { text: card.text, subText: card.subText, sub: card.sub, isNew };
+  iofSelect(id);
+  el.classList.add('is-editing');
+  const text = el.querySelector('.iof-card-text');
+  const sub  = el.querySelector('.iof-card-sub-text');
+  iofMakeEditable(text);
+  iofMakeEditable(sub);
+  const target = focusSub && card.sub ? sub : text;
+  iofFocusEnd(target);
+  // Opened by a click: put the caret where the click landed, not at the end.
+  if (at) {
+    let range = null;
+    if (document.caretRangeFromPoint) {
+      range = document.caretRangeFromPoint(at.x, at.y);
+    } else if (document.caretPositionFromPoint) {
+      const pos = document.caretPositionFromPoint(at.x, at.y);
+      if (pos) { range = document.createRange(); range.setStart(pos.offsetNode, pos.offset); }
+    }
+    if (range && target.contains(range.startContainer)) {
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+  }
+}
+
+function iofFinishEdit(cancel) {
+  const id = iofEditingId;
+  if (!id) return;
+  const snap = iofEditSnapshot;
+  iofEditingId = null;
+  iofEditSnapshot = null;
+  const card = iofFind(id);
+  const el = iofNode(id);
+  if (!card) return;
+
+  if (cancel) {
+    Object.assign(card, { text: snap.text, subText: snap.subText, sub: snap.sub });
+  } else if (el) {
+    card.text    = el.querySelector('.iof-card-text').textContent.trim().slice(0, IOF_MAXLEN.text);
+    card.subText = el.querySelector('.iof-card-sub-text').textContent.trim().slice(0, IOF_MAXLEN.subText);
+  }
+
+  // A card with no name is not a card. A brand-new one just vanishes; an
+  // existing one that was emptied is a real delete and gets an undo.
+  if (!card.text) {
+    if (snap.isNew) {
+      iofState.cards = iofState.cards.filter(c => c !== card);
+      iofDropLinksFor(id);
+      if (iofSelectedId === id) iofSelectedId = null;
+    } else {
+      card.text = snap.text;
+      iofDelete(id);
+      return;
+    }
+  }
+  iofRender();
+  iofSave();
+}
+
+// ── Card operations ──────────────────────────────
+function iofAdd(col, beforeId = null) {
+  if (iofEditingId) iofFinishEdit(false);
+  const card = iofNormalizeCard({ col, text: '' });
+  const at = beforeId ? iofState.cards.findIndex(c => c.id === beforeId) : -1;
+  if (at >= 0) iofState.cards.splice(at, 0, card);
+  else iofState.cards.push(card);
+  iofSelectedId = card.id;
+  iofRender();
+  iofNode(card.id)?.scrollIntoView({ block: 'nearest' });
+  iofStartEdit(card.id, { isNew: true });
+}
+
+function iofRememberForUndo() {
+  iofUndoState = JSON.parse(JSON.stringify(iofState));
+}
+
+function iofDelete(id) {
+  if (iofEditingId === id) {
+    const isNew = iofEditSnapshot?.isNew;
+    const card = iofFind(id);
+    if (card && !isNew) Object.assign(card, { text: iofEditSnapshot.text, subText: iofEditSnapshot.subText, sub: iofEditSnapshot.sub });
+    iofEditingId = null;
+    iofEditSnapshot = null;
+    if (isNew) {
+      iofState.cards = iofState.cards.filter(c => c.id !== id);
+      iofDropLinksFor(id);
+      iofSelectedId = null;
+      iofRender();
+      iofSave();
+      return;
+    }
+  }
+  const card = iofFind(id);
+  if (!card) return;
+  iofRememberForUndo();
+  iofState.cards = iofState.cards.filter(c => c.id !== id);
+  iofDropLinksFor(id);
+  if (iofSelectedId === id) iofSelectedId = null;
+  iofRender();
+  iofSave();
+  iofToast(`Deleted “${card.text.length > 40 ? card.text.slice(0, 40) + '…' : card.text}”`);
+}
+
+function iofUndo() {
+  if (!iofUndoState) return;
+  if (iofEditingId) iofFinishEdit(false);
+  iofState = iofUndoState;
+  iofUndoState = null;
+  iofSelectedId = null;
+  iofSelectedLinkId = null;
+  document.getElementById('iof-title').value = iofState.title;
+  iofRender();
+  iofSave();
+  iofHideToast();
+}
+
+function iofToggleSub(id) {
+  const card = iofFind(id);
+  const el = iofNode(id);
+  if (!card || !el) return;
+  card.sub = !card.sub;
+  const subEl = el.querySelector('.iof-card-sub-text');
+  if (iofEditingId === id) {
+    // Mid-edit: keep the edit going. Jump into the line if it just opened, or
+    // back to the name if the line being typed in just closed.
+    iofSubClasses(el, card.sub, subEl.textContent.trim());
+    if (card.sub) iofFocusEnd(subEl);
+    else if (document.activeElement === subEl) iofFocusEnd(el.querySelector('.iof-card-text'));
+    return;
+  }
+  iofSubClasses(el, card.sub, card.subText);
+  iofSave();
+  // Opening a sub-process nobody has described yet drops the cursor into its line.
+  if (card.sub && !card.subText) iofStartEdit(id, { focusSub: true });
+}
+
+function iofRemoveSub(id) {
+  const card = iofFind(id);
+  if (!card) return;
+  if (iofEditingId === id) {
+    // Keep whatever was typed into the name; only the process line goes.
+    const text = iofNode(id)?.querySelector('.iof-card-text').textContent.trim().slice(0, IOF_MAXLEN.text);
+    if (text) card.text = text;
+    iofEditingId = null;
+    iofEditSnapshot = null;
+  }
+  const hadText = !!card.subText;
+  if (hadText) iofRememberForUndo();
+  card.sub = false;
+  card.subText = '';
+  iofSelectedId = id;
+  iofRender();
+  iofSave();
+  if (hadText) iofToast(`Removed the sub-process from “${card.text.length > 40 ? card.text.slice(0, 40) + '…' : card.text}”`);
+}
+
+// Keyboard moves: dCol steps across columns (keeping the card's row where it
+// can), dRow steps up or down within its column.
+function iofMoveSelected(dCol, dRow) {
+  const card = iofFind(iofSelectedId);
+  if (!card) return;
+  const groups = Object.fromEntries(IOF_COLS.map(col => [col, iofState.cards.filter(c => c.col === col)]));
+  const from = groups[card.col];
+  const pos = from.indexOf(card);
+  if (dRow) {
+    const to = pos + dRow;
+    if (to < 0 || to >= from.length) return;
+    from.splice(pos, 1);
+    from.splice(to, 0, card);
+  } else {
+    const colIdx = IOF_COLS.indexOf(card.col) + dCol;
+    if (colIdx < 0 || colIdx >= IOF_COLS.length) return;
+    from.splice(pos, 1);
+    card.col = IOF_COLS[colIdx];
+    const dest = groups[card.col];
+    dest.splice(Math.min(pos, dest.length), 0, card);
+  }
+  iofState.cards = IOF_COLS.flatMap(col => groups[col]);
+  iofRender();
+  iofNode(card.id)?.scrollIntoView({ block: 'nearest' });
+  iofSave();
+}
+
+function iofClear() {
+  if (!iofState.cards.length) return;
+  if (iofEditingId) iofFinishEdit(false);
+  iofRememberForUndo();
+  iofState.cards = [];
+  iofState.links = [];
+  iofSelectedId = null;
+  iofRender();
+  iofSave();
+  iofToast('Board cleared');
+}
+
+function iofLoadExample() {
+  if (iofEditingId) iofFinishEdit(false);
+  const hadContent = iofState.cards.length || iofState.title;
+  if (hadContent) iofRememberForUndo();
+  const cards = IOF_EXAMPLE.cards.map(iofNormalizeCard);
+  const links = IOF_EXAMPLE.links.map(([f, t]) => ({ id: iofNewId(), from: cards[f].id, to: cards[t].id }));
+  iofState = { title: IOF_EXAMPLE.title, cards, links };
+  iofSelectedId = null;
+  document.getElementById('iof-title').value = iofState.title;
+  iofRender();
+  iofSave();
+  if (hadContent) iofToast('Example loaded — your board was replaced');
+}
+
+// ── Arrows between cards ─────────────────────────
+// Links are { id, from, to } card-id pairs, drawn as curves on an SVG layer
+// that sits under the cards (so an Input → Output arrow passes behind the
+// Function column). Any card may point at any other: across columns it runs
+// edge to facing edge; within one column it loops out the side. Positions are
+// read off the DOM, so arrows follow cards through drags, reorders, edits, and
+// resizes — a ResizeObserver on every card triggers the redraws.
+const IOF_ID_RE = /^[A-Za-z0-9_-]+$/;
+let iofSelectedLinkId = null;
+let iofLinkDrag       = null;   // arrow being drawn from a card's dot
+let _iofLinksFrame    = 0;
+let _iofResizeObs     = null;
+let _iofSwallowClickUntil = 0;   // swallows the click that ends a two-click arrow
+
+function iofNormalizeLinks(links, cardIds) {
+  const seen = new Set();
+  return (Array.isArray(links) ? links : []).filter(l => {
+    if (!l || !cardIds.has(l.from) || !cardIds.has(l.to) || l.from === l.to) return false;
+    const key = `${l.from}>${l.to}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).map(l => ({ id: IOF_ID_RE.test(l.id ?? '') ? l.id : iofNewId(), from: l.from, to: l.to }));
+}
+
+function iofDropLinksFor(cardId) {
+  iofState.links = iofState.links.filter(l => l.from !== cardId && l.to !== cardId);
+}
+
+function iofScheduleLinks() {
+  if (!_iofLinksFrame) _iofLinksFrame = requestAnimationFrame(iofDrawLinks);
+}
+
+function iofObserveCards() {
+  if (!_iofResizeObs) return;
+  _iofResizeObs.disconnect();
+  _iofResizeObs.observe(document.getElementById('iof-board'));
+  document.querySelectorAll('#iof-board .iof-card').forEach(el => _iofResizeObs.observe(el));
+}
+
+// Mid-height point on a card's left or right edge, in board coordinates.
+function iofEdgePoint(el, side, b) {
+  const r = el.getBoundingClientRect();
+  // Sub-process cards carry two offset sheets on their right; start past them.
+  const pad = side === 'r' && el.classList.contains('is-sub') ? 10 : 0;
+  return { x: (side === 'r' ? r.right + pad : r.left) - b.left, y: r.top + r.height / 2 - b.top };
+}
+
+// a: start point, leaving in direction sa (+1 right, -1 left).
+// z: arrow tip, arriving while travelling in direction dz.
+function iofCurve(a, sa, z, dz, k) {
+  const end = { x: z.x - dz * 7, y: z.y };   // line stops under the arrowhead
+  const c1 = { x: a.x + sa * k, y: a.y };
+  const c2 = { x: end.x - dz * k, y: end.y };
+  return {
+    d: `M${a.x},${a.y} C${c1.x},${c1.y} ${c2.x},${c2.y} ${end.x},${end.y}`,
+    head: `M${z.x},${z.y} L${z.x - dz * 11},${z.y - 6} L${z.x - dz * 11},${z.y + 6} Z`,
+    mid: { x: (a.x + 3 * c1.x + 3 * c2.x + end.x) / 8, y: (a.y + 3 * c1.y + 3 * c2.y + end.y) / 8 },
+  };
+}
+
+// Column a card is in right now — read off the DOM, so it is already right
+// while a card is mid-drag, before the move is saved.
+function iofColOf(el) {
+  return el.closest('.iof-list')?.dataset.col ?? 'in';
+}
+
+function iofLinkGeometry(fromId, toId, b) {
+  const fromEl = iofNode(fromId), toEl = iofNode(toId);
+  if (!fromEl || !toEl) return null;
+  const ci = IOF_COLS.indexOf(iofColOf(fromEl)), cj = IOF_COLS.indexOf(iofColOf(toEl));
+  const GAP = 3;
+  if (ci !== cj) {
+    const dir = cj > ci ? 1 : -1;
+    const a = iofEdgePoint(fromEl, dir > 0 ? 'r' : 'l', b);
+    const z = iofEdgePoint(toEl, dir > 0 ? 'l' : 'r', b);
+    z.x -= dir * GAP;
+    return iofCurve(a, dir, z, dir, Math.max(36, Math.abs(z.x - a.x) * 0.45));
+  }
+  // Same column: loop out the right side (the left side for Output, the edge column).
+  const s = ci === IOF_COLS.length - 1 ? -1 : 1;
+  const side = s > 0 ? 'r' : 'l';
+  const a = iofEdgePoint(fromEl, side, b);
+  const z = iofEdgePoint(toEl, side, b);
+  z.x += s * GAP;
+  return iofCurve(a, s, z, -s, 26 + Math.min(70, Math.abs(z.y - a.y) * 0.3));
+}
+
+function iofDrawLinks() {
+  _iofLinksFrame = 0;
+  const svg = document.getElementById('iof-links');
+  const board = document.getElementById('iof-board');
+  if (!svg || !board || !board.offsetParent) return;   // board not on screen
+  const b = board.getBoundingClientRect();
+  const hot = iofSelectedId;
+  let html = '';
+  for (const link of iofState.links) {
+    const g = iofLinkGeometry(link.from, link.to, b);
+    if (!g) continue;
+    const cls = ['iof-link'];
+    if (hot && (link.from === hot || link.to === hot)) cls.push('is-hot');
+    const selected = link.id === iofSelectedLinkId;
+    if (selected) cls.push('is-selected');
+    html += `<g class="${cls.join(' ')}" data-link="${link.id}" style="--lc: var(--iof-${iofColOf(iofNode(link.from))})">`
+      + `<path class="iof-link-hit" d="${g.d}"/><path class="iof-link-line" d="${g.d}"/><path class="iof-link-head" d="${g.head}"/>`
+      + (selected ? `<g class="iof-link-del" data-link-del="${link.id}" transform="translate(${g.mid.x} ${g.mid.y})"><title>Remove arrow (Del)</title><circle r="11"/><path d="M-4,-4 L4,4 M4,-4 L-4,4"/></g>` : '')
+      + '</g>';
+  }
+
+  // The arrow being drawn: snaps to the card under the pointer, else follows it.
+  const ld = iofLinkDrag;
+  const fromEl = ld && iofNode(ld.from);
+  if (ld && fromEl) {
+    let g = ld.target ? iofLinkGeometry(ld.from, ld.target, b) : null;
+    if (!g) {
+      const p = { x: ld.x - b.left, y: ld.y - b.top };
+      const r = fromEl.getBoundingClientRect();
+      const dir = ld.x >= r.left + r.width / 2 ? 1 : -1;
+      const a = iofEdgePoint(fromEl, dir > 0 ? 'r' : 'l', b);
+      g = iofCurve(a, dir, p, p.x >= a.x ? 1 : -1, Math.max(30, Math.abs(p.x - a.x) * 0.4));
+    }
+    html += `<g class="iof-link is-drawing" style="--lc: var(--iof-${iofColOf(fromEl)})">`
+      + `<path class="iof-link-line" d="${g.d}"/><path class="iof-link-head" d="${g.head}"/></g>`;
+  }
+  svg.innerHTML = html;
+}
+
+function iofSelectLink(id) {
+  iofSelect(null);
+  iofSelectedLinkId = id;
+  iofDrawLinks();
+}
+
+function iofAddLink(from, to) {
+  if (from === to || iofState.links.some(l => l.from === from && l.to === to)) return;
+  iofState.links.push({ id: iofNewId(), from, to });
+  iofSave();
+}
+
+function iofDeleteLink(id) {
+  if (!iofState.links.some(l => l.id === id)) return;
+  iofRememberForUndo();
+  iofState.links = iofState.links.filter(l => l.id !== id);
+  iofSelectedLinkId = null;
+  iofSave();
+  iofDrawLinks();
+  iofToast('Arrow removed');
+}
+
+// Drawing an arrow takes two clicks — one on the dot, one on the target card —
+// with the arrow following the pointer in between. Dragging from the dot and
+// releasing on a card also works. In between, a capturing pointerdown on the
+// window takes the second click before any card, button, or column sees it.
+function iofLinkStart(e, fromId) {
+  iofLinkDrag = { from: fromId, pointerId: e.pointerId, startX: e.clientX, startY: e.clientY,
+                  x: e.clientX, y: e.clientY, target: null, armed: false };
+  document.body.classList.add('iof-linking');
+  iofSelect(fromId);
+  window.addEventListener('pointermove', iofLinkMove);
+  window.addEventListener('pointerup', iofLinkUp);
+  window.addEventListener('pointercancel', iofLinkCancel);
+}
+
+function iofLinkTrack(x, y) {
+  const ld = iofLinkDrag;
+  ld.x = x;
+  ld.y = y;
+  const over = document.elementFromPoint(x, y)?.closest('#iof-board .iof-card');
+  const target = over && over.dataset.id !== ld.from ? over.dataset.id : null;
+  if (target !== ld.target) {
+    if (ld.target) iofNode(ld.target)?.classList.remove('is-link-target');
+    if (target) over.classList.add('is-link-target');
+    ld.target = target;
+  }
+}
+
+function iofLinkMove(e) {
+  const ld = iofLinkDrag;
+  // Once armed, any pointer steers it — a touchscreen's next tap is a new pointer.
+  if (!ld || (!ld.armed && e.pointerId !== ld.pointerId)) return;
+  iofLinkTrack(e.clientX, e.clientY);
+  if (!ld.armed) {
+    // Only a held drag auto-scrolls; a free-moving mouse near the edge shouldn't.
+    const main = document.getElementById('iof-main');
+    const r = main.getBoundingClientRect();
+    if (e.clientY < r.top + 50) main.scrollTop -= 14;
+    else if (e.clientY > r.bottom - 50) main.scrollTop += 14;
+  }
+  iofScheduleLinks();
+}
+
+function iofLinkUp(e) {
+  const ld = iofLinkDrag;
+  if (!ld || ld.armed || e.pointerId !== ld.pointerId) return;
+  iofLinkTrack(e.clientX, e.clientY);
+  if (ld.target) { iofLinkFinish(true); return; }            // dragged onto a card
+  if (Math.hypot(e.clientX - ld.startX, e.clientY - ld.startY) < 6) {
+    // A click on the dot rather than a drag: wait for the click on the target.
+    ld.armed = true;
+    window.addEventListener('pointerdown', iofLinkArmedDown, true);
+    iofToast('Click the card the arrow points to · Esc to cancel', { undo: false, sticky: true });
+    return;
+  }
+  iofLinkFinish(false);                                       // dragged into empty space
+}
+
+function iofLinkArmedDown(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  // The click this press produces must not land on a card button or add a card.
+  _iofSwallowClickUntil = performance.now() + 800;
+  iofLinkTrack(e.clientX, e.clientY);
+  iofLinkFinish(e.button === 0);   // on a card: connect; anywhere else: cancel
+}
+
+function iofLinkCancel() { iofLinkFinish(false); }
+
+function iofLinkFinish(create) {
+  const ld = iofLinkDrag;
+  if (!ld) return;
+  iofLinkDrag = null;
+  window.removeEventListener('pointermove', iofLinkMove);
+  window.removeEventListener('pointerup', iofLinkUp);
+  window.removeEventListener('pointercancel', iofLinkCancel);
+  window.removeEventListener('pointerdown', iofLinkArmedDown, true);
+  document.body.classList.remove('iof-linking');
+  if (ld.target) {
+    iofNode(ld.target)?.classList.remove('is-link-target');
+    if (create) iofAddLink(ld.from, ld.target);
+  }
+  if (ld.armed) iofHideToast();
+  _iofAddArmed = false;   // finishing over empty column space must not add a card
+  iofDrawLinks();
+}
+
+// ── Undo toast ───────────────────────────────────
+function iofToast(message, { undo = true, sticky = false } = {}) {
+  document.getElementById('iof-toast-text').textContent = message;
+  document.getElementById('iof-toast-undo').classList.toggle('hidden', !undo);
+  document.getElementById('iof-toast').classList.remove('hidden');
+  clearTimeout(_iofToastTimer);
+  if (!sticky) _iofToastTimer = setTimeout(iofHideToast, 8000);
+}
+
+function iofHideToast() {
+  clearTimeout(_iofToastTimer);
+  document.getElementById('iof-toast').classList.add('hidden');
+}
+
+// ── Text size (for the projector) ────────────────
+function iofSetSize(size) {
+  if (!['s', 'm', 'l'].includes(size)) size = 'm';
+  document.getElementById('iof-app').dataset.size = size;
+  document.querySelectorAll('.iof-size-btn').forEach(btn => {
+    btn.setAttribute('aria-pressed', btn.dataset.iofSize === size);
+  });
+  try { localStorage.setItem(IOF_SIZE_KEY, size); } catch { /* ignore */ }
+}
+
+// ── Drag and drop ────────────────────────────────
+// Pointer events rather than native HTML5 drag-and-drop, so it works the same
+// with a mouse, a pen, or a touchscreen podium. The real card moves through
+// the DOM as a faded placeholder while a floating clone follows the pointer;
+// on release, the board's order is read back off the DOM.
+function iofDragMove(e) {
+  const d = iofDrag;
+  if (!d || e.pointerId !== d.pointerId) return;
+  if (!d.started) {
+    if (Math.hypot(e.clientX - d.startX, e.clientY - d.startY) < 6) return;
+    iofDragBegin(e);
+  }
+  d.clone.style.left = `${e.clientX - d.offsetX}px`;
+  d.clone.style.top  = `${e.clientY - d.offsetY}px`;
+
+  const col = document.elementFromPoint(e.clientX, e.clientY)?.closest('#iof-board .iof-col');
+  if (col) {
+    if (col !== d.col) {
+      d.col?.classList.remove('is-drop-target');
+      col.classList.add('is-drop-target');
+      d.col = col;
+      d.clone.style.setProperty('--col', getComputedStyle(col).getPropertyValue('--col'));
+    }
+    const list = col.querySelector('.iof-list');
+    const before = [...list.children].find(child => {
+      if (child === d.el) return false;
+      const r = child.getBoundingClientRect();
+      return e.clientY < r.top + r.height / 2;
+    }) || null;
+    if (d.el.parentNode !== list || d.el.nextElementSibling !== before) {
+      list.insertBefore(d.el, before);
+      iofScheduleLinks();   // arrows follow the placeholder as it moves
+    }
+  }
+
+  // Scroll the board when dragging near its top or bottom edge.
+  const main = document.getElementById('iof-main');
+  const r = main.getBoundingClientRect();
+  if (e.clientY < r.top + 50) main.scrollTop -= 14;
+  else if (e.clientY > r.bottom - 50) main.scrollTop += 14;
+}
+
+function iofDragBegin(e) {
+  const d = iofDrag;
+  d.started = true;
+  const rect = d.el.getBoundingClientRect();
+  d.offsetX = e.clientX - rect.left;
+  d.offsetY = e.clientY - rect.top;
+  d.clone = d.el.cloneNode(true);
+  d.clone.classList.add('iof-drag-clone');
+  d.clone.classList.remove('is-selected');
+  d.clone.style.width = `${rect.width}px`;
+  d.clone.style.setProperty('--col', getComputedStyle(d.el).getPropertyValue('--col'));
+  document.body.appendChild(d.clone);
+  d.el.classList.add('is-placeholder');
+  document.body.classList.add('iof-dragging');
+  iofSelect(d.id);
+}
+
+function iofDragEnd(e) {
+  const d = iofDrag;
+  if (!d || e.pointerId !== d.pointerId) return;
+  iofDrag = null;
+  window.removeEventListener('pointermove', iofDragMove);
+  window.removeEventListener('pointerup', iofDragEnd);
+  window.removeEventListener('pointercancel', iofDragEnd);
+
+  if (!d.started) { iofSelect(d.id); return; }
+
+  d.clone.remove();
+  d.el.classList.remove('is-placeholder');
+  d.col?.classList.remove('is-drop-target');
+  document.body.classList.remove('iof-dragging');
+
+  const byId = new Map(iofState.cards.map(c => [c.id, c]));
+  const next = [];
+  document.querySelectorAll('#iof-board .iof-list').forEach(list => {
+    list.querySelectorAll(':scope > .iof-card').forEach(el => {
+      const card = byId.get(el.dataset.id);
+      if (card) { card.col = list.dataset.col; next.push(card); }
+    });
+  });
+  iofState.cards = next;
+  iofSave();
+  iofDrawLinks();
+  // A drop onto empty column space ends in a click on that list; don't let it add a card.
+  _iofAddArmed = false;
+}
+
+// ── Keyboard (called from bindKeyboardShortcuts) ──
+function iofHandleKey(e) {
+  if (iofLinkDrag) { if (e.key === 'Escape') iofLinkFinish(false); return; }
+  if (iofEditingId) return;
+  const mod = e.ctrlKey || e.metaKey;
+  if (mod && (e.key === 'z' || e.key === 'Z')) { e.preventDefault(); iofUndo(); return; }
+  if (mod || e.altKey) return;
+
+  const addCol = { 1: 'in', 2: 'fn', 3: 'out' }[e.key];
+  if (addCol) { e.preventDefault(); iofAdd(addCol); return; }
+
+  if (iofSelectedLinkId) {
+    if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); iofDeleteLink(iofSelectedLinkId); }
+    else if (e.key === 'Escape') iofSelectLink(null);
+    return;
+  }
+
+  if (!iofSelectedId || !iofFind(iofSelectedId)) return;
+  switch (e.key) {
+    case 'Enter':      e.preventDefault(); iofStartEdit(iofSelectedId); break;
+    case 'Delete':
+    case 'Backspace':  e.preventDefault(); iofDelete(iofSelectedId); break;
+    case 'ArrowLeft':  e.preventDefault(); iofMoveSelected(-1, 0); break;
+    case 'ArrowRight': e.preventDefault(); iofMoveSelected(1, 0); break;
+    case 'ArrowUp':    e.preventDefault(); iofMoveSelected(0, -1); break;
+    case 'ArrowDown':  e.preventDefault(); iofMoveSelected(0, 1); break;
+    case 'Escape':     iofSelect(null); break;
+  }
+}
+
+// ── Events ───────────────────────────────────────
+function bindIofEvents() {
+  const board = document.getElementById('iof-board');
+  if (!board) return;
+
+  // Cards move by pointer events; a native drag (of selected text, say) would
+  // swallow those events mid-gesture.
+  board.addEventListener('dragstart', e => e.preventDefault());
+
+  // Card buttons must not steal focus, or they'd end an edit before their click lands.
+  board.addEventListener('mousedown', e => {
+    if (e.target.closest('.iof-card-btn')) e.preventDefault();
+  });
+
+  board.addEventListener('pointerdown', e => {
+    const list = e.target.closest('.iof-list');
+    _iofAddArmed = !!list && e.target === list && !iofEditingId;
+
+    let cardEl = e.target.closest('.iof-card');
+    if (!cardEl || e.button !== 0 || e.target.closest('.iof-card-btn')) return;
+    const id = cardEl.dataset.id;
+
+    // The dot on a card's edge draws an arrow instead of moving the card.
+    if (e.target.closest('.iof-link-handle')) {
+      e.preventDefault();
+      if (iofEditingId) iofFinishEdit(false);
+      iofLinkStart(e, id);
+      return;
+    }
+
+    if (cardEl.classList.contains('is-editing')) return;
+    e.preventDefault();   // no text selection or focus shuffle while dragging
+
+    // The process line edits on a single click; the rest of the card drags.
+    if (e.target.closest('.iof-card-sub') && cardEl.classList.contains('is-sub-open')) {
+      iofStartEdit(id, { focusSub: true, at: { x: e.clientX, y: e.clientY } });
+      return;
+    }
+
+    if (iofEditingId) {
+      // preventDefault above keeps the other card from blurring, so commit it here.
+      // That re-renders the board, so pick up this card's fresh node.
+      iofFinishEdit(false);
+      cardEl = iofNode(id);
+      if (!cardEl) return;
+    }
+    iofDrag = { id, el: cardEl, pointerId: e.pointerId, startX: e.clientX, startY: e.clientY, started: false, col: null };
+    window.addEventListener('pointermove', iofDragMove);
+    window.addEventListener('pointerup', iofDragEnd);
+    window.addEventListener('pointercancel', iofDragEnd);
+  });
+
+  board.addEventListener('click', e => {
+    const del = e.target.closest('[data-link-del]');
+    if (del) { iofDeleteLink(del.dataset.linkDel); return; }
+    const link = e.target.closest('.iof-link[data-link]');
+    if (link) { iofSelectLink(link.dataset.link); return; }
+
+    const btn = e.target.closest('.iof-card-btn');
+    if (btn) {
+      const id = btn.closest('.iof-card').dataset.id;
+      if (btn.dataset.act === 'delete') iofDelete(id);
+      else if (btn.dataset.act === 'unsub') iofRemoveSub(id);
+      else if (btn.dataset.act === 'sub') { iofSelect(id); iofToggleSub(id); }
+      return;
+    }
+    const add = e.target.closest('.iof-add');
+    if (add) { iofAdd(add.dataset.col); return; }
+
+    const list = e.target.closest('.iof-list');
+    if (list && e.target === list) {
+      if (_iofAddArmed) iofAdd(list.dataset.col);
+      else iofSelect(null);
+      _iofAddArmed = false;
+    }
+  });
+
+  board.addEventListener('dblclick', e => {
+    const cardEl = e.target.closest('.iof-card');
+    if (!cardEl || cardEl.classList.contains('is-editing') || e.target.closest('.iof-card-btn')) return;
+    iofStartEdit(cardEl.dataset.id, { focusSub: !!e.target.closest('.iof-card-sub') });
+  });
+
+  board.addEventListener('keydown', e => {
+    if (!e.target.isContentEditable) return;
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); e.stopPropagation(); iofFinishEdit(false); }
+    else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); iofFinishEdit(true); }
+  });
+
+  // Leaving the card (Tab out, clicking elsewhere) commits. Moving between the
+  // card's own two lines does not.
+  board.addEventListener('focusout', e => {
+    if (!iofEditingId || !e.target.isContentEditable) return;
+    const cardEl = e.target.closest('.iof-card');
+    if (e.relatedTarget && cardEl?.contains(e.relatedTarget)) return;
+    iofFinishEdit(false);
+  });
+
+  // Clicking empty space outside the columns clears the selection.
+  document.getElementById('iof-main').addEventListener('click', e => {
+    if (!e.target.closest('.iof-card, .iof-col, .iof-link')) iofSelect(null);
+  });
+
+  const title = document.getElementById('iof-title');
+  title.addEventListener('input', () => {
+    iofState.title = title.value.slice(0, IOF_MAXLEN.title);
+    iofSave();
+  });
+  title.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); title.blur(); }
+  });
+
+  document.querySelectorAll('.iof-size-btn').forEach(btn => {
+    btn.addEventListener('click', () => iofSetSize(btn.dataset.iofSize));
+  });
+  document.getElementById('iof-btn-clear').addEventListener('click', iofClear);
+  document.getElementById('iof-btn-example').addEventListener('click', iofLoadExample);
+  document.getElementById('iof-toast-undo').addEventListener('click', iofUndo);
+
+  if ('ResizeObserver' in window) _iofResizeObs = new ResizeObserver(iofScheduleLinks);
+
+  window.addEventListener('click', e => {
+    if (performance.now() < _iofSwallowClickUntil) {
+      _iofSwallowClickUntil = 0;
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }, true);
+
+  // Keep a half-drawn arrow's loose end under the pointer while the board scrolls.
+  document.getElementById('iof-main').addEventListener('scroll', () => { if (iofLinkDrag) iofScheduleLinks(); });
+}
+
+function iofInit() {
+  iofLoad();
+  let size = 'm';
+  try { size = localStorage.getItem(IOF_SIZE_KEY) || 'm'; } catch { /* ignore */ }
+  iofSetSize(size);
+  document.getElementById('iof-title').value = iofState.title;
+  iofRender();
+}
+
+// ════════════════════════════════════════════════
 //  INIT
 // ════════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', () => {
@@ -4260,6 +5172,7 @@ window.addEventListener('DOMContentLoaded', () => {
   bindResearchEvents();
   bindTokenEvents();
   bindCitationEvents();
+  bindIofEvents();
   bindSubmitRouter();
 
   document.getElementById('counsel-assign-btn')?.addEventListener('click', counselAssignScenarios);

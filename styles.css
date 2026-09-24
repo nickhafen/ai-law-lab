@@ -2058,3 +2058,462 @@ input[type="number"] { width: 72px; text-align: center; }
   .research-left { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
   .research-right { padding: 20px 16px; }
 }
+
+/* ── INPUT · FUNCTION · OUTPUT ── */
+/* Presentation board: three columns of draggable cards. Colors come from the
+   theme tokens so saved color schemes restyle it along with everything else. */
+#iof-app {
+  --iof-in:  var(--gold);
+  --iof-fn:  var(--accent);
+  --iof-out: var(--text);   /* the one theme color that stays legible on every scheme, light or dark */
+  --iof-scale: 1;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - var(--disclaimer-h));
+  overflow: hidden;
+}
+#iof-app[data-size="s"] { --iof-scale: 0.85; }
+#iof-app[data-size="l"] { --iof-scale: 1.3; }
+
+.iof-size {
+  display: flex;
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-right: 4px;
+}
+.iof-size-btn {
+  width: 30px; height: 31px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--serif);
+  cursor: pointer;
+  line-height: 1;
+}
+.iof-size-btn[data-iof-size="s"] { font-size: 0.8rem; }
+.iof-size-btn[data-iof-size="m"] { font-size: 1rem; }
+.iof-size-btn[data-iof-size="l"] { font-size: 1.25rem; }
+.iof-size-btn + .iof-size-btn { border-left: 1px solid var(--border); }
+.iof-size-btn:hover { background: var(--btn-secondary-bg); }
+.iof-size-btn[aria-pressed="true"] { background: var(--btn-secondary-bg); color: var(--text); }
+
+.iof-tool-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.iof-tool-btn:hover { color: var(--text); border-color: var(--muted); }
+
+#iof-main {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 22px 28px 40px;
+  display: flex;
+  flex-direction: column;
+}
+
+#iof-main .iof-title {
+  width: 100%;
+  font-family: var(--serif);
+  font-size: calc(2rem * var(--iof-scale));
+  line-height: 1.2;
+  color: var(--text);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px dashed transparent;
+  border-radius: 0;
+  padding: 2px 0 6px;
+  margin-bottom: 18px;
+}
+#iof-main .iof-title:hover { border-bottom-color: var(--border); }
+#iof-main .iof-title:focus { border-bottom-color: var(--accent); }
+.iof-title::placeholder { color: var(--muted); opacity: 0.6; }
+
+.iof-board {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 0 14px;
+  align-items: stretch;
+}
+
+.iof-arrow {
+  align-self: start;
+  padding-top: calc(14px * var(--iof-scale));
+  font-size: calc(2rem * var(--iof-scale));
+  line-height: 1;
+  color: var(--muted);
+  opacity: 0.55;
+  user-select: none;
+}
+
+.iof-col {
+  --col: var(--iof-in);
+  display: flex;
+  flex-direction: column;
+  min-height: 320px;
+  background: color-mix(in srgb, var(--col) 5%, var(--bg));
+  border: 1px solid color-mix(in srgb, var(--col) 22%, var(--border));
+  border-top: 4px solid var(--col);
+  border-radius: var(--radius);
+  transition: background 0.12s, border-color 0.12s;
+}
+.iof-col[data-col="fn"]  { --col: var(--iof-fn); }
+.iof-col[data-col="out"] { --col: var(--iof-out); }
+.iof-col.is-drop-target {
+  background: color-mix(in srgb, var(--col) 11%, var(--bg));
+  border-color: var(--col);
+}
+
+.iof-col-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: calc(12px * var(--iof-scale)) 16px 10px;
+}
+.iof-col-head h3 {
+  font-size: calc(1.05rem * var(--iof-scale));
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--col);
+  margin: 0;
+}
+.iof-col-head span {
+  font-size: calc(0.8rem * var(--iof-scale));
+  color: var(--muted);
+}
+
+/* The list itself is the click-to-add target: clicking empty space in a
+   column starts a new card there. */
+.iof-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: calc(12px * var(--iof-scale));
+  padding: 4px 14px 14px;
+  min-height: 80px;
+  cursor: copy;
+}
+.iof-list:empty::before {
+  content: 'Click to add';
+  margin: auto;
+  font-size: 0.85rem;
+  color: var(--muted);
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.iof-add {
+  margin: 0 14px 14px;
+  padding: 9px;
+  border: 1.5px dashed color-mix(in srgb, var(--col) 40%, var(--border));
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.iof-add:hover {
+  color: var(--col);
+  border-color: var(--col);
+  background: color-mix(in srgb, var(--col) 6%, transparent);
+}
+
+/* ── Cards ── */
+.iof-card {
+  position: relative;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 5px solid var(--col);
+  border-radius: 6px;
+  padding: calc(12px * var(--iof-scale)) 66px calc(12px * var(--iof-scale)) 14px;
+  box-shadow: var(--card-shadow);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.iof-card:hover .iof-card-btn,
+.iof-card.is-selected .iof-card-btn { opacity: 1; }
+.iof-card.is-selected {
+  outline: 2px solid var(--col);
+  outline-offset: 2px;
+}
+.iof-card.is-editing { cursor: text; touch-action: auto; }
+
+.iof-card-text {
+  font-size: calc(1.15rem * var(--iof-scale));
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  outline: none;
+  min-height: 1.35em;
+}
+.iof-card-text:empty::before {
+  content: attr(data-placeholder);
+  color: var(--muted);
+  font-weight: 400;
+  opacity: 0.7;
+}
+.iof-card.is-editing .iof-card-text,
+.iof-card.is-editing .iof-card-sub-text {
+  user-select: text;
+  cursor: text;
+}
+
+.iof-card-actions {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  gap: 2px;
+}
+.iof-card-btn {
+  opacity: 0;
+  transition: opacity 0.12s, background 0.12s;
+  width: 26px; height: 26px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.iof-card-btn:hover { background: var(--btn-secondary-bg); color: var(--text); }
+.iof-card-btn[data-act="delete"]:hover { color: var(--danger); }
+/* ⧉ stays on screen whenever the card has a sub-process, shown or hidden,
+   so a collapsed one still announces itself. Tinted while the line is open. */
+.iof-card.is-sub .iof-card-btn[data-act="sub"] { opacity: 1; color: var(--col); }
+.iof-card-btn[data-act="sub"][aria-pressed="true"] { background: color-mix(in srgb, var(--col) 14%, transparent); }
+
+/* Sub-process: the card is itself the product of another
+   input → function → output chain. Two offset sheets behind it read as a
+   stack — "there is more underneath this". The stack stays whether the
+   process line is shown (.is-sub-open) or tucked away. */
+.iof-card.is-sub {
+  margin: 0 10px 10px 0;
+  box-shadow:
+    5px 5px 0 -1px var(--card), 5px 5px 0 0 color-mix(in srgb, var(--col) 45%, var(--border)),
+    10px 10px 0 -1px var(--card), 10px 10px 0 0 color-mix(in srgb, var(--col) 30%, var(--border)),
+    var(--card-shadow);
+}
+
+.iof-card-sub {
+  display: none;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: calc(9px * var(--iof-scale));
+  padding-top: calc(8px * var(--iof-scale));
+  border-top: 1px dashed color-mix(in srgb, var(--col) 35%, var(--border));
+  margin-right: -52px;   /* past the action-button gutter: only the name line needs to clear it */
+}
+.iof-card.is-sub-open .iof-card-sub { display: flex; }
+
+/* One click on the process line edits it — no double-click needed. */
+.iof-card.is-sub-open .iof-card-sub-text { cursor: text; }
+
+.iof-card-btn.iof-sub-remove {
+  width: auto;
+  height: auto;
+  flex-shrink: 0;
+  padding: 2px 6px;
+  font-family: var(--font);
+  font-size: calc(0.72rem * var(--iof-scale));
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.iof-card-btn.iof-sub-remove:hover { color: var(--danger); }
+.iof-card.is-editing .iof-sub-remove { opacity: 1; }
+
+/* A miniature of the board itself: three boxes and two arrows. */
+.iof-glyph {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: calc(5px * var(--iof-scale));
+}
+.iof-glyph i {
+  display: block;
+  width: calc(8px * var(--iof-scale));
+  height: calc(8px * var(--iof-scale));
+  border-radius: 2px;
+  border: 1.5px solid var(--iof-in);
+}
+.iof-glyph i:nth-of-type(2) { border-color: var(--iof-fn); }
+.iof-glyph i:nth-of-type(3) { border-color: var(--iof-out); }
+.iof-glyph b {
+  display: block;
+  width: calc(5px * var(--iof-scale));
+  height: 1.5px;
+  background: var(--muted);
+}
+
+.iof-card-sub-text {
+  flex: 1;
+  min-width: 0;
+  font-size: calc(0.88rem * var(--iof-scale));
+  font-style: italic;
+  line-height: 1.4;
+  color: var(--muted);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  outline: none;
+}
+.iof-card-sub-text:empty::before {
+  content: attr(data-placeholder);
+  opacity: 0.6;
+}
+/* Outside of editing, an unnamed sub-process just shows the label. */
+.iof-card:not(.is-editing) .iof-card-sub-text:empty::before { content: 'Its own process'; opacity: 0.85; }
+
+/* ── Dragging ── */
+.iof-card.is-placeholder {
+  opacity: 0.35;
+  box-shadow: none;
+  border-style: dashed;
+}
+.iof-card.is-placeholder .iof-card-btn { opacity: 0; }
+.iof-drag-clone {
+  position: fixed;
+  z-index: 500;
+  margin: 0;
+  pointer-events: none;
+  transform: rotate(-1.5deg);
+  box-shadow: 0 14px 30px rgba(0,0,0,0.22);
+}
+body.iof-dragging, body.iof-dragging * { cursor: grabbing !important; }
+
+/* ── Undo toast ── */
+.iof-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--disclaimer-h) + 18px);
+  transform: translateX(-50%);
+  z-index: 400;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 12px 10px 16px;
+  border-radius: 8px;
+  background: var(--header);
+  color: var(--header-text, #fff);
+  font-size: 0.88rem;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+}
+.iof-toast button {
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 5px;
+  background: transparent;
+  color: inherit;
+  font-family: var(--font);
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+.iof-toast button:hover { background: rgba(255,255,255,0.12); }
+
+@media (max-width: 760px) {
+  #iof-main { padding: 16px 16px 32px; }
+  .iof-board { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .iof-arrow { justify-self: center; padding-top: 0; transform: rotate(90deg); }
+  .iof-col { min-height: 180px; }
+  .iof-size, .iof-tool-btn { display: none; }
+}
+@media (hover: none) {
+  .iof-card-btn { opacity: 1; }
+}
+
+/* ── Arrows between cards ── */
+/* The SVG layer sits over the column backgrounds but under the cards. */
+.iof-board { position: relative; }
+.iof-card { z-index: 2; }
+.iof-links {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 1;
+}
+.iof-link-line {
+  fill: none;
+  stroke: var(--lc);
+  stroke-width: 2;
+  stroke-linecap: round;
+  opacity: 0.55;
+  transition: opacity 0.12s;
+}
+.iof-link-head { fill: var(--lc); opacity: 0.55; transition: opacity 0.12s; }
+/* A wide invisible stroke so a 2px line is easy to click. */
+.iof-link-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 14;
+  pointer-events: stroke;
+  cursor: pointer;
+}
+/* Mid-drag, arrows must not sit between the pointer and the column under it. */
+body.iof-dragging .iof-link-hit,
+body.iof-linking .iof-link-hit { pointer-events: none; }
+.iof-link:hover .iof-link-line, .iof-link:hover .iof-link-head,
+.iof-link.is-hot .iof-link-line, .iof-link.is-hot .iof-link-head,
+.iof-link.is-selected .iof-link-line, .iof-link.is-selected .iof-link-head,
+.iof-link.is-drawing .iof-link-line, .iof-link.is-drawing .iof-link-head { opacity: 1; }
+.iof-link.is-hot .iof-link-line { stroke-width: 3; }
+.iof-link.is-selected .iof-link-line { stroke-width: 3.5; }
+.iof-link.is-drawing .iof-link-line { stroke-width: 2.5; stroke-dasharray: 6 5; }
+
+.iof-link-del { pointer-events: all; cursor: pointer; }
+.iof-link-del circle { fill: var(--card); stroke: var(--lc); stroke-width: 1.5; }
+.iof-link-del path { stroke: var(--lc); stroke-width: 2; stroke-linecap: round; }
+.iof-link-del:hover circle { fill: var(--lc); }
+.iof-link-del:hover path { stroke: var(--card); }
+
+/* The dot to drag an arrow from. */
+.iof-link-handle {
+  position: absolute;
+  top: 50%;
+  right: -8px;
+  width: 15px;
+  height: 15px;
+  margin-top: -7.5px;
+  border-radius: 50%;
+  border: 2px solid var(--col);
+  background: var(--card);
+  cursor: crosshair;
+  touch-action: none;
+  opacity: 0;
+  transition: opacity 0.12s, transform 0.12s, background 0.12s;
+  z-index: 3;
+}
+.iof-card:hover .iof-link-handle,
+.iof-card.is-selected .iof-link-handle { opacity: 1; }
+.iof-link-handle:hover { transform: scale(1.3); background: var(--col); }
+.iof-card.is-placeholder .iof-link-handle,
+.iof-drag-clone .iof-link-handle { display: none; }
+.iof-card.is-link-target {
+  outline: 2px dashed var(--col);
+  outline-offset: 3px;
+}
+body.iof-linking, body.iof-linking * { cursor: crosshair !important; }
+
+@media (hover: none) {
+  .iof-link-handle { opacity: 1; }
+}
+/* Stacked phone layout: there is no sensible way to draw the arrows. */
+@media (max-width: 760px) {
+  .iof-links, .iof-link-handle { display: none; }
+}

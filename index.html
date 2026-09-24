@@ -361,6 +361,35 @@
       </div>
     </div>
 
+<div id="help-section-iof">
+      <h4>Input · Function · Output</h4>
+      <ul class="shortcut-list">
+        <li><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd><span>Add a card to Input / Function / Output</span></li>
+        <li><kbd>Double-click</kbd><span>Edit a card</span></li>
+        <li><kbd>Enter</kbd><span>Edit the selected card · finish editing</span></li>
+        <li><kbd>Delete</kbd><span>Delete the selected card</span></li>
+        <li><kbd>← →</kbd><span>Move the selected card to the next column</span></li>
+        <li><kbd>↑ ↓</kbd><span>Move the selected card up / down</span></li>
+        <li><kbd>Delete</kbd><span>Remove the selected arrow</span></li>
+        <li><kbd>Ctrl/⌘ + Z</kbd><span>Undo the last delete</span></li>
+      </ul>
+
+      <div class="token-help-note">
+        <strong>Sub-processes.</strong>
+        Some parts of a process are processes of their own. <em>Claims</em> is an input to drafting a complaint, but it is also the output of researching claims, exercising legal judgment, and choosing which to plead. Mark a card as a sub-process with its ⧉ button (hover over the card to see it): it gets a stacked look and a line where you can name the process that produces it. Click the line to edit it. Press ⧉ again to hide the line — the stack and the ⧉ button stay visible, so the card still reads as a process of its own. <em>Remove</em>, at the end of the line, turns it back into a plain card.
+      </div>
+
+      <div class="token-help-note">
+        <strong>Arrows.</strong>
+        Hover over a card, click the dot on its right edge, then click another card to draw an arrow (dragging from the dot works too; <kbd>Esc</kbd> or a click on empty space cancels) — for example, from <em>Client's story</em> to <em>Organize the facts</em>. Any card can point at any other, as many times as you like, including a function that leads to another function. Select a card to highlight its arrows. Click an arrow to select it, then click its × or press <kbd>Delete</kbd> to remove it. Deleting a card removes its arrows.
+      </div>
+
+      <div class="token-help-note">
+        <strong>Saving.</strong>
+        The board saves automatically in this browser and is still there after a refresh. Nothing is sent anywhere, so a board built on the classroom computer stays on that computer. <em>Clear</em> empties the board; <em>Example</em> loads a sample complaint-drafting board for rehearsal.
+      </div>
+    </div>
+
     <p class="help-credit">Created by Nick Hafen</p>
   </div>
 </div>
@@ -436,6 +465,22 @@
         <div class="exercise-card-eyebrow">Experiment</div>
         <div class="exercise-card-title">Hallucinated Citations</div>
         <div class="exercise-card-desc">Invent a case citation the way a model does — from patterns in what you've seen. The class's fake cites go up on the board without names and are split apart, part by part.</div>
+        <div class="exercise-card-arrow">Open →</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="exercise-group">
+    <header class="group-head">
+      <h2 class="group-title">Frameworks</h2>
+      <span class="group-desc">Presentation boards for breaking legal work into its parts before bringing AI into it</span>
+    </header>
+
+    <div class="exercise-grid">
+      <div class="exercise-card" onclick="showIofApp()">
+        <div class="exercise-card-eyebrow">Present</div>
+        <div class="exercise-card-title">Input · Function · Output</div>
+        <div class="exercise-card-desc">Break a legal task into what goes in, what is done to it, and what comes out. Add and drag cards live, and flag the parts that are processes of their own.</div>
         <div class="exercise-card-arrow">Open →</div>
       </div>
     </div>
@@ -1268,6 +1313,74 @@
 
   </div>
 </div><!-- end #citation-app -->
+
+<!-- ═══════════════════════════════ INPUT · FUNCTION · OUTPUT ═══════════════════════════════ -->
+<div id="iof-app" class="hidden app-wrapper">
+
+  <div class="mod-header-bar" style="flex-shrink:0;">
+    <div class="header-left">
+      <button class="header-btn" onclick="showHomeScreen()" title="Back to Home">←</button>
+      <div>
+        <div class="header-title">Input · Function · Output</div>
+        <div class="header-subtitle">Framework</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="iof-size" role="group" aria-label="Card text size">
+        <button class="iof-size-btn" data-iof-size="s" title="Smaller text">A</button>
+        <button class="iof-size-btn" data-iof-size="m" title="Medium text">A</button>
+        <button class="iof-size-btn" data-iof-size="l" title="Larger text">A</button>
+      </div>
+      <button class="btn btn-sm iof-tool-btn" id="iof-btn-example" title="Load a sample complaint-drafting board">▦ Example</button>
+      <button class="btn btn-sm iof-tool-btn" id="iof-btn-clear" title="Remove every card">✕ Clear</button>
+      <button class="header-btn help-btn" title="Keyboard shortcuts (?)">?</button>
+      <button class="header-btn settings-trigger" title="Appearance settings (S)">⚙</button>
+    </div>
+  </div>
+
+  <main id="iof-main">
+    <input type="text" id="iof-title" class="iof-title" maxlength="80" placeholder="Name the process…" aria-label="Process name" autocomplete="off">
+
+    <div id="iof-board" class="iof-board">
+      <svg id="iof-links" class="iof-links" aria-hidden="true"></svg>
+      <section class="iof-col" data-col="in">
+        <header class="iof-col-head">
+          <h3>Input</h3>
+          <span>What goes in</span>
+        </header>
+        <div class="iof-list" data-col="in"></div>
+        <button class="iof-add" data-col="in">+ Add input</button>
+      </section>
+
+      <div class="iof-arrow" aria-hidden="true">→</div>
+
+      <section class="iof-col" data-col="fn">
+        <header class="iof-col-head">
+          <h3>Function</h3>
+          <span>What is done with it</span>
+        </header>
+        <div class="iof-list" data-col="fn"></div>
+        <button class="iof-add" data-col="fn">+ Add function</button>
+      </section>
+
+      <div class="iof-arrow" aria-hidden="true">→</div>
+
+      <section class="iof-col" data-col="out">
+        <header class="iof-col-head">
+          <h3>Output</h3>
+          <span>What comes out</span>
+        </header>
+        <div class="iof-list" data-col="out"></div>
+        <button class="iof-add" data-col="out">+ Add output</button>
+      </section>
+    </div>
+  </main>
+
+  <div id="iof-toast" class="iof-toast hidden" role="status">
+    <span id="iof-toast-text"></span>
+    <button id="iof-toast-undo" type="button">Undo</button>
+  </div>
+</div><!-- end #iof-app -->
 
 <!-- ══════════════════ STUDENT SUBMIT VIEW ══════════════════ -->
 <div id="plotter-submit-view" class="hidden" style="
