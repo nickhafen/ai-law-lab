@@ -127,7 +127,7 @@ body {
   margin: 16px auto 44px;
 }
 
-/* ── LANDING GROUPS (Law of AI vs. How AI Works) ── */
+/* ── LANDING GROUPS (Law of AI vs. AI in Legal Practice) ── */
 .exercise-group {
   width: 100%;
   align-self: stretch;
@@ -525,13 +525,13 @@ input[type="number"] { width: 72px; text-align: center; }
 .inline-warning.show { display: block; }
 
 /* ── SHARED LABEL STYLES ── */
-/* Muted caps labels (light surfaces — panel exercise) */
+/* Caps labels (panel exercise) — theme label color, like the landing-page eyebrows */
 .group-card-title, .opening-card-name, .qa-drawn-label, .advanced-subtitle {
   font-size: 0.8rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--muted);
+  color: var(--gold);
 }
 /* Gold caps labels (dark surfaces — counsel result card) */
 .called-label, .scenario-label, .risks-label {
@@ -559,7 +559,7 @@ input[type="number"] { width: 72px; text-align: center; }
 .group-card-title { margin-bottom: 8px; }
 .group-member { padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 0.95rem; }
 .group-member:last-child { border-bottom: none; }
-.group-member-name { font-weight: 600; color: var(--muted); }
+.group-member-name { font-weight: 600; color: var(--text); }
 .group-member-prompt { font-size: 1rem; color: var(--text); margin-top: 4px; line-height: 1.45; }
 
 /* Opening remarks */

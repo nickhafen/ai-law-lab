@@ -1089,6 +1089,16 @@ const BUILTIN_SCHEMES = [
       '--text': '#e6edf3', '--muted': '#8b949e', '--border': '#30363d',
       '--btn-secondary-bg': '#30363d', '--gold': '#c4b5fd'
     }
+  },
+  {
+    name: 'Synthwave',
+    vars: {
+      '--bg': '#130b26', '--header': '#241734', '--header-text': '#e6dff2',
+      '--accent': '#2de2e6', '--accent-hover': '#1fc4c8',
+      '--card': '#1d1433', '--card-shadow': '0 2px 8px rgba(0,0,0,0.45)',
+      '--text': '#e6dff2', '--muted': '#998eb4', '--border': '#312658',
+      '--btn-secondary-bg': '#2a2048', '--gold': '#ff3864'
+    }
   }
 ];
 
