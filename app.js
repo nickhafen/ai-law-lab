@@ -2476,34 +2476,24 @@ function citeUpdatePromptCount() {
 }
 
 // ── Sample data ───────────────────────────────────
-// A simulated class, so the exercise can be rehearsed with nobody submitting.
-// Deliberately shaped like real results: every case name is unique, while the
-// reporters, courts, and years pile onto a few familiar values.
+// A sample class, so the exercise can be rehearsed with nobody submitting.
+// These are real submissions from an archived round (prompt: "Create a
+// citation to a Utah family law case."), kept as typed — the uneven
+// reporter and court formatting is part of what the exercise shows. Student
+// names are left out, and case names built from classmates' names are changed.
 const CITE_DEMO_RECORDS = [
-  ['Hartley v. Brennan',            '412', 'F.3d',        '118', '9th Cir.',  '2004'],
-  ['Marston v. Delgado',            '287', 'F.3d',        '551', '2d Cir.',   '2002'],
-  ['United States v. Coyle',        '533', 'U.S.',        '204', 'U.S.',      '2001'],
-  ['Whitfield v. Ramsey',           '119', 'F. Supp. 2d', '442', 'S.D.N.Y.',  '2010'],
-  ['Ellison v. Vance',              '764', 'F.3d',        '89',  '10th Cir.', '2015'],
-  ['Barlow v. Ridgeway Holdings',   '221', 'P.3d',        '1032','Utah',      '2010'],
-  ['State v. Pruitt',               '318', 'F.3d',        '77',  '9th Cir.',  '1996'],
-  ['Cardoza v. Fenwick',            '605', 'F.3d',        '1145','9th Cir.',  '2010'],
-  ['Ingram v. Sutter County',       '478', 'U.S.',        '331', 'U.S.',      '1986'],
-  ['Delacroix v. Meridian Bank',    '92',  'F. Supp. 2d', '210', 'D. Utah',   '1999'],
-  ['Okafor v. Trellis Systems',     '831', 'F.3d',        '664', '10th Cir.', '2015'],
-  ['Nunley v. Ashcombe',            '145', 'P.3d',        '509', 'Utah',      '2006'],
-  ['Rivera v. Halloran',            '299', 'F.3d',        '1201','2d Cir.',   '2002'],
-  ['Weatherby v. Colston',          '514', 'U.S.',        '87',  'U.S.',      '1995'],
-  ['Aldridge v. Pemberton Mills',   '673', 'F.3d',        '412', '9th Cir.',  '2012'],
-  ['In re Kessler Estate',          '208', 'P.3d',        '918', 'Utah',      '2018'],
-  ['Salazar v. Grantham',           '387', 'F. Supp. 2d', '55',  'S.D.N.Y.',  '2005'],
-  ['Bristow v. Kaneko',             '752', 'F.3d',        '229', '2d Cir.',   '2015'],
-  ['Tavares v. Milbank County',     '166', 'P.3d',        '744', 'Utah',      '2007'],
-  ['Fenton v. Aurora Logistics',    '941', 'F.3d',        '1077','9th Cir.',  '2019'],
-  ['United States v. Marchetti',    '461', 'U.S.',        '612', 'U.S.',      '2010'],
-  ['Halstead v. Verity Health',     '327', 'F. Supp. 2d', '881', 'D. Utah',   '2004'],
-  ['Quinlan v. Broadmoor Trust',    '588', 'F.3d',        '340', '10th Cir.', '2012'],
-  ['Ferrand v. Oakes',              '134', 'P.3d',        '62',  'Utah',      '2005'],
+  ['Plotter v. Johnson',       '3',    'UT',       '473',  'Utah Supreme Court',    '2008'],
+  ['Williams v. Williams',     '23',   'F.3d',     '12',   'Utah Court of Appeals', '2025'],
+  ['Monroe v. Monroe',         '17',   'P.3d',     '14',   'UT Ct. App.',           '2021'],
+  ['Thatcher v. Knoll',        '7331', 'P.2d',     '1081', 'Utah',                  '1985'],
+  ['Wells Fargo v. Smith',     '78',   'F.Supp.',  '80',   '10th Circuit',          '2007'],
+  ['In re Marriage of Allen',  '626',  'P.2d',     '16',   'Wn. App',               '1981'],
+  ['Rodriguez v. Mullin',      '56',   'F.4th',    '365',  '9th Circuit',           '2028'],
+  ['Allen v. Allen',           '4',    'Ut. Fam.', '87',   'Provo Dis. Ct.',        '1999'],
+  ['Kerstetter v. Stillwell',  '7',    'Fed. Supp.2d', '839', 'Ariz.',              '1954'],
+  ['Murkowitz v. Murkowitz',   '2',    'SE',       '227',  'Va. Ct. App.',          '2025'],
+  ['Roommates.com v. Califonias for Fair Housing Association', '12', 'F.4th', '812', '9th circuit', '2012'],
+  ['J.M. v. R.D.',             '4',    'F.Supp.',  '2',    'Fed Cir.',              '1921'],
 ];
 
 let _citeDemoRecords = null;
@@ -2697,7 +2687,7 @@ function citeRender() {
   if (countEl) countEl.textContent = `${records.length} submitted`;
 
   if (citeDemoMode) {
-    citeSetStatus('ok', `Sample data — ${records.length} simulated citations. Live submissions hidden.`);
+    citeSetStatus('ok', `Sample data — ${records.length} citations from a past class. Live submissions hidden.`);
   } else {
     citeSetStatus('ok', records.length === 0
       ? 'No submissions yet.'
