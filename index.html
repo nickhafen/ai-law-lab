@@ -895,6 +895,7 @@
           <button id="plotter-btn-copy-link" class="btn btn-sm" title="Copy link"
             style="flex-shrink:0;padding:5px 9px;background:transparent;border:1px solid var(--border);color:var(--muted);">⎘</button>
         </div>
+        <p class="plotter-hint">Opens every student form on one page, starting on this exercise's tab — one scan at the start of class covers both.</p>
       </section>
 
       <section class="plotter-section">
@@ -1266,6 +1267,7 @@
           <button id="cite-btn-copy-link" class="btn btn-sm" title="Copy link"
             style="flex-shrink:0;padding:5px 9px;background:transparent;border:1px solid var(--border);color:var(--muted);">⎘</button>
         </div>
+        <p class="plotter-hint">Opens every student form on one page, starting on this exercise's tab — one scan at the start of class covers both.</p>
       </section>
 
       <section class="plotter-section">
@@ -1383,139 +1385,130 @@
 </div><!-- end #iof-app -->
 
 <!-- ══════════════════ STUDENT SUBMIT VIEW ══════════════════ -->
-<div id="plotter-submit-view" class="hidden" style="
-  position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
-  background:var(--bg);z-index:9999;padding:24px;box-sizing:border-box;">
-  <div style="width:100%;max-width:420px;">
-    <div style="text-align:center;margin-bottom:28px;">
-      <div style="font-size:1.4rem;font-weight:700;color:var(--text);margin-bottom:4px;">Word Plotter</div>
-      <div style="font-size:0.9rem;color:var(--muted);">Enter your ratings and submit</div>
+<!-- Every student link lands here. One QR code at the start of class covers
+     every exercise: the tabs switch forms, and `?submit=<tab>` only picks which
+     one opens first. The name sits above the tabs so it is typed once. -->
+<div id="submit-view" class="hidden">
+  <div class="submit-shell">
+    <div class="submit-name">
+      <label for="submit-field-student" class="cite-sub-label">Your name</label>
+      <input id="submit-field-student" type="text" maxlength="60" autocomplete="name" autocapitalize="words" placeholder="First Last" class="cite-sub-input">
     </div>
 
-    <form id="plotter-submit-form" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;display:flex;flex-direction:column;gap:18px;">
-
-      <div>
-        <label style="display:block;font-size:0.85rem;font-weight:600;color:var(--muted);margin-bottom:6px;">Your name</label>
-        <input id="submit-field-student" type="text" autocomplete="name" placeholder="First Last"
-          style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:1rem;">
-      </div>
-
-      <div>
-        <label style="display:block;font-size:0.85rem;font-weight:600;color:var(--muted);margin-bottom:6px;">Word</label>
-        <div style="display:flex;gap:8px;align-items:stretch;">
-          <select id="submit-field-word"
-            style="flex:1;min-width:0;padding:10px 12px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:1rem;">
-            <option value="">— waiting for word list —</option>
-          </select>
-          <button type="button" id="submit-btn-random" title="Pick a random word"
-            style="padding:10px 13px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:1.1rem;cursor:pointer;flex-shrink:0;">↻</button>
-        </div>
-        <div id="submit-word-hint" style="font-size:0.78rem;color:var(--muted);margin-top:4px;"></div>
-      </div>
-
-      <div>
-        <label style="display:block;font-size:0.85rem;font-weight:600;color:var(--muted);margin-bottom:4px;">
-          <span id="submit-label-x">X</span>
-          <span id="submit-val-x" style="float:right;font-weight:400;color:var(--text);">0.5</span>
-        </label>
-        <input id="submit-field-x" type="range" min="0" max="1" step="0.1" value="0.5"
-          style="width:100%;accent-color:var(--accent);">
-      </div>
-
-      <div>
-        <label style="display:block;font-size:0.85rem;font-weight:600;color:var(--muted);margin-bottom:4px;">
-          <span id="submit-label-y">Y</span>
-          <span id="submit-val-y" style="float:right;font-weight:400;color:var(--text);">0.5</span>
-        </label>
-        <input id="submit-field-y" type="range" min="0" max="1" step="0.1" value="0.5"
-          style="width:100%;accent-color:var(--accent);">
-      </div>
-
-      <div>
-        <label style="display:block;font-size:0.85rem;font-weight:600;color:var(--muted);margin-bottom:4px;">
-          <span id="submit-label-z">Z</span>
-          <span id="submit-val-z" style="float:right;font-weight:400;color:var(--text);">0.5</span>
-        </label>
-        <input id="submit-field-z" type="range" min="0" max="1" step="0.1" value="0.5"
-          style="width:100%;accent-color:var(--accent);">
-      </div>
-
-      <div id="plotter-submit-error" class="hidden" style="font-size:0.85rem;color:#f87171;padding:8px 12px;background:rgba(248,113,113,0.1);border-radius:6px;"></div>
-
-      <div id="plotter-submit-success" class="hidden" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.35);border-radius:6px;">
-        <span style="font-size:1.1rem;color:#22c55e;">✓</span>
-        <span id="plotter-submit-confirm-text" style="font-size:0.88rem;color:var(--text);flex:1;"></span>
-      </div>
-
-      <button type="submit" id="plotter-submit-btn" class="btn btn-primary" style="width:100%;padding:12px;">Submit</button>
-    </form>
-  </div>
-</div>
-
-<!-- ══════════════════ STUDENT SUBMIT VIEW — CITATIONS ══════════════════ -->
-<div id="cite-submit-view" class="hidden" style="
-  position:fixed;inset:0;display:flex;align-items:flex-start;justify-content:center;
-  background:var(--bg);z-index:9999;padding:24px;box-sizing:border-box;overflow-y:auto;">
-  <div style="width:100%;max-width:440px;margin:auto;">
-    <div style="text-align:center;margin-bottom:24px;">
-      <div style="font-size:1.4rem;font-weight:700;color:var(--text);margin-bottom:6px;">Case Citation</div>
-      <div id="cite-submit-instructions" style="font-size:0.9rem;color:var(--muted);line-height:1.5;">Make up a citation for a case that does not exist. Fill in every part, as you would if you were citing a real one.</div>
+    <div class="submit-tabs" role="tablist" aria-label="Exercise">
+      <button type="button" class="submit-tab" role="tab" id="submit-tab-plotter" data-submit-tab="plotter" aria-controls="plotter-submit-view" aria-selected="true">Word Plotter</button>
+      <button type="button" class="submit-tab" role="tab" id="submit-tab-citations" data-submit-tab="citations" aria-controls="cite-submit-view" aria-selected="false" tabindex="-1">Case Citation</button>
     </div>
 
-    <form id="cite-submit-form" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;display:flex;flex-direction:column;gap:16px;">
+    <div id="plotter-submit-view" role="tabpanel" aria-labelledby="submit-tab-plotter">
+      <div class="submit-intro">Pick a word, rate it on each axis, and submit.</div>
 
-      <div>
-        <label for="cite-field-student" class="cite-sub-label">Your name</label>
-        <input id="cite-field-student" type="text" maxlength="60" autocomplete="name" autocapitalize="words" placeholder="First Last" class="cite-sub-input">
-      </div>
+      <form id="plotter-submit-form" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;display:flex;flex-direction:column;gap:18px;">
 
-      <div>
-        <label for="cite-field-caption" class="cite-sub-label">Case name</label>
-        <input id="cite-field-caption" type="text" maxlength="120" autocomplete="off" autocapitalize="words" class="cite-sub-input">
-      </div>
-
-      <div class="cite-sub-row">
         <div>
-          <label for="cite-field-volume" class="cite-sub-label">Volume</label>
-          <input id="cite-field-volume" type="text" maxlength="8" inputmode="numeric" autocomplete="off" class="cite-sub-input">
+          <label style="display:block;font-size:0.85rem;font-weight:600;color:var(--muted);margin-bottom:6px;">Word</label>
+          <div style="display:flex;gap:8px;align-items:stretch;">
+            <select id="submit-field-word"
+              style="flex:1;min-width:0;padding:10px 12px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:1rem;">
+              <option value="">— waiting for word list —</option>
+            </select>
+            <button type="button" id="submit-btn-random" title="Pick a random word"
+              style="padding:10px 13px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:1.1rem;cursor:pointer;flex-shrink:0;">↻</button>
+          </div>
+          <div id="submit-word-hint" style="font-size:0.78rem;color:var(--muted);margin-top:4px;"></div>
         </div>
+
         <div>
-          <label for="cite-field-reporter" class="cite-sub-label">Reporter</label>
-          <input id="cite-field-reporter" type="text" maxlength="40" autocomplete="off" autocapitalize="characters" class="cite-sub-input">
+          <label style="display:block;font-size:0.85rem;font-weight:600;color:var(--muted);margin-bottom:4px;">
+            <span id="submit-label-x">X</span>
+            <span id="submit-val-x" style="float:right;font-weight:400;color:var(--text);">0.5</span>
+          </label>
+          <input id="submit-field-x" type="range" min="0" max="1" step="0.1" value="0.5"
+            style="width:100%;accent-color:var(--accent);">
         </div>
+
         <div>
-          <label for="cite-field-page" class="cite-sub-label">First page</label>
-          <input id="cite-field-page" type="text" maxlength="8" inputmode="numeric" autocomplete="off" class="cite-sub-input">
+          <label style="display:block;font-size:0.85rem;font-weight:600;color:var(--muted);margin-bottom:4px;">
+            <span id="submit-label-y">Y</span>
+            <span id="submit-val-y" style="float:right;font-weight:400;color:var(--text);">0.5</span>
+          </label>
+          <input id="submit-field-y" type="range" min="0" max="1" step="0.1" value="0.5"
+            style="width:100%;accent-color:var(--accent);">
         </div>
-      </div>
 
-      <div class="cite-sub-row cite-sub-row-2">
         <div>
-          <label for="cite-field-court" class="cite-sub-label">Court</label>
-          <input id="cite-field-court" type="text" maxlength="40" autocomplete="off" class="cite-sub-input">
+          <label style="display:block;font-size:0.85rem;font-weight:600;color:var(--muted);margin-bottom:4px;">
+            <span id="submit-label-z">Z</span>
+            <span id="submit-val-z" style="float:right;font-weight:400;color:var(--text);">0.5</span>
+          </label>
+          <input id="submit-field-z" type="range" min="0" max="1" step="0.1" value="0.5"
+            style="width:100%;accent-color:var(--accent);">
         </div>
+
+        <div id="plotter-submit-error" class="hidden" style="font-size:0.85rem;color:#f87171;padding:8px 12px;background:rgba(248,113,113,0.1);border-radius:6px;"></div>
+
+        <div id="plotter-submit-success" class="hidden" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.35);border-radius:6px;">
+          <span style="font-size:1.1rem;color:#22c55e;">✓</span>
+          <span id="plotter-submit-confirm-text" style="font-size:0.88rem;color:var(--text);flex:1;"></span>
+        </div>
+
+        <button type="submit" id="plotter-submit-btn" class="btn btn-primary" style="width:100%;padding:12px;">Submit</button>
+      </form>
+    </div>
+
+    <div id="cite-submit-view" class="hidden" role="tabpanel" aria-labelledby="submit-tab-citations">
+      <div id="cite-submit-instructions" class="submit-intro">Make up a citation for a case that does not exist. Fill in every part, as you would if you were citing a real one.</div>
+
+      <form id="cite-submit-form" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;display:flex;flex-direction:column;gap:16px;">
+
         <div>
-          <label for="cite-field-year" class="cite-sub-label">Year</label>
-          <input id="cite-field-year" type="text" maxlength="8" inputmode="numeric" autocomplete="off" class="cite-sub-input">
+          <label for="cite-field-caption" class="cite-sub-label">Case name</label>
+          <input id="cite-field-caption" type="text" maxlength="120" autocomplete="off" autocapitalize="words" class="cite-sub-input">
         </div>
-      </div>
 
-      <div>
-        <div class="cite-sub-label" style="margin-bottom:6px;">Your citation</div>
-        <div id="cite-submit-preview" class="cite-sub-preview cite-sub-preview-empty">Fill in the fields above.</div>
-      </div>
+        <div class="cite-sub-row">
+          <div>
+            <label for="cite-field-volume" class="cite-sub-label">Volume</label>
+            <input id="cite-field-volume" type="text" maxlength="8" inputmode="numeric" autocomplete="off" class="cite-sub-input">
+          </div>
+          <div>
+            <label for="cite-field-reporter" class="cite-sub-label">Reporter</label>
+            <input id="cite-field-reporter" type="text" maxlength="40" autocomplete="off" autocapitalize="characters" class="cite-sub-input">
+          </div>
+          <div>
+            <label for="cite-field-page" class="cite-sub-label">First page</label>
+            <input id="cite-field-page" type="text" maxlength="8" inputmode="numeric" autocomplete="off" class="cite-sub-input">
+          </div>
+        </div>
 
-      <div id="cite-submit-error" class="hidden" style="font-size:0.85rem;color:#f87171;padding:8px 12px;background:rgba(248,113,113,0.1);border-radius:6px;"></div>
+        <div class="cite-sub-row cite-sub-row-2">
+          <div>
+            <label for="cite-field-court" class="cite-sub-label">Court</label>
+            <input id="cite-field-court" type="text" maxlength="40" autocomplete="off" class="cite-sub-input">
+          </div>
+          <div>
+            <label for="cite-field-year" class="cite-sub-label">Year</label>
+            <input id="cite-field-year" type="text" maxlength="8" inputmode="numeric" autocomplete="off" class="cite-sub-input">
+          </div>
+        </div>
 
-      <div id="cite-submit-success" class="hidden" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.35);border-radius:6px;">
-        <span style="font-size:1.1rem;color:#22c55e;">✓</span>
-        <span id="cite-submit-confirm-text" style="font-size:0.88rem;color:var(--text);flex:1;"></span>
-      </div>
+        <div>
+          <div class="cite-sub-label" style="margin-bottom:6px;">Your citation</div>
+          <div id="cite-submit-preview" class="cite-sub-preview cite-sub-preview-empty">Fill in the fields above.</div>
+        </div>
 
-      <button type="submit" id="cite-submit-btn" class="btn btn-primary" style="width:100%;padding:12px;">Submit</button>
-      <div id="cite-submit-tally" style="font-size:0.78rem;color:var(--muted);text-align:center;"></div>
-      <div style="font-size:0.75rem;color:var(--muted);text-align:center;line-height:1.5;">Your name goes to your instructor only — the class board shows the citation without it. Your citation is shown to the whole class, so don't type anyone's real name.</div>
-    </form>
+        <div id="cite-submit-error" class="hidden" style="font-size:0.85rem;color:#f87171;padding:8px 12px;background:rgba(248,113,113,0.1);border-radius:6px;"></div>
+
+        <div id="cite-submit-success" class="hidden" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.35);border-radius:6px;">
+          <span style="font-size:1.1rem;color:#22c55e;">✓</span>
+          <span id="cite-submit-confirm-text" style="font-size:0.88rem;color:var(--text);flex:1;"></span>
+        </div>
+
+        <button type="submit" id="cite-submit-btn" class="btn btn-primary" style="width:100%;padding:12px;">Submit</button>
+        <div id="cite-submit-tally" style="font-size:0.78rem;color:var(--muted);text-align:center;"></div>
+        <div style="font-size:0.75rem;color:var(--muted);text-align:center;line-height:1.5;">Your name goes to your instructor only — the class board shows the citation without it. Your citation is shown to the whole class, so don't type anyone's real name.</div>
+      </form>
+    </div>
   </div>
 </div>
 

@@ -2141,8 +2141,8 @@ function plotterReRender() {
 }
 
 function plotterBuildQR() {
-  // Named form of the parameter — bare `?submit` still routes here, so links
-  // and QR codes handed out before the citations exercise existed keep working.
+  // Opens the tabbed student page on the plotter tab; the same page carries
+  // every other exercise's form, so one scan covers the whole class.
   const submitUrl  = window.location.origin + window.location.pathname + '?submit=plotter';
   const qrUrl      = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=6&data=${encodeURIComponent(submitUrl)}`;
   const img        = document.getElementById('plotter-qr-img');
@@ -2218,15 +2218,68 @@ function bindPlotterEvents() {
 }
 
 // ── Student submit routing ─────────────────────────
-// `?submit` is the shared entry point for every student-facing form. The bare
-// parameter stays with the plotter so QR codes and links printed before the
-// citations exercise existed keep working.
+// `?submit` is the shared entry point for every student-facing form. All of
+// them live on one tabbed page, so a single QR code at the start of class
+// covers every exercise; the parameter's value only picks the opening tab.
+// A bare `?submit` opens on the plotter, as links printed before the
+// citations exercise existed expect.
+const SUBMIT_TABS = ['plotter', 'citations'];
+
 function bindSubmitRouter() {
   const params = new URLSearchParams(window.location.search);
   if (!params.has('submit')) return;
   const which = (params.get('submit') || '').trim().toLowerCase();
-  if (which === 'citations' || which === 'citation') citeInitSubmitView();
-  else plotterInitSubmitView();
+
+  document.querySelectorAll('#home-screen, #panel-app, #plotter-app, #counsel-app, #research-app, #token-app, #citation-app, #iof-app')
+    .forEach(el => el.classList.add('hidden'));
+  document.getElementById('submit-view').classList.remove('hidden');
+
+  // One name for every tab, remembered for the next visit. The old
+  // citations-only key is read as a fallback so returning students keep theirs.
+  const nameField = document.getElementById('submit-field-student');
+  if (nameField) {
+    nameField.value = submitRecallStudent();
+    nameField.addEventListener('change', () => submitRememberStudent(nameField.value.trim()));
+  }
+
+  plotterInitSubmitView();
+  citeInitSubmitView();
+
+  const tabs = [...document.querySelectorAll('.submit-tab')];
+  tabs.forEach((tab, i) => {
+    tab.addEventListener('click', () => submitShowTab(tab.dataset.submitTab, true));
+    tab.addEventListener('keydown', e => {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      e.preventDefault();
+      const next = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+      submitShowTab(next.dataset.submitTab, true);
+      next.focus();
+    });
+  });
+  submitShowTab(which === 'citation' ? 'citations' : which, false);
+}
+
+function submitShowTab(which, updateUrl) {
+  if (!SUBMIT_TABS.includes(which)) which = 'plotter';
+  document.querySelectorAll('.submit-tab').forEach(tab => {
+    const on = tab.dataset.submitTab === which;
+    tab.setAttribute('aria-selected', String(on));
+    tab.tabIndex = on ? 0 : -1;
+    document.getElementById(tab.getAttribute('aria-controls'))?.classList.toggle('hidden', !on);
+  });
+  // Keep the URL in step so a reload lands back on the same tab.
+  if (updateUrl) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('submit', which);
+    history.replaceState(null, '', url);
+  }
+}
+
+function submitRememberStudent(name) {
+  try { localStorage.setItem('submit_student', name); } catch {}
+}
+function submitRecallStudent() {
+  try { return localStorage.getItem('submit_student') || localStorage.getItem('citations_student') || ''; } catch { return ''; }
 }
 
 // ── localStorage helpers for per-student submission tracking ──
@@ -2238,11 +2291,8 @@ function submitMarkDone(studentName, word) {
   if (!done.includes(word)) { done.push(word); localStorage.setItem(`plotter_done_${studentName}`, JSON.stringify(done)); }
 }
 
+// Binds the plotter tab of the student page; bindSubmitRouter shows the page.
 function plotterInitSubmitView() {
-  // Show only the submit overlay
-  document.querySelectorAll('#home-screen, #panel-app, #plotter-app, #counsel-app, #research-app').forEach(el => el.classList.add('hidden'));
-  document.getElementById('plotter-submit-view').classList.remove('hidden');
-
   // Slider live readout
   ['x','y','z'].forEach(axis => {
     const slider = document.getElementById(`submit-field-${axis}`);
@@ -2300,13 +2350,19 @@ function plotterInitSubmitView() {
     const z       = parseFloat(document.getElementById('submit-field-z').value);
 
     errEl.classList.add('hidden'); errEl.textContent = '';
-    if (!student) { errEl.textContent = 'Please enter your name.'; errEl.classList.remove('hidden'); return; }
+    if (!student) {
+      errEl.textContent = 'Please enter your name.';
+      errEl.classList.remove('hidden');
+      document.getElementById('submit-field-student')?.focus();
+      return;
+    }
     if (!word)    { errEl.textContent = 'Please select a word.';   errEl.classList.remove('hidden'); return; }
 
     btn.disabled = true; btn.textContent = 'Submitting…';
     try {
       await _fbDB.ref(PLOTTER_LIVE_PATH).push({ name: student, word, x, y, z, ts: Date.now() });
       submitMarkDone(student, word);
+      submitRememberStudent(student);
       // Inline confirmation — keep the form visible
       const confirmEl = document.getElementById('plotter-submit-confirm-text');
       const successEl = document.getElementById('plotter-submit-success');
@@ -2950,17 +3006,10 @@ function citeSubmitTally(n) {
   if (el) el.textContent = n ? `You've submitted ${n} citation${n !== 1 ? 's' : ''}.` : '';
 }
 
-// The name survives a submission — a student sending a second citation should
-// not have to type it again — so it is kept out of the per-round field reset
-// and restored on the next visit.
+// The name field is shared with every tab of the student page and sits outside
+// this form, so it survives a submission and is restored on the next visit.
 function citeSubmitStudent() {
-  return citeClean(document.getElementById('cite-field-student')?.value, CITE_STUDENT_KEY);
-}
-function citeRememberStudent(name) {
-  try { localStorage.setItem('citations_student', name); } catch {}
-}
-function citeRecallStudent() {
-  try { return localStorage.getItem('citations_student') || ''; } catch { return ''; }
+  return citeClean(document.getElementById('submit-field-student')?.value, CITE_STUDENT_KEY);
 }
 
 function citeSubmitFields() {
@@ -2992,20 +3041,13 @@ function citeSubmitUpdatePreview() {
   el.appendChild(restEl);
 }
 
+// Binds the citations tab of the student page; bindSubmitRouter shows the page.
 function citeInitSubmitView() {
-  // Show only the submit overlay
-  document.querySelectorAll('#home-screen, #panel-app, #plotter-app, #counsel-app, #research-app, #token-app, #citation-app')
-    .forEach(el => el.classList.add('hidden'));
-  document.getElementById('cite-submit-view').classList.remove('hidden');
-
   CITE_PARTS.forEach(part => {
     document.getElementById(`cite-field-${part.key}`)?.addEventListener('input', citeSubmitUpdatePreview);
   });
   citeSubmitUpdatePreview();
   citeSubmitTally(citeSubmitCount());
-
-  const studentField = document.getElementById('cite-field-student');
-  if (studentField) studentField.value = citeRecallStudent();
 
   document.getElementById('cite-submit-form').addEventListener('submit', async e => {
     e.preventDefault();
@@ -3018,7 +3060,7 @@ function citeInitSubmitView() {
     if (!student) {
       errEl.textContent = 'Please enter your name.';
       errEl.classList.remove('hidden');
-      document.getElementById('cite-field-student')?.focus();
+      document.getElementById('submit-field-student')?.focus();
       return;
     }
     const missing = CITE_PARTS.filter(p => !rec[p.key]);
@@ -3032,7 +3074,7 @@ function citeInitSubmitView() {
     btn.disabled = true; btn.textContent = 'Submitting…';
     try {
       await _fbDB.ref(CITE_LIVE_PATH).push({ ...rec, [CITE_STUDENT_KEY]: student, ts: Date.now() });
-      citeRememberStudent(student);
+      submitRememberStudent(student);
       const { name, rest } = citeFormat(rec);
       const confirmEl = document.getElementById('cite-submit-confirm-text');
       const successEl = document.getElementById('cite-submit-success');

@@ -20,7 +20,7 @@ Keep instructions concrete and ordered — assume the tester will follow them to
 
 ## Architecture Notes
 - All apps share a single `index.html` / `app.js` / `styles.css`
-- Student submit view is triggered by `?submit` in the URL; it hides all instructor UI and shows only the submit form. `bindSubmitRouter()` dispatches on the parameter's value (`?submit=plotter`, `?submit=citations`); a bare `?submit` routes to the plotter for links handed out before the parameter took a value
+- Student submit view is triggered by `?submit` in the URL; it hides all instructor UI and shows one tabbed page (`#submit-view`) holding every student form, so a single QR code covers every exercise. The parameter's value only picks the opening tab (`?submit=plotter`, `?submit=citations`; a bare `?submit` opens on the plotter), and switching tabs rewrites it with `replaceState` so a reload stays put. The name field sits above the tabs and is shared by every form (remembered in `localStorage` as `submit_student`). A new exercise's form needs a tab button, a `role="tabpanel"` wrapper, and an entry in `SUBMIT_TABS`
 - Exercise configs live in Firebase at `/configs/{exerciseName}` (e.g. `/configs/plotter`)
 - Submission data lives at `/plotter`, `/citations`, `/configs`, etc. — see Firebase rules before adding new paths
 - Plotter and citations both split into `live` and `archive` under their one permitted path — `/plotter/live/{pushId}` + `/plotter/archive/{sessionId}/{records,axes,archivedAt}`, `/citations/live/{pushId}` + `/citations/archive/{sessionId}/{records,prompt,archivedAt}`. Clearing archives the round instead of deleting it, and the CSV export reads live and archive together. No extra Firebase rule is needed, since rules cascade to children

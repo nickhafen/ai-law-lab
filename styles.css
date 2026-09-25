@@ -1834,6 +1834,57 @@ input[type="number"] { width: 72px; text-align: center; }
   color: var(--muted);
 }
 
+/* ── Student submit view (tabbed, every exercise on one page) ── */
+#submit-view {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  background: var(--bg);
+}
+/* Top-aligned, not centered: the forms differ in height, and centering would
+   make the name field and tabs jump every time a student switches tabs. */
+.submit-shell { width: 100%; max-width: 440px; margin: 8px auto 0; }
+.submit-name { margin-bottom: 16px; }
+
+.submit-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 18px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.submit-tab {
+  padding: 10px 8px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  font: 600 0.95rem var(--font);
+  cursor: pointer;
+}
+.submit-tab[aria-selected="true"] {
+  background: var(--accent);
+  color: var(--btn-primary-text, #fff);
+}
+.submit-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.submit-intro {
+  font-size: 0.9rem;
+  color: var(--muted);
+  line-height: 1.5;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
 /* ── Student submit form ── */
 .cite-sub-label {
   display: block;
