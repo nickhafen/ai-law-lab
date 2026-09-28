@@ -342,12 +342,20 @@ input[type="number"] { width: 72px; text-align: center; }
   transition: background 0.15s, opacity 0.15s;
   text-decoration: none;
 }
+/* Button roles — pick by what the button does, not how prominent it should feel:
+   .btn-primary   the one action that moves the screen forward (Start, Submit, Generate,
+                  Save & Push). At most one per screen, or per self-contained card (a
+                  settings section, the presentation timer).
+   .btn-secondary supporting form actions (Create Groups, Assign, Quick Fill, Add, Clear, Reset).
+   .btn-ghost     tool and view controls on presentation screens (Export, Copy link, Reset
+                  view, sample-data toggles, Show issues) — quiet so they don't pull focus.
+   .btn-danger    permanent deletion only. */
 .btn-primary { background: var(--accent); color: var(--btn-primary-text, #fff); }
 .btn-primary:hover { background: var(--accent-hover); }
 .btn-secondary { background: var(--btn-secondary-bg); color: var(--text); }
 .btn-secondary:hover { filter: brightness(0.92); }
-.btn-outline { background: transparent; border: 1.5px solid var(--accent); color: var(--link); }
-.btn-outline:hover { background: color-mix(in srgb, var(--link) 7%, transparent); }
+.btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+.btn-ghost:hover { color: var(--text); border-color: var(--muted); }
 .btn-danger { background: var(--danger); color: #fff; }
 .btn-danger:hover { background: #b91c1c; }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
@@ -776,41 +784,7 @@ input[type="number"] { width: 72px; text-align: center; }
   margin-bottom: 32px;
 }
 
-.btn-load {
-  padding: 14px 22px;
-  background: var(--card);
-  color: var(--text);
-  font-family: var(--font);
-  font-size: 0.78rem;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.15s;
-}
-.btn-load:hover { background: var(--bg); }
 
-.btn-draw {
-  flex: 1;
-  padding: 14px;
-  background: var(--accent);
-  color: var(--btn-primary-text, #fff);
-  font-family: var(--font);
-  font-size: 0.82rem;
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.15s, transform 0.1s;
-}
-.btn-draw:hover { background: var(--accent-hover); }
-.btn-draw:active { transform: translateY(1px); }
-.btn-draw:disabled { opacity: 0.5; cursor: not-allowed; }
 
 #counsel-result {
   width: 100%;
@@ -867,19 +841,15 @@ input[type="number"] { width: 72px; text-align: center; }
   width: 100%;
   margin-top: 22px;
   padding: 11px;
-  background: transparent;
-  color: var(--muted);
   font-family: var(--font);
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  border: 1px solid var(--border);
   border-radius: 3px;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: border-color 0.15s, color 0.15s;
 }
-.btn-reveal:hover { background: var(--btn-secondary-bg); color: var(--text); }
 
 .risks-panel { display: none; margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--border); animation: rise 0.3s ease both; }
 .risks-panel.visible { display: block; }
@@ -893,23 +863,6 @@ input[type="number"] { width: 72px; text-align: center; }
 .risks-md em { color: var(--text); }
 .risks-md p:last-child, .risks-md li:last-child { margin-bottom: 0; }
 
-.btn-reset {
-  display: block;
-  width: 100%;
-  padding: 13px;
-  background: transparent;
-  color: var(--muted);
-  font-family: var(--font);
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-}
-.btn-reset:hover { background: var(--card); color: var(--text); }
 
 @keyframes rise {
   from { opacity: 0; transform: translateY(6px); }
@@ -2158,13 +2111,6 @@ input[type="number"] { width: 72px; text-align: center; }
 .iof-size-btn + .iof-size-btn { border-left: 1px solid var(--border); }
 .iof-size-btn:hover { background: var(--btn-secondary-bg); }
 .iof-size-btn[aria-pressed="true"] { background: var(--btn-secondary-bg); color: var(--text); }
-
-.iof-tool-btn {
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--muted);
-}
-.iof-tool-btn:hover { color: var(--text); border-color: var(--muted); }
 
 #iof-main {
   flex: 1;

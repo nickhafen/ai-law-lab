@@ -556,8 +556,8 @@
     </div>
     <p class="names-hint">Groups smaller than this will be distributed among other groups.</p>
     <div class="btn-row">
-      <button class="btn btn-primary" id="randomize-btn">Create Groups</button>
-      <button class="btn btn-outline" id="assign-prompts-btn">Assign Prompts</button>
+      <button class="btn btn-secondary" id="randomize-btn">Create Groups</button>
+      <button class="btn btn-secondary" id="assign-prompts-btn">Assign Prompts</button>
     </div>
     <div class="inline-warning" id="warn-no-groups">Groups haven't been created yet. Create groups first.</div>
     <div class="inline-warning" id="warn-no-prompts">Prompts haven't been assigned yet. Assign prompts before starting.</div>
@@ -582,7 +582,7 @@
         </div>
         <div style="display:flex;gap:10px;margin-top:8px;">
           <button class="btn btn-secondary btn-sm" id="qf-btn">⚡ Quick Fill</button>
-          <button class="btn btn-primary btn-sm" id="qf-start-btn" title="Quick Fill then start the panel (W)">⚡ Quick Fill + Start</button>
+          <button class="btn btn-secondary btn-sm" id="qf-start-btn" title="Quick Fill then start the panel (W)">⚡ Quick Fill + Start</button>
         </div>
       </div>
       
@@ -726,7 +726,7 @@
         <p style="font-size:0.85rem;color:var(--muted);margin:0 0 12px;line-height:1.55;">Data source URL is configured in <button onclick="openSettings()" style="background:none;border:none;padding:0;cursor:pointer;color:var(--muted);text-decoration:underline;text-underline-offset:2px;font-size:inherit;">Settings ⚙</button></p>
         <div id="csv-status" style="font-size:0.85rem;margin-bottom:12px;min-height:18px;"></div>
         <div class="btn-row">
-          <button class="btn btn-primary" id="counsel-assign-btn">Assign Scenarios</button>
+          <button class="btn btn-secondary" id="counsel-assign-btn">Assign Scenarios</button>
         </div>
         <div class="inline-warning" id="counsel-warn-no-names">Enter at least one name in the Roster before assigning.</div>
         <div class="inline-warning" id="counsel-warn-no-scenarios">Scenarios haven't been assigned yet. Assign scenarios before starting.</div>
@@ -767,7 +767,7 @@
         <div class="scenario-label">Scenario</div>
         <div class="scenario-title" id="out-title"></div>
         <div class="scenario-text" id="out-scenario"></div>
-        <button class="btn-reveal" id="btn-reveal" onclick="counselToggleRisks()">▸ Show Priority Legal Issues</button>
+        <button class="btn-ghost btn-reveal" id="btn-reveal" onclick="counselToggleRisks()">▸ Show Priority Legal Issues</button>
         <div class="risks-panel" id="risks-panel">
           <div class="risks-label">Priority Legal Issues</div>
           <div class="risks-md" id="risks-list"></div>
@@ -858,10 +858,10 @@
           <span id="plotter-live-label" style="font-size:0.82rem;color:var(--muted);">Connecting…</span>
         </div>
         <div style="display:flex;gap:6px;">
-          <button id="plotter-btn-export" class="btn btn-sm" title="Download every submission ever collected, including archived classes"
-            style="flex:1;justify-content:center;background:transparent;border:1px solid var(--border);color:var(--muted);">⤓ Export</button>
-          <button id="plotter-btn-clear" class="btn btn-sm" title="Archive the current submissions and clear the plot"
-            style="flex:1;justify-content:center;background:transparent;border:1px solid var(--border);color:var(--muted);">✕ Clear</button>
+          <button id="plotter-btn-export" class="btn btn-sm btn-ghost" title="Download every submission ever collected, including archived classes"
+            style="flex:1;justify-content:center;">⤓ Export</button>
+          <button id="plotter-btn-clear" class="btn btn-sm btn-ghost" title="Archive the current submissions and clear the plot"
+            style="flex:1;justify-content:center;">✕ Clear</button>
         </div>
         <p class="plotter-hint"><code>Clear</code> archives the current data. <code>Export</code> exports all current and archived data.</p>
       </section>
@@ -869,8 +869,8 @@
       <!-- Sample data (works without student submissions) -->
       <section class="plotter-section">
         <div class="advanced-subtitle">Sample Data</div>
-        <button id="plotter-btn-demo" class="btn btn-sm" aria-pressed="false"
-          style="width:100%;background:transparent;border:1px solid var(--border);color:var(--muted);">▦ Show sample data</button>
+        <button id="plotter-btn-demo" class="btn btn-sm btn-ghost" aria-pressed="false"
+          style="width:100%;">▦ Show sample data</button>
         <p class="plotter-hint">A simulated class of ~100 plots on Female / Alive / Royal. Live submissions stay in Firebase — they're just hidden while this is on.</p>
       </section>
 
@@ -882,8 +882,8 @@
         <div style="display:flex;align-items:center;gap:5px;margin-top:8px;">
           <input type="text" id="plotter-student-link" readonly
             style="flex:1;min-width:0;font-size:0.72rem;padding:5px 7px;border-radius:5px;border:1px solid var(--border);background:var(--bg);color:var(--muted);font-family:monospace;">
-          <button id="plotter-btn-copy-link" class="btn btn-sm" title="Copy link"
-            style="flex-shrink:0;padding:5px 9px;background:transparent;border:1px solid var(--border);color:var(--muted);">⎘</button>
+          <button id="plotter-btn-copy-link" class="btn btn-sm btn-ghost" title="Copy link"
+            style="flex-shrink:0;padding:5px 9px;">⎘</button>
         </div>
         <p class="plotter-hint">Opens every student form on one page, starting on this exercise's tab — one scan at the start of class covers both.</p>
       </section>
@@ -914,7 +914,7 @@
           <label style="min-width:14px;">Z</label>
           <span id="plotter-label-z" style="font-size:0.88rem;color:var(--text);">Royal</span>
         </div>
-        <button id="plotter-btn-reset-view" class="btn btn-sm" style="width:100%;margin-top:4px;background:transparent;border:1px solid var(--border);color:var(--muted);">⤢ Reset view</button>
+        <button id="plotter-btn-reset-view" class="btn btn-sm btn-ghost" style="width:100%;margin-top:4px;">⤢ Reset view</button>
       </section>
 
       <section class="plotter-section">
@@ -1230,10 +1230,10 @@
           <span id="cite-live-label" style="font-size:0.82rem;color:var(--muted);">Connecting…</span>
         </div>
         <div style="display:flex;gap:6px;">
-          <button id="cite-btn-export" class="btn btn-sm" title="Download every citation ever collected, including archived classes"
-            style="flex:1;justify-content:center;background:transparent;border:1px solid var(--border);color:var(--muted);">⤓ Export</button>
-          <button id="cite-btn-clear" class="btn btn-sm" title="Archive the current citations and clear the board"
-            style="flex:1;justify-content:center;background:transparent;border:1px solid var(--border);color:var(--muted);">✕ Clear</button>
+          <button id="cite-btn-export" class="btn btn-sm btn-ghost" title="Download every citation ever collected, including archived classes"
+            style="flex:1;justify-content:center;">⤓ Export</button>
+          <button id="cite-btn-clear" class="btn btn-sm btn-ghost" title="Archive the current citations and clear the board"
+            style="flex:1;justify-content:center;">✕ Clear</button>
         </div>
         <p class="plotter-hint"><code>Clear</code> archives the current data. <code>Export</code> exports all current and archived data.</p>
       </section>
@@ -1241,8 +1241,8 @@
       <!-- Sample data (works without student submissions) -->
       <section class="plotter-section">
         <div class="advanced-subtitle">Sample Data</div>
-        <button id="cite-btn-demo" class="btn btn-sm" aria-pressed="false"
-          style="width:100%;background:transparent;border:1px solid var(--border);color:var(--muted);">▦ Show sample data</button>
+        <button id="cite-btn-demo" class="btn btn-sm btn-ghost" aria-pressed="false"
+          style="width:100%;">▦ Show sample data</button>
         
       </section>
 
@@ -1254,8 +1254,8 @@
         <div style="display:flex;align-items:center;gap:5px;margin-top:8px;">
           <input type="text" id="cite-student-link" readonly
             style="flex:1;min-width:0;font-size:0.72rem;padding:5px 7px;border-radius:5px;border:1px solid var(--border);background:var(--bg);color:var(--muted);font-family:monospace;">
-          <button id="cite-btn-copy-link" class="btn btn-sm" title="Copy link"
-            style="flex-shrink:0;padding:5px 9px;background:transparent;border:1px solid var(--border);color:var(--muted);">⎘</button>
+          <button id="cite-btn-copy-link" class="btn btn-sm btn-ghost" title="Copy link"
+            style="flex-shrink:0;padding:5px 9px;">⎘</button>
         </div>
         <p class="plotter-hint">Opens every student form on one page, starting on this exercise's tab — one scan at the start of class covers both.</p>
       </section>
@@ -1323,8 +1323,8 @@
         <button class="iof-size-btn" data-iof-size="m" title="Medium text">A</button>
         <button class="iof-size-btn" data-iof-size="l" title="Larger text">A</button>
       </div>
-      <button class="btn btn-sm iof-tool-btn" id="iof-btn-example" title="Load a sample complaint-drafting board">▦ Example</button>
-      <button class="btn btn-sm iof-tool-btn" id="iof-btn-clear" title="Remove every card">✕ Clear</button>
+      <button class="btn btn-sm btn-ghost iof-tool-btn" id="iof-btn-example" title="Load a sample complaint-drafting board">▦ Example</button>
+      <button class="btn btn-sm btn-ghost iof-tool-btn" id="iof-btn-clear" title="Remove every card">✕ Clear</button>
       <button class="header-btn help-btn" title="Keyboard shortcuts (?)">?</button>
       <button class="header-btn settings-trigger" title="Appearance settings (S)">⚙</button>
     </div>
