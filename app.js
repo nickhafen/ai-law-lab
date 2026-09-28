@@ -1053,7 +1053,7 @@ const BUILTIN_SCHEMES = [
   {
     name: 'Parchment',
     vars: {
-      '--bg': '#f0ece4', '--header': '#1c1814', '--header-text': '#ffffff',
+      '--bg': '#f0ece4', '--header': '#8b1a1a', '--header-text': '#ffffff',
       '--accent': '#8b1a1a', '--accent-hover': '#6e1414',
       '--card': '#ffffff', '--card-shadow': '0 2px 8px rgba(0,0,0,0.10)',
       '--text': '#1c1814', '--muted': '#6b6259', '--border': '#d8d0c4',
@@ -1174,6 +1174,9 @@ function applyIndividualColor(varName, value) {
     document.documentElement.style.setProperty('--accent-hover', value);
     const lum = hexLuminance(value);
     document.documentElement.style.setProperty('--btn-primary-text', lum > 0.35 ? '#1e2533' : '#ffffff');
+  }
+  if (varName === '--header') {
+    document.documentElement.style.setProperty('--header-text', hexLuminance(value) > 0.35 ? '#1e2533' : '#ffffff');
   }
   if (plotterInitialized) plotterReRender();
 }

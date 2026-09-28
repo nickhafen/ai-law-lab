@@ -8,7 +8,7 @@ html { scroll-padding-top: 80px; }
   --font: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --serif: 'DM Serif Display', Georgia, serif;
   --bg: #f0ece4;
-  --header: #1c1814;
+  --header: #8b1a1a;
   --header-text: #ffffff;
   --accent: #8b1a1a;
   --accent-hover: #6e1414;
@@ -263,9 +263,16 @@ body {
   color: var(--accent);
 }
 
-/* ── SHARED HEADER BAR ── */
+/* ── SHARED HEADER BAR ──
+   Painted in the theme's header color. The text/muted/border tokens are
+   re-pointed at --header-text inside the bar so every control in it
+   (title, icon buttons, nav label, IOF tools) stays legible on it. */
 .mod-header-bar {
-  background: var(--card);
+  --text: var(--header-text);
+  --muted: color-mix(in srgb, var(--header-text) 68%, transparent);
+  --border: color-mix(in srgb, var(--header-text) 28%, transparent);
+  --btn-secondary-bg: color-mix(in srgb, var(--header-text) 14%, transparent);
+  background: var(--header);
   color: var(--text);
   border-bottom: 2px solid var(--accent);
   padding: 11px 24px;
