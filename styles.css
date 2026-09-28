@@ -67,10 +67,12 @@ body {
 }
 #global-disclaimer strong { color: rgba(255, 255, 255, 0.95); font-weight: 600; }
 #global-disclaimer .disclaimer-sep { opacity: 0.4; }
+#global-disclaimer .disclaimer-link { color: rgba(255, 255, 255, 0.95); text-underline-offset: 2px; }
 @media (max-width: 640px) {
   :root { --disclaimer-h: 44px; }
   #global-disclaimer { font-size: 0.66rem; }
-  #global-disclaimer .disclaimer-sep { display: none; }
+  #global-disclaimer .disclaimer-sep,
+  #global-disclaimer .disclaimer-link { display: none; } /* a third line would overflow the 44px footer */
   #global-disclaimer { flex-wrap: wrap; gap: 0 6px; }
 }
 

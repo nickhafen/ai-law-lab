@@ -128,7 +128,7 @@ The current workflow — student fills Google Form → sheet updates → instruc
 
 ## Customization
 
-- Built-in color themes: Parchment, Classic Blue, Forest, Midnight
+- Built-in color themes: Parchment, Classic Blue, Forest, Midnight, Synthwave, Honolulu Blue
 - Custom themes can be created and saved; saved themes can be deleted from the settings panel
 - Open Settings with `S` from any screen
 

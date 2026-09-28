@@ -1099,6 +1099,16 @@ const BUILTIN_SCHEMES = [
       '--text': '#e6dff2', '--muted': '#998eb4', '--border': '#312658',
       '--btn-secondary-bg': '#2a2048', '--gold': '#ff3864'
     }
+  },
+  {
+    name: 'Honolulu Blue',
+    vars: {
+      '--bg': '#eef2f5', '--header': '#0076b6', '--header-text': '#ffffff',
+      '--accent': '#0076b6', '--accent-hover': '#005a8c',
+      '--card': '#ffffff', '--card-shadow': '0 2px 8px rgba(0,0,0,0.10)',
+      '--text': '#0f1a24', '--muted': '#5b6670', '--border': '#cfd6db',
+      '--btn-secondary-bg': '#dde3e7', '--gold': '#005a8c'
+    }
   }
 ];
 
