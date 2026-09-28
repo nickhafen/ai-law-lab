@@ -1053,8 +1053,8 @@ const BUILTIN_SCHEMES = [
   {
     name: 'Parchment',
     vars: {
-      '--bg': '#f0ece4', '--header': '#8b1a1a', '--header-text': '#ffffff',
-      '--accent': '#8b1a1a', '--accent-hover': '#6e1414',
+      '--bg': '#f0ece4', '--header': '#5a1212', '--header-text': '#ffffff',
+      '--accent': '#b0342c', '--accent-hover': '#8b1a1a',
       '--card': '#ffffff', '--card-shadow': '0 2px 8px rgba(0,0,0,0.10)',
       '--text': '#1c1814', '--muted': '#6b6259', '--border': '#d8d0c4',
       '--btn-secondary-bg': '#e8e2d8', '--gold': '#a07030'
@@ -1104,10 +1104,10 @@ const BUILTIN_SCHEMES = [
     name: 'Honolulu Blue',
     vars: {
       '--bg': '#eef2f5', '--header': '#0076b6', '--header-text': '#ffffff',
-      '--accent': '#0076b6', '--accent-hover': '#005a8c',
+      '--accent': '#b0b7bc', '--accent-hover': '#9aa2a8', '--link': '#004c7a',
       '--card': '#ffffff', '--card-shadow': '0 2px 8px rgba(0,0,0,0.10)',
       '--text': '#0f1a24', '--muted': '#5b6670', '--border': '#cfd6db',
-      '--btn-secondary-bg': '#dde3e7', '--gold': '#005a8c'
+      '--btn-secondary-bg': '#dde3e7', '--gold': '#0076b6'
     }
   }
 ];
@@ -1139,6 +1139,8 @@ function renderSchemeDropdown(selectedIdx) {
 
 function applyScheme(scheme) {
   const root = document.documentElement;
+  // Most schemes leave --link to follow --accent; drop one a previous scheme set
+  if (!scheme.vars['--link']) root.style.removeProperty('--link');
   Object.entries(scheme.vars).forEach(([k, v]) => root.style.setProperty(k, v));
   if (scheme.vars['--accent']) {
     const lum = hexLuminance(scheme.vars['--accent']);
@@ -1172,6 +1174,7 @@ function applyIndividualColor(varName, value) {
   document.documentElement.style.setProperty(varName, value);
   if (varName === '--accent') {
     document.documentElement.style.setProperty('--accent-hover', value);
+    document.documentElement.style.removeProperty('--link');   // links follow a hand-picked accent
     const lum = hexLuminance(value);
     document.documentElement.style.setProperty('--btn-primary-text', lum > 0.35 ? '#1e2533' : '#ffffff');
   }
@@ -1337,7 +1340,7 @@ function bindAdvancedEvents() {
     const root = document.documentElement;
     const cs = getComputedStyle(root);
     const getVar = v => root.style.getPropertyValue(v) || cs.getPropertyValue(v).trim();
-    const allVarNames = ['--bg','--header','--header-text','--accent','--accent-hover',
+    const allVarNames = ['--bg','--header','--header-text','--accent','--accent-hover','--link',
                          '--card','--card-shadow','--text','--muted','--border','--btn-secondary-bg','--gold'];
     const vars = {};
     allVarNames.forEach(v => { vars[v] = getVar(v); });
@@ -2144,7 +2147,7 @@ function plotterSetDemoMode(on) {
   if (btn) {
     btn.textContent = on ? '◉ Show live submissions' : '▦ Show sample data';
     btn.setAttribute('aria-pressed', String(on));
-    btn.style.color       = on ? 'var(--accent)' : 'var(--muted)';
+    btn.style.color       = on ? 'var(--link)' : 'var(--muted)';
     btn.style.borderColor = on ? 'var(--accent)' : 'var(--border)';
   }
   document.getElementById('plotter-demo-badge')?.classList.toggle('hidden', !on);
@@ -2937,7 +2940,7 @@ function citeSetDemoMode(on) {
   if (btn) {
     btn.textContent = on ? '◉ Show live submissions' : '▦ Show sample data';
     btn.setAttribute('aria-pressed', String(on));
-    btn.style.color       = on ? 'var(--accent)' : 'var(--muted)';
+    btn.style.color       = on ? 'var(--link)' : 'var(--muted)';
     btn.style.borderColor = on ? 'var(--accent)' : 'var(--border)';
   }
   document.getElementById('cite-demo-badge')?.classList.toggle('hidden', !on);

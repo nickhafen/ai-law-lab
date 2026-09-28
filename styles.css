@@ -8,10 +8,11 @@ html { scroll-padding-top: 80px; }
   --font: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --serif: 'DM Serif Display', Georgia, serif;
   --bg: #f0ece4;
-  --header: #8b1a1a;
+  --header: #5a1212;
   --header-text: #ffffff;
-  --accent: #8b1a1a;
-  --accent-hover: #6e1414;
+  --accent: #b0342c;
+  --accent-hover: #8b1a1a;
+  --link: var(--accent);   /* accent used as text; a scheme overrides it when its accent is too light to read on cards */
   --card: #ffffff;
   --card-shadow: 0 2px 8px rgba(0,0,0,0.10);
   --text: #1c1814;
@@ -234,7 +235,7 @@ body {
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--link);
 }
 
 /* Card with a secondary link beside the primary "Open" action */
@@ -260,7 +261,7 @@ body {
 }
 
 .exercise-card-source:hover {
-  color: var(--accent);
+  color: var(--link);
 }
 
 /* ── SHARED HEADER BAR ──
@@ -345,8 +346,8 @@ input[type="number"] { width: 72px; text-align: center; }
 .btn-primary:hover { background: var(--accent-hover); }
 .btn-secondary { background: var(--btn-secondary-bg); color: var(--text); }
 .btn-secondary:hover { filter: brightness(0.92); }
-.btn-outline { background: transparent; border: 1.5px solid var(--accent); color: var(--accent); }
-.btn-outline:hover { background: rgba(139,26,26,0.07); }
+.btn-outline { background: transparent; border: 1.5px solid var(--accent); color: var(--link); }
+.btn-outline:hover { background: color-mix(in srgb, var(--link) 7%, transparent); }
 .btn-danger { background: var(--danger); color: #fff; }
 .btn-danger:hover { background: #b91c1c; }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
@@ -409,7 +410,7 @@ input[type="number"] { width: 72px; text-align: center; }
 }
 .token-help-note strong { color: var(--text); }
 .token-help-note a {
-  color: var(--accent);
+  color: var(--link);
   font-weight: 600;
   text-underline-offset: 2px;
 }
@@ -418,7 +419,7 @@ input[type="number"] { width: 72px; text-align: center; }
   border: 1px solid var(--border);
   border-radius: 4px;
   background: var(--bg);
-  color: var(--accent);
+  color: var(--link);
   font-weight: 700;
 }
 .help-credit { font-size: 0.78rem; color: var(--muted); text-align: center; margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--border); }
@@ -431,7 +432,7 @@ input[type="number"] { width: 72px; text-align: center; }
   cursor: pointer; transition: color 0.15s; white-space: nowrap; font-family: inherit;
 }
 .settings-tab:hover { color: var(--text); }
-.settings-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.settings-tab.active { color: var(--link); border-bottom-color: var(--accent); }
 .settings-tab-panel { display: none; }
 .settings-tab-panel.active { display: block; }
 
@@ -737,7 +738,7 @@ input[type="number"] { width: 72px; text-align: center; }
   padding: 1px 5px;
   border-radius: 3px;
   font-size: 0.7rem;
-  color: var(--accent);
+  color: var(--link);
 }
 
 #counsel-app input[type="text"] {
@@ -765,7 +766,7 @@ input[type="number"] { width: 72px; text-align: center; }
 
 #csv-status { font-size: 0.75rem; margin-top: 8px; min-height: 18px; color: var(--muted); }
 #csv-status.ok { color: var(--green); }
-#csv-status.err { color: var(--accent); }
+#csv-status.err { color: var(--link); }
 
 .c-btn-row {
   display: flex;
@@ -796,7 +797,7 @@ input[type="number"] { width: 72px; text-align: center; }
   flex: 1;
   padding: 14px;
   background: var(--accent);
-  color: #fff;
+  color: var(--btn-primary-text, #fff);
   font-family: var(--font);
   font-size: 0.82rem;
   font-weight: 600;
@@ -1055,7 +1056,7 @@ input[type="number"] { width: 72px; text-align: center; }
   border-radius: 999px;
   border: 1px solid var(--accent);
   background-color: var(--card);
-  color: var(--accent);
+  color: var(--link);
   font-size: .72rem;
   font-weight: 700;
   letter-spacing: .04em;
@@ -1176,7 +1177,7 @@ input[type="number"] { width: 72px; text-align: center; }
 .token-info-toggle::after { content: none; }
 .token-info-toggle[aria-expanded="true"] {
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(--link);
 }
 .token-info-note {
   margin: 8px 0 0;
@@ -1189,7 +1190,7 @@ input[type="number"] { width: 72px; text-align: center; }
   line-height: 1.5;
 }
 
-.token-alt-row.chosen .token-alt-label { font-weight: 700; color: var(--accent); }
+.token-alt-row.chosen .token-alt-label { font-weight: 700; color: var(--link); }
 
 .token-param-warning {
   margin: 14px 0 0;
@@ -1423,7 +1424,7 @@ input[type="number"] { width: 72px; text-align: center; }
 }
 .token-cached-response-title {
   margin-bottom: 8px;
-  color: var(--accent);
+  color: var(--link);
   font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -1797,7 +1798,7 @@ input[type="number"] { width: 72px; text-align: center; }
   flex-shrink: 0;
   font-size: 0.75rem;
   font-weight: 700;
-  color: var(--accent);
+  color: var(--link);
   font-variant-numeric: tabular-nums;
 }
 
@@ -2124,7 +2125,7 @@ input[type="number"] { width: 72px; text-align: center; }
    theme tokens so saved color schemes restyle it along with everything else. */
 #iof-app {
   --iof-in:  var(--gold);
-  --iof-fn:  var(--accent);
+  --iof-fn:  var(--link);   /* used as text, so it follows the link color */
   --iof-out: var(--text);   /* the one theme color that stays legible on every scheme, light or dark */
   --iof-scale: 1;
   display: flex;
