@@ -13,9 +13,10 @@ Ideas for expanding the AI & Law Lab, and how far along each one is. This file i
 | [Token Explorer: ⎵ for spaces](#token-explorer--for-spaces) | Token Explorer | 💡 Idea | Small tweak |
 | [AI terms of service explorer](#ai-terms-of-service-explorer) | Contracts / ethics | 💡 Idea | |
 | [AI lawsuit explorer](#ai-lawsuit-explorer) | Litigation | 💡 Idea | |
-| [OTC Client Simulator: try-it card](#otc-client-simulator-try-it-card) | Client counseling | 📝 Spec'd | Skill and plugin shipped; the card needs a Worker route |
+| [OTC Client Simulator: try-it card](#otc-client-simulator-try-it-card) | Client counseling | 📝 Spec'd | [Spec v0.1](docs/specs/otc-card.md); skill and plugin shipped |
 | [Transcript capture for the simulator](#transcript-capture-for-the-simulator) | Client counseling | 💡 Idea | Deliberately deferred out of the card |
 | [Skill Explorer](#skill-explorer) | Using AI | 🔍 Exploring | Demo (replay) + active (run your own prompt) modes; next step is an API feasibility test |
+| [Instructor / student roles](#instructor--student-roles) | Site-wide | 📝 Spec'd | [Spec v0.1](docs/specs/role-separation.md) · infrastructure the Skill Explorer and OTC card both need |
 
 When an idea moves, update its row. Specs go in [`docs/specs/`](docs/specs/).
 
@@ -81,6 +82,8 @@ A card on the site that runs the simulator in the browser, so anyone can intervi
 - Caps on messages, message length, conversation length and `max_tokens`, a model whitelist separate from the Token Explorer's, and rate limiting keyed on the caller's IP.
 - The card itself: a persona picker, a model select that names which model replied, a chat log, tiered hint and debrief buttons, and a transcript download.
 
+Spec: [docs/specs/otc-card.md](docs/specs/otc-card.md) (draft v0.1, open decisions in §9)
+
 **Open decision:** which non-OpenAI model to offer next to `openai/gpt-4.1-mini`. `google/gemini-2.5-flash` is the closest match on cost; `mistralai/mistral-medium-3.1` makes the vendor contrast sharper.
 
 **Watch out for:** changing the skill means redeploying the Worker, or the card keeps serving the old prompt. Claude Code installs are versioned copies in `~/.claude/plugins/cache/`, so editing the repo changes nothing until the version is bumped and the marketplace updated.
@@ -110,3 +113,17 @@ Teach what Agent Skills do that a plain prompt can't, without students having to
 - ChatGPT as a second platform later, to show that skills are an open format?
 
 **Next steps:** a `/skills/run` feasibility test (2–3 litigation and transactional runs to see the real event shapes, where the skill sits in the sandbox, how long a run takes, what it costs, and how `pause_turn` behaves), then the event parser, then demo mode, then active mode. Later: a skill picker, and no-skill comparison runs that show how much the answer deadline varies without the skill.
+
+## Instructor / student roles
+
+Give instructors control over what students see, when they see it, and what they can change — enforced by Firebase rules, not just hidden in the interface. Covers every exercise, not only the ones with submit forms: hiding setup screens, keeping panel questions and Product Counsel legal issues out of reach until released, and letting the instructor choose which Token Explorer parameters students get.
+
+- Spec: [docs/specs/role-separation.md](docs/specs/role-separation.md) (draft v0.1, open decisions in §12)
+
+**Shape of it:** sort data by which direction it travels, and give each direction its own path and permissions — a private content bank, published config, live session state, a stable course link, and write-only submissions. Exactly one person signs in; students never do, which is what keeps account administration out of the project.
+
+**Why it ranks above its line in this table:** three items here are waiting on pieces of it. The Skill Explorer wants a class code, per-person limits, and a way for the class to watch a live run. The OTC try-it card wants rate limiting and spend controls. Transcript capture is blocked on "the card is public and anonymous, so whose transcripts are these?" All three are answered by the session and role model rather than by three separate solutions.
+
+**Cheapest useful piece, independent of everything else:** an OpenRouter key with its own credit limit, swapped into the Worker secret. Two minutes, no code, and it bounds the only financial exposure the site has.
+
+**Open decision:** whether the projector is mirrored or extended. Mirroring needs a phone as remote (session path, classroom wifi); extending lets two browser windows share state directly, with less code and no network dependency.
