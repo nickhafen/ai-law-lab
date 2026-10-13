@@ -29,5 +29,8 @@ Keep instructions concrete and ordered — assume the tester will follow them to
 - Generic helpers `saveExerciseConfig(exercise, config)` and `onExerciseConfig(exercise, callback)` should be reused for any new interactive exercise
 - The Input · Function · Output board (`#iof-app`, `iof*` functions) is instructor-only presentation: it saves to `localStorage` (`iofBoard`, `iofTextSize`) and never touches Firebase, so it needs no rule. Cards drag with pointer events, not native HTML5 drag-and-drop, so touchscreens work. Arrows between cards are drawn on an SVG layer under the cards from live DOM positions; a ResizeObserver on each card redraws them, so anything that moves a card without resizing it must call `iofDrawLinks()` / `iofScheduleLinks()`
 
+## Roadmap
+Planned work and its stage (Idea → Exploring → Spec'd → Building → Shipped, or Parked) is tracked in `ROADMAP.md`; detailed specs live in `docs/specs/`. When work on a roadmap item starts or ships, update its row in the table.
+
 ## Firebase Rules
 Any new Firebase path needs a corresponding rule in the Firebase console (Realtime Database → Rules) before it will work. Current allowed paths: `plotter`, `configs`, `citations`.
