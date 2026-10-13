@@ -13,6 +13,9 @@ Ideas for expanding the AI & Law Lab, and how far along each one is. This file i
 | [Token Explorer: ⎵ for spaces](#token-explorer--for-spaces) | Token Explorer | 💡 Idea | Small tweak |
 | [AI terms of service explorer](#ai-terms-of-service-explorer) | Contracts / ethics | 💡 Idea | |
 | [AI lawsuit explorer](#ai-lawsuit-explorer) | Litigation | 💡 Idea | |
+| [OTC Client Simulator: try-it card](#otc-client-simulator-try-it-card) | Client counseling | 📝 Spec'd | Skill and plugin shipped; the card needs a Worker route |
+| [Transcript capture for the simulator](#transcript-capture-for-the-simulator) | Client counseling | 💡 Idea | Deliberately deferred out of the card |
+| [Skill Explorer](#skill-explorer) | Using AI | 🔍 Exploring | Demo (replay) + active (run your own prompt) modes; next step is an API feasibility test |
 
 When an idea moves, update its row. Specs go in [`docs/specs/`](docs/specs/).
 
@@ -66,3 +69,44 @@ AI terms of service examples from the lawyer's and/or the client's perspective.
 ## AI lawsuit explorer
 
 Show the different theories of liability in AI lawsuits, possibly as a data visualizer.
+
+## OTC Client Simulator: try-it card
+
+A card on the site that runs the simulator in the browser, so anyone can interview an OTC employee with no account and no install. It calls the existing Cloudflare Worker, which bundles the skill files at deploy time, so the card and every other install of the simulator run the same prompt. There is never a second copy.
+
+**Shipped already:** the simulator is an Agent Skill inside a Claude Code plugin at [`plugins/otc-client-simulator/`](plugins/otc-client-simulator/), replacing the custom GPT that OpenAI is retiring. It installs in Claude Code, Claude.ai, Codex, and anything else that supports [Agent Skills](https://agentskills.io). Verified end to end against a cold agent: one persona file read per session, all three hint tiers in order, and prompt-extraction and false-authority attempts refused.
+
+**Still to build:**
+- An `/otc/chat` route on the Worker, alongside the Token Explorer's existing route. It strips the frontmatter from `SKILL.md`, adds a web-mode preamble, and appends only the chosen persona plus the questionnaire — about 4,600–4,900 tokens of system prompt per request. The card deliberately does no progressive disclosure: not sending the other three personas is what keeps their open risk areas out of reach.
+- Caps on messages, message length, conversation length and `max_tokens`, a model whitelist separate from the Token Explorer's, and rate limiting keyed on the caller's IP.
+- The card itself: a persona picker, a model select that names which model replied, a chat log, tiered hint and debrief buttons, and a transcript download.
+
+**Open decision:** which non-OpenAI model to offer next to `openai/gpt-4.1-mini`. `google/gemini-2.5-flash` is the closest match on cost; `mistralai/mistral-medium-3.1` makes the vendor contrast sharper.
+
+**Watch out for:** changing the skill means redeploying the Worker, or the card keeps serving the old prompt. Claude Code installs are versioned copies in `~/.claude/plugins/cache/`, so editing the repo changes nothing until the version is bumped and the marketplace updated.
+
+## Transcript capture for the simulator
+
+Keeping student transcripts or debriefs, so an instructor can see how a class did. Left out of the try-it card on purpose — it would mean a new Firebase path and a rule, and it raises a question worth answering first: the card is public and anonymous, so whose transcripts are these and what does the notice above the input need to say? Possibly better as an opt-in "submit your debrief" form on the student submit page than as silent logging.
+
+## Skill Explorer
+
+Teach what Agent Skills do that a plain prompt can't, without students having to install anything. Built around the [engagement-letter skill](https://github.com/nickhafen/nh-ai-skills), which shows five things: auto-triggering, progressive disclosure, bundled scripts, bundled templates, and real tracked changes. Should work for any skill, not just this one.
+
+**Two modes:**
+- *Demo:* replay a recorded run, faster than real time, with play / step / speed controls. A simplified file tree lights up as each file is read, each script runs, or each output is written. A context meter shows tokens growing as files load, starting from just the `description`. The .docx outputs render in the page (docx-preview), including the redline's tracked changes.
+- *Active:* students send their own prompts to skills the instructor provided. Live visuals are nice to have. They come almost free if both modes share one internal event format and parser.
+
+**Leaning toward:**
+- Active runs go through the Claude API (Skills API + code execution) via a new `cf-worker/` route, so the key stays server-side. Each skill is uploaded once, and its ID is stored at `/configs/skills`.
+- Demo traces are recorded from real API runs, then trimmed and annotated with teaching notes.
+- Cost controls, enforced by the Worker and by Anthropic, not the page: a separate Anthropic workspace with a spend limit, an on/off flag in `/configs/skills`, a class code, and per-person or per-day limits.
+
+**Open questions:**
+- Get an Anthropic API key in its own workspace.
+- Record demo traces from the API, or from Claude Code? Claude Code shows the multiple-choice intake; the API can't.
+- Where it lives: an instructor card for demo, and maybe a `#submit-view` tab for active?
+- Should the class be able to watch the presenter's live run? That needs a new Firebase path and rule.
+- ChatGPT as a second platform later, to show that skills are an open format?
+
+**Next steps:** a `/skills/run` feasibility test (2–3 litigation and transactional runs to see the real event shapes, where the skill sits in the sandbox, how long a run takes, what it costs, and how `pause_turn` behaves), then the event parser, then demo mode, then active mode. Later: a skill picker, and no-skill comparison runs that show how much the answer deadline varies without the skill.
