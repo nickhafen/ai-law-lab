@@ -74,7 +74,7 @@ Constants at the top next to the existing ones, each with a one-line reason in t
 | `max_tokens` | 1,200 | The debrief is the longest reply and must not truncate |
 | `logprobs` | not sent | Only the Token Explorer needs them |
 
-A separate `OTC_MODEL_WHITELIST`, not shared with the Token Explorer's. Starts with `openai/gpt-4.1-mini` plus one non-OpenAI model of similar cost (§10).
+A separate `OTC_MODEL_WHITELIST`, not shared with the Token Explorer's. Was going to start with `openai/gpt-4.1-mini` plus one non-OpenAI model of similar cost (§9), but OpenRouter retires GPT-4.1 on January 14, 2027, so the starting model needs choosing again. If a retiring model is listed, give it a sunset date the way the Token Explorer's `MODELS` table does.
 
 ### 4.5 Rate limiting
 
@@ -128,6 +128,6 @@ Run the Worker with `npx wrangler dev`, point `OTC_PROXY_URL` at it temporarily,
 
 ## 9. Open decisions
 
-1. **The non-OpenAI model.** `google/gemini-2.5-flash` ($0.30/$2.50 per M) is closest to `openai/gpt-4.1-mini` ($0.40/$1.60) on cost. `mistralai/mistral-medium-3.1` ($0.40/$2.00) makes the vendor contrast sharper. Needs a decision before the whitelist is written.
+1. **The starting models.** `openai/gpt-4.1-mini` retires January 14, 2027 (see §4.4), so both slots are open. For the non-OpenAI one, `google/gemini-2.5-flash` ($0.30/$2.50 per M) is closest to `openai/gpt-4.1-mini` ($0.40/$1.60) on cost. `mistralai/mistral-medium-3.1` ($0.40/$2.00) makes the vendor contrast sharper. Needs a decision before the whitelist is written.
 2. **Whether to keep the Agent Plugins manifests** at `plugins/otc-client-simulator/plugin.json` and `.agents/plugins/marketplace.json`. They're confirmed against OpenAI's docs and let Codex install the plugin, but individual ChatGPT users can't install from GitHub, so the ChatGPT story is partial.
 3. **Whether the card gets its own URL parameter**, like the student submit views, so it can be handed out as a direct link or a QR code.

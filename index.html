@@ -134,8 +134,13 @@
           <label style="margin-bottom:6px;">Default model</label>
           <select id="settings-token-model" style="width:100%;">
             <optgroup label="Paid">
-              <option value="openai/gpt-4.1-mini" selected>GPT-4.1 mini</option>
-              <option value="openai/gpt-4.1">GPT-4.1</option>
+              <option value="openai/gpt-oss-120b" selected>GPT-OSS 120B</option>
+              <option value="deepseek/deepseek-v4-flash">DeepSeek V4 Flash</option>
+            </optgroup>
+            <!-- data-sunset: the card removes the option from that UTC day on (tokenPruneRetiredModels). -->
+            <optgroup label="Retiring Jan 14, 2027">
+              <option value="openai/gpt-4.1-mini" data-sunset="2027-01-14">GPT-4.1 mini</option>
+              <option value="openai/gpt-4.1" data-sunset="2027-01-14">GPT-4.1</option>
             </optgroup>
             <optgroup label="Free">
               <option value="google/gemma-4-26b-a4b-it:free">Gemma 4 26B</option>
@@ -325,7 +330,7 @@
 
       <div class="token-help-note">
         <strong>Results.</strong>
-        Generated text and token probabilities come from the selected live model and can vary between requests. Responses are capped at 60 generated tokens and prompts at 8,000 characters. Cached Examples are real captures from the live model — genuine text and genuine probabilities — recorded once and committed to the repository so class time never depends on the network. Regenerate them with <code>scripts/capture-cached-examples.mjs</code>.
+        Generated text and token probabilities come from the selected live model and can vary between requests. Answers are capped at 60 tokens and prompts at 8,000 characters. Models that think before answering (GPT-OSS 120B) get extra room for thinking on top of that cap, and their thinking is shown above the answer in its own box. Thinking comes back as plain text without token probabilities, so it can be read but not explored token by token. Cached Examples are real captures from the live model — genuine text and genuine probabilities — recorded once and committed to the repository so class time never depends on the network. Regenerate them with <code>scripts/capture-cached-examples.mjs</code>.
       </div>
 
       <div class="token-help-note token-whitespace-help"><strong>Whitespace display.</strong> In alternative-token labels, <code>␠</code> represents a space, <code>⇥</code> a tab, <code>↵</code> a line break, and <code>∅</code> an empty token. These symbols make otherwise invisible model tokens inspectable.</div>
@@ -959,8 +964,13 @@
         <div class="advanced-subtitle">Model</div>
         <select id="token-model" style="width:100%;padding:7px 9px;border-radius:5px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.88rem;">
           <optgroup label="Paid">
-            <option value="openai/gpt-4.1-mini" selected>GPT-4.1 mini</option>
-            <option value="openai/gpt-4.1">GPT-4.1</option>
+            <option value="openai/gpt-oss-120b" selected>GPT-OSS 120B</option>
+            <option value="deepseek/deepseek-v4-flash">DeepSeek V4 Flash</option>
+          </optgroup>
+          <!-- data-sunset: the card removes the option from that UTC day on (tokenPruneRetiredModels). -->
+          <optgroup label="Retiring Jan 14, 2027">
+            <option value="openai/gpt-4.1-mini" data-sunset="2027-01-14">GPT-4.1 mini</option>
+            <option value="openai/gpt-4.1" data-sunset="2027-01-14">GPT-4.1</option>
           </optgroup>
           <optgroup label="Free">
             <option value="google/gemma-4-26b-a4b-it:free">Gemma 4 26B</option>
@@ -990,7 +1000,7 @@
 
       <section class="plotter-section">
         <div class="advanced-subtitle">Response length</div>
-        <p class="plotter-hint">Up to 60 generated tokens.</p>
+        <p class="plotter-hint">Up to 60 answer tokens. A model that thinks first gets extra room for thinking, so it doesn't eat into the answer.</p>
       </section>
 
       <section class="plotter-section">
@@ -1019,7 +1029,7 @@
             </label>
             <input type="number" id="token-top-k" value="0" min="0" max="100" step="1" style="width:100%;">
             <p class="plotter-hint">0 = off. Not every provider supports Top-K.</p>
-            <p class="token-info-note hidden" id="token-top-k-info">At each step the model ranks every possible next token. Top-K throws away everything below the top K before sampling. Set it to 1 and the model always takes the most likely token; set it to 0 and nothing is discarded. <strong>OpenAI models have no Top-K parameter and silently ignore it</strong> — the card detects this and warns you under the response. The Alternatives list is separate: it always shows the most <em>likely</em> tokens, which are not necessarily the ones Top-K left eligible.</p>
+            <p class="token-info-note hidden" id="token-top-k-info">At each step the model ranks every possible next token. Top-K throws away everything below the top K before sampling. Set it to 1 and the model always takes the most likely token; set it to 0 and nothing is discarded. <strong>OpenAI's own API models (GPT-4.1) have no Top-K parameter and silently ignore it</strong> — the card detects this and warns you under the response. The Alternatives list is separate: it always shows the most <em>likely</em> tokens, which are not necessarily the ones Top-K left eligible.</p>
           </div>
 
           <div class="token-advanced-field">
@@ -1030,7 +1040,7 @@
             </label>
             <input type="number" id="token-top-p" placeholder="off" min="0.01" max="1" step="0.05" style="width:100%;">
             <p class="plotter-hint">Blank = off. 1 keeps everything.</p>
-            <p class="token-info-note hidden" id="token-top-p-info">Also called nucleus sampling. Where Top-K keeps a fixed <em>number</em> of candidates, Top-P keeps the smallest group of top-ranked tokens whose probabilities add up to P. At 0.9 the model keeps whatever covers 90% of the probability — which might be two tokens where it is confident and fifty where it is not. That is the key difference: Top-P adapts to the model's certainty at each step, Top-K does not. Unlike Top-K, <strong>OpenAI models do support Top-P</strong>. Changing both it and Temperature at once makes results hard to attribute, so vary one at a time.</p>
+            <p class="token-info-note hidden" id="token-top-p-info">Also called nucleus sampling. Where Top-K keeps a fixed <em>number</em> of candidates, Top-P keeps the smallest group of top-ranked tokens whose probabilities add up to P. At 0.9 the model keeps whatever covers 90% of the probability — which might be two tokens where it is confident and fifty where it is not. That is the key difference: Top-P adapts to the model's certainty at each step, Top-K does not. Unlike Top-K, <strong>every model here supports Top-P</strong>. Changing both it and Temperature at once makes results hard to attribute, so vary one at a time.</p>
           </div>
 
         </div>
@@ -1096,6 +1106,7 @@
                   <label class="token-render-toggle"><input type="checkbox" id="token-render-toggle"> <span>Render Markdown</span></label>
                 </div>
                 <p class="plotter-hint" style="margin-bottom:10px;">Hover to explore. Click a token to lock its alternatives; click it again to unlock.</p>
+                <div id="token-thinking-slot"></div>
                 <div id="token-output"><span class="plotter-hint">Nothing generated yet — type a prompt and hit Generate.</span></div>
                 <div id="token-output-rendered" class="token-rendered hidden"></div>
                 <div id="token-usage" class="token-usage hidden" aria-live="polite"></div>

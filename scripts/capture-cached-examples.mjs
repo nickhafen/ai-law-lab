@@ -22,8 +22,10 @@ const WORKER_URL = 'https://ai-law-lab-token-explorer.nickhafen.workers.dev';
 // so the card can be developed against the live proxy, and that is what we use here.
 const ORIGIN = 'http://localhost:8123';
 
-const MODEL = 'openai/gpt-4.1';
-const MODEL_LABEL = 'GPT-4.1';
+// The committed captures were recorded with GPT-4.1, which OpenRouter retires on
+// 2027-01-14. A re-run uses the card's current default. Its thinking is not captured.
+const MODEL = 'openai/gpt-oss-120b';
+const MODEL_LABEL = 'GPT-OSS 120B';
 const MAX_TOKENS = 150;
 const TOP_LOGPROBS = 5;
 const TEMPERATURES = [0, 1, 2];

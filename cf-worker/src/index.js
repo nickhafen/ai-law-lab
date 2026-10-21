@@ -2,17 +2,96 @@ const ALLOWED_ORIGINS = [
   'https://nickhafen.github.io',
 ];
 
-const MODEL_WHITELIST = [
-  'google/gemma-4-26b-a4b-it:free',
-  // meta-llama/llama-3.3-70b-instruct was removed: OpenRouter load-balances it across
-  // providers whose logprobs support is broken in different ways. Cloudflare returns
-  // none; Novita, AkashML and Parasail return partial arrays (55-57 entries for 60
-  // tokens) with tokens missing from the middle. Across 11 runs it never once returned
-  // a complete array, so the card cannot display its output faithfully. Any open-weight
-  // model added here must be screened for complete logprobs first.
-  'openai/gpt-4.1-mini',
-  'openai/gpt-4.1',
-];
+// Allowed models and how each one is called.
+//   providers  OpenRouter providers to use, in order, with no fallback to others.
+//              Open-weight models are served by many providers and most of them
+//              return no logprobs or a partial array, so each listed provider was
+//              screened (Oct 2026, 10 requests each: complete logprobs, temperature
+//              honored). Re-screen before adding one.
+//   reasoning  Sent as OpenRouter's `reasoning` field.
+//   thinkingAllowance  Extra max_tokens for thinking. Providers count thinking
+//              against max_tokens, so without this a model that thinks first gets
+//              fewer than MAX_TOKENS_CAP answer tokens. The answer is trimmed back
+//              to the cap afterwards (see trimAnswer).
+//   sunset     First UTC day the model is refused. The card hides it from the same
+//              day (data-sunset on its <option>), so nothing has to be removed by hand.
+//
+// meta-llama/llama-3.3-70b-instruct was removed: across 11 runs it never once
+// returned a complete logprobs array. mistralai/mistral-small-3.2-24b-instruct was
+// screened and rejected: only one provider (Parasail) returns logprobs, and it
+// rate-limited 4 of 10 requests.
+const MODELS = {
+  'openai/gpt-oss-120b': {
+    providers: ['CoreWeave', 'DigitalOcean', 'DekaLLM', 'AkashML'],
+    // Its thinking cannot be switched off. At low effort it is usually under 25
+    // tokens. Every unused allowance token becomes answer text that is generated,
+    // billed and then trimmed, so keep this modest.
+    reasoning: { effort: 'low' },
+    thinkingAllowance: 100,
+  },
+  'deepseek/deepseek-v4-flash': {
+    providers: ['StreamLake', 'DigitalOcean', 'Parasail', 'Cloudflare'],
+    // With thinking on it spends 100-200+ tokens thinking, hits rate limits, and
+    // StreamLake returned an incomplete logprobs array. Off, it passed 40 of 40.
+    reasoning: { enabled: false },
+  },
+  'google/gemma-4-26b-a4b-it:free': {},
+  // OpenRouter retires GPT-4o and GPT-4.1 on January 14, 2027.
+  'openai/gpt-4.1-mini': { sunset: '2027-01-14' },
+  'openai/gpt-4.1': { sunset: '2027-01-14' },
+};
+
+function modelConfig(model) {
+  if (typeof model !== 'string' || !Object.hasOwn(MODELS, model)) return null;
+  return MODELS[model];
+}
+
+function isRetired(config, now = new Date()) {
+  return !!config?.sunset && now >= new Date(config.sunset + 'T00:00:00Z');
+}
+
+function modelError(model, headers) {
+  const config = modelConfig(model);
+  const retired = isRetired(config);
+  return new Response(JSON.stringify({
+    error: retired ? 'This model was retired on ' + config.sunset + '. Choose another model.' : 'Model not allowed',
+  }), {
+    status: retired ? 410 : 400,
+    headers: { ...headers, 'Content-Type': 'application/json' },
+  });
+}
+
+function isUsableModel(model) {
+  const config = modelConfig(model);
+  return !!config && !isRetired(config);
+}
+
+// The extra room given for thinking can let the answer run past the cap. Trim it
+// back so every model shows the same number of answer tokens. Only the kept part
+// has to be complete: if its tokens spell out the start of the message exactly, no
+// token is missing from what the card shows. Otherwise the response passes through
+// untouched so the card's own completeness check rejects it.
+function trimAnswer(parsed, cap) {
+  const choice = parsed?.choices?.[0];
+  const content = choice?.logprobs?.content;
+  const message = choice?.message?.content;
+  if (!Array.isArray(content) || content.length <= cap || typeof message !== 'string') return;
+  const kept = content.slice(0, cap);
+  const keptText = kept.map(entry => entry.token).join('');
+  if (!message.trimStart().startsWith(keptText.trimStart())) return;
+  choice.logprobs.content = kept;
+  choice.message.content = keptText;
+  parsed._answerTrimmed = { generated: usageAnswerTokens(parsed) ?? content.length, shown: cap };
+}
+
+// Answer tokens actually generated: completion minus thinking. The logprobs array
+// can be short on some providers, so usage is the better count when present.
+function usageAnswerTokens(parsed) {
+  const completion = Number(parsed?.usage?.completion_tokens);
+  if (!Number.isFinite(completion)) return null;
+  const thinking = Number(parsed?.usage?.completion_tokens_details?.reasoning_tokens) || 0;
+  return completion - thinking;
+}
 
 const MAX_TOKENS_CAP = 60;
 // Absolute ceiling for an explicit max_tokens. The card never sends one, so normal
@@ -90,12 +169,7 @@ export default {
 
     if (request.method === 'GET') {
       const model = new URL(request.url).searchParams.get('model');
-      if (!MODEL_WHITELIST.includes(model)) {
-        return new Response(JSON.stringify({ error: 'Model not allowed' }), {
-          status: 400,
-          headers: { ...headers, 'Content-Type': 'application/json' },
-        });
-      }
+      if (!isUsableModel(model)) return modelError(model, headers);
 
       try {
         const modelPath = model.split('/').map(encodeURIComponent).join('/');
@@ -145,12 +219,8 @@ export default {
 
     const { model, messages, system, temperature, top_logprobs, seed, top_k, top_p, max_tokens } = body || {};
 
-    if (!MODEL_WHITELIST.includes(model)) {
-      return new Response(JSON.stringify({ error: 'Model not allowed' }), {
-        status: 400,
-        headers: { ...headers, 'Content-Type': 'application/json' },
-      });
-    }
+    if (!isUsableModel(model)) return modelError(model, headers);
+    const config = modelConfig(model);
     if (!Array.isArray(messages) || messages.length === 0) {
       return new Response(JSON.stringify({ error: 'messages is required' }), {
         status: 400,
@@ -182,20 +252,24 @@ export default {
       ? [{ role: 'system', content: systemText }, ...messages]
       : messages;
 
+    const answerCap = clampInteger(max_tokens, 1, MAX_TOKENS_CEILING) ?? MAX_TOKENS_CAP;
     const upstreamPayload = {
       model,
       messages: outboundMessages,
       temperature: clampNumber(temperature, 0, 2, 0.7),
-      max_tokens: clampInteger(max_tokens, 1, MAX_TOKENS_CEILING) ?? MAX_TOKENS_CAP,
+      max_tokens: answerCap + (config.thinkingAllowance || 0),
       logprobs: true,
       top_logprobs: clampNumber(top_logprobs, 1, TOP_LOGPROBS_CAP, 5),
       // NOTE: `provider: { require_parameters: true }` was tried here to avoid
       // providers with broken logprobs support. It made things worse — OpenAI models
       // 404'd with "No endpoints found that can handle the requested parameters",
       // while the open-weight providers it did allow still returned partial arrays.
-      // The client-side check that the logprob tokens reproduce message.content is
-      // the reliable defence; keep it there rather than trying to solve it by routing.
+      // Naming screened providers per model (MODELS above) is what works. The
+      // client-side check that the logprob tokens reproduce message.content stays as
+      // the backstop.
     };
+    if (config.providers) upstreamPayload.provider = { order: config.providers, allow_fallbacks: false };
+    if (config.reasoning) upstreamPayload.reasoning = config.reasoning;
 
     const safeSeed = clampInteger(seed, 0, 2147483647);
     if (safeSeed !== null) upstreamPayload.seed = safeSeed;
@@ -231,6 +305,7 @@ export default {
         try {
           const parsed = JSON.parse(rawBody);
           if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            if (config.thinkingAllowance) trimAnswer(parsed, answerCap);
             parsed._request = upstreamPayload;
             responseBody = JSON.stringify(parsed);
           }

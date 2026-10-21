@@ -3250,7 +3250,37 @@ let tokenInitialized = false;
 // Default to a paid model: the :free variants share an upstream provider pool across
 // all OpenRouter users and are frequently saturated (HTTP 429), which is fatal for a
 // live classroom demo. Gemma stays selectable for the no-system-turn comparison.
-let tokenConfig = { model: 'openai/gpt-4.1-mini', temperature: 0.7, altCount: 5, systemPrompt: '' };
+const TOKEN_DEFAULT_MODEL = 'openai/gpt-oss-120b';
+let tokenConfig = { model: TOKEN_DEFAULT_MODEL, temperature: 0.7, altCount: 5, systemPrompt: '' };
+
+// A model <option> with data-sunset="YYYY-MM-DD" disappears from that UTC day on,
+// the same day the Worker starts refusing it, so retiring models need no cleanup.
+function tokenIsRetiredOption(option, now = new Date()) {
+  const sunset = option?.dataset?.sunset;
+  return !!sunset && now >= new Date(sunset + 'T00:00:00Z');
+}
+
+function tokenPruneRetiredModels() {
+  ['token-model', 'settings-token-model'].forEach(id => {
+    const select = document.getElementById(id);
+    if (!select) return;
+    select.querySelectorAll('option').forEach(option => {
+      if (tokenIsRetiredOption(option)) option.remove();
+    });
+    select.querySelectorAll('optgroup').forEach(group => {
+      if (!group.querySelector('option')) group.remove();
+    });
+  });
+  if (!tokenModelAvailable(tokenConfig.model)) tokenConfig.model = TOKEN_DEFAULT_MODEL;
+  ['token-model', 'settings-token-model'].forEach(id => {
+    const select = document.getElementById(id);
+    if (select && !select.value) select.value = tokenConfig.model;
+  });
+}
+
+function tokenModelAvailable(modelId) {
+  return Array.from(document.querySelectorAll('#token-model option')).some(option => option.value === modelId);
+}
 // The last system prompt the instructor pushed, plus whether this student has
 // typed over it. Together they decide if a new push may overwrite the field.
 let tokenSystemPushed = '';
@@ -3509,7 +3539,12 @@ async function tokenRenderCachedExamples() {
   });
 }
 function tokenApplyConfig(cfg) {
-  tokenConfig = { ...tokenConfig, ...cfg };
+  const next = { ...cfg };
+  // A saved default can outlive its model (a retired one, say). Keep the built-in
+  // default rather than point the dropdown at an option that no longer exists.
+  if (next.model && !tokenModelAvailable(next.model)) delete next.model;
+  tokenConfig = { ...tokenConfig, ...next };
+  if (!tokenModelAvailable(tokenConfig.model)) tokenConfig.model = TOKEN_DEFAULT_MODEL;
 
   const modelEl = document.getElementById('token-model');
   const tempEl  = document.getElementById('token-temperature');
@@ -3621,12 +3656,55 @@ async function tokenGetModelPricing(modelId) {
 function tokenUsageValues(usage) {
   const inputTokens = usage?.prompt_tokens ?? usage?.input_tokens;
   const outputTokens = usage?.completion_tokens ?? usage?.output_tokens;
+  const thinkingTokens = usage?.completion_tokens_details?.reasoning_tokens;
   const totalCost = usage?.cost === null || usage?.cost === undefined ? null : Number(usage.cost);
   return {
     inputTokens: Number.isFinite(Number(inputTokens)) ? Number(inputTokens) : null,
     outputTokens: Number.isFinite(Number(outputTokens)) ? Number(outputTokens) : null,
+    thinkingTokens: Number(thinkingTokens) > 0 ? Number(thinkingTokens) : null,
     totalCost: Number.isFinite(totalCost) ? totalCost : null,
   };
+}
+
+// Thinking arrives as plain text (message.reasoning, or reasoning_details on some
+// providers) with no token probabilities, so it is shown as a separate box rather
+// than as explorable token pills.
+function tokenThinkingText(data) {
+  const message = data?.choices?.[0]?.message;
+  if (typeof message?.reasoning === 'string' && message.reasoning.trim()) return message.reasoning.trim();
+  const details = Array.isArray(message?.reasoning_details) ? message.reasoning_details : [];
+  return details.map(item => (typeof item?.text === 'string' ? item.text : '')).join('').trim();
+}
+
+function tokenBuildThinking(data) {
+  const text = tokenThinkingText(data);
+  if (!text) return null;
+  const tokens = tokenUsageValues(data?.usage).thinkingTokens;
+
+  const box = document.createElement('div');
+  box.className = 'token-thinking';
+
+  const label = document.createElement('div');
+  label.className = 'token-thinking-label';
+  label.textContent = 'Thinking' + (tokens ? ' · ' + tokens.toLocaleString() + ' token' + (tokens === 1 ? '' : 's') : '');
+
+  const body = document.createElement('div');
+  body.className = 'token-thinking-text';
+  body.textContent = text;
+
+  const note = document.createElement('p');
+  note.className = 'token-thinking-note';
+  note.textContent = 'Written before the answer. Providers return thinking without token probabilities, so it can be read but not explored.';
+
+  box.append(label, body, note);
+  return box;
+}
+
+function tokenShowThinking(data) {
+  const slot = document.getElementById('token-thinking-slot');
+  if (!slot) return;
+  const box = data ? tokenBuildThinking(data) : null;
+  if (box) slot.replaceChildren(box); else slot.replaceChildren();
 }
 
 function tokenEstimateCostSplit(values, pricing) {
@@ -3653,17 +3731,25 @@ function tokenEstimateCostSplit(values, pricing) {
   return { inputCost, outputCost };
 }
 
-function tokenWriteUsage(container, usage, modelId, costs) {
+function tokenWriteUsage(container, usage, modelId, costs, trimmed) {
   const values = tokenUsageValues(usage);
   const hasUsage = values.inputTokens !== null || values.outputTokens !== null || values.totalCost !== null;
   container.replaceChildren();
   container.classList.toggle('hidden', !hasUsage);
   if (!hasUsage) return;
 
+  const thinkingNote = values.thinkingTokens !== null ? ' (' + values.thinkingTokens.toLocaleString() + ' thinking)' : '';
+  // The Worker gives thinking models extra room, so the answer can run past the cap
+  // and is trimmed back. The tokens were still generated and billed.
+  const trimmedNote = trimmed?.generated > trimmed?.shown
+    ? 'Answer: first ' + trimmed.shown + ' of ' + trimmed.generated + ' tokens shown'
+    : null;
+
   const entries = [
     tokenModelDisplayName(modelId),
     values.inputTokens !== null ? 'Input: ' + values.inputTokens.toLocaleString() + ' tokens' : null,
-    values.outputTokens !== null ? 'Output: ' + values.outputTokens.toLocaleString() + ' tokens' : null,
+    values.outputTokens !== null ? 'Output: ' + values.outputTokens.toLocaleString() + ' tokens' + thinkingNote : null,
+    trimmedNote,
     costs === undefined ? 'Input cost: calculating…' : 'Input cost (est.): ' + (tokenFormatCost(costs.inputCost) || 'unavailable'),
     costs === undefined ? 'Output cost: calculating…' : 'Output cost (est.): ' + (tokenFormatCost(costs.outputCost) || 'unavailable'),
     values.totalCost !== null ? 'Total cost: ' + tokenFormatCost(values.totalCost) : 'Total cost: unavailable',
@@ -3677,18 +3763,18 @@ function tokenWriteUsage(container, usage, modelId, costs) {
   });
 }
 
-async function tokenRenderUsageInto(container, usage, modelId) {
+async function tokenRenderUsageInto(container, usage, modelId, trimmed) {
   if (!container) return;
   const values = tokenUsageValues(usage);
-  tokenWriteUsage(container, usage, modelId);
+  tokenWriteUsage(container, usage, modelId, undefined, trimmed);
 
   const pricing = await tokenGetModelPricing(modelId);
   if (!container.isConnected) return;
-  tokenWriteUsage(container, usage, modelId, tokenEstimateCostSplit(values, pricing));
+  tokenWriteUsage(container, usage, modelId, tokenEstimateCostSplit(values, pricing), trimmed);
 }
 
-function tokenRenderUsage(usage, modelId) {
-  return tokenRenderUsageInto(document.getElementById('token-usage'), usage, modelId);
+function tokenRenderUsage(usage, modelId, trimmed) {
+  return tokenRenderUsageInto(document.getElementById('token-usage'), usage, modelId, trimmed);
 }
 
 const TOKEN_SYSTEM_CHAR_CAP = 2000;
@@ -3789,7 +3875,7 @@ function tokenBuildTopKWarning(requestedTopK) {
   warning.className = 'token-param-warning';
   warning.textContent = 'Top-K = ' + requestedTopK + ' was sent but ignored by this model. '
     + 'It generated a token ranked below ' + requestedTopK + ', which a provider honoring Top-K cannot do. '
-    + 'OpenAI models have no Top-K parameter — use Temperature instead, or select a model that supports it.';
+    + 'OpenAI\'s own API models (GPT-4.1) have no Top-K parameter, and some providers drop it — use Temperature instead, or select a model that supports it.';
   return warning;
 }
 
@@ -4010,12 +4096,13 @@ function tokenRenderComparisonSuccess(card, data, temperature, requestedModel, c
 
   tokenBindCachedInteraction(output, alternativesTitle, alternativesList, content);
   alternatives.append(alternativesTitle, alternativesList);
-  card.append(title, output, usage, instructions, alternatives);
+  const thinking = tokenBuildThinking(data);
+  card.append(title, ...(thinking ? [thinking] : []), output, usage, instructions, alternatives);
   if (clientPayload && tokenTopKWasIgnored(clientPayload.top_k, content)) {
     card.appendChild(tokenBuildTopKWarning(clientPayload.top_k));
   }
   if (clientPayload) card.appendChild(tokenBuildRequestViewer(clientPayload, data?._request));
-  tokenRenderUsageInto(usage, data?.usage, resolvedModel);
+  tokenRenderUsageInto(usage, data?.usage, resolvedModel, data?._answerTrimmed);
 }
 
 async function tokenGenerateComparison({ prompt, system, model, altCount, seed, topK, topP }) {
@@ -4089,6 +4176,7 @@ async function tokenGenerate() {
 
     tokenShowSingleResults();
     tokenSetStatus('Generating…');
+    tokenShowThinking(null);
     const body = tokenBuildRequestBody({ prompt, system, model, temperature, altCount, seed, topK, topP });
     tokenShowRequest(body, null);
 
@@ -4100,8 +4188,9 @@ async function tokenGenerate() {
     });
 
     tokenResults = data.choices[0].logprobs.content;
+    tokenShowThinking(data);
     tokenRenderOutput();
-    tokenRenderUsage(data?.usage, data?.model || model);
+    tokenRenderUsage(data?.usage, data?.model || model, data?._answerTrimmed);
     tokenShowRequest(body, data?._request);
     if (tokenTopKWasIgnored(body.top_k, tokenResults)) {
       document.getElementById('token-request-slot')?.prepend(tokenBuildTopKWarning(body.top_k));
@@ -4219,6 +4308,8 @@ function bindTokenEvents() {
   // Subscribe at load, not on first open of the card: the Settings panel shows
   // the pushed defaults, so an instructor who never opens the card must not see
   // (and re-push) blank fields over what is already live.
+  // Prune first, so a saved default naming a retired model falls back.
+  tokenPruneRetiredModels();
   if (!tokenInitialized) {
     tokenInitialized = true;
     onExerciseConfig('tokenExplorer', tokenApplyConfig);
