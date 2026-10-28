@@ -1,6 +1,6 @@
 # OTC Client Simulator — Agent Skill and Claude Code Plugin
 
-The OTC Client Simulator is a roleplay exercise for law students. It's packaged as an [Agent Skill](https://agentskills.io) (`SKILL.md`, an open standard), so it runs in Claude, Codex, Gemini CLI, GitHub Copilot, and other tools that support Agent Skills. The same files also power the try-it card on the [AI Law Lab site](https://nickhafen.github.io/ai-law-lab/). There's only one copy of the prompt, and every option below runs it.
+The OTC Client Simulator is a roleplay exercise for law students. It's packaged as an [Agent Skill](https://agentskills.io) (`SKILL.md`, an open standard), so it runs in Claude, Codex, Gemini CLI, GitHub Copilot, and other tools that support Agent Skills. There's only one copy of the prompt, and every option below runs it.
 
 It started as the [OTC Client Simulator v2](https://chatgpt.com/g/g-69c5820d64e4819186c723f9fc7b9e33-otc-client-simulator-v2) custom GPT. That GPT still runs the v2 files, and it'll stop working when OpenAI retires custom GPTs.
 
@@ -22,10 +22,6 @@ Each persona file includes the "open risk areas" the student is meant to uncover
 ## Install / use
 
 Once it's running, pick a persona and start the interview. Ask for a hint if you're stuck, and type `debrief` to end the session and see what you missed.
-
-### On the site
-
-Open the **OTC Client Simulator** card on the [AI Law Lab site](https://nickhafen.github.io/ai-law-lab/). You don't need an account or an install. Your messages go to a third-party model through OpenRouter, so don't enter personal information.
 
 ### Claude Code
 
@@ -71,7 +67,7 @@ The files are versioned as a set. Each version is a git tag, and the tag's link 
 | Version | Date | Changes |
 | --- | --- | --- |
 | [v2](https://github.com/nickhafen/ai-law-lab/tree/otc-sim-v2/gpts/otc-client-simulator) | September 18, 2026 | First version published here, matching the "OTC Client Simulator v2" GPT |
-| [v3](https://github.com/nickhafen/ai-law-lab/tree/otc-sim-v3/plugins/otc-client-simulator) | September 18, 2026 | Repackaged as an Agent Skill and Claude Code plugin; portability edits only (file references, host-environment section); powers the site's try-it card |
+| [v3](https://github.com/nickhafen/ai-law-lab/tree/otc-sim-v3/plugins/otc-client-simulator) | September 18, 2026 | Repackaged as an Agent Skill and Claude Code plugin; portability edits only (file references, host-environment section) |
 
 ### Releasing a new version
 
@@ -81,7 +77,7 @@ When the skill's instructions or reference files change:
 2. **Bump `version`** to the new version, for example `4.0.0`. Change it in both [`.claude-plugin/plugin.json`](.claude-plugin/plugin.json) and [`plugin.json`](plugin.json). Claude Code and Codex install an update only when the version changes.
 3. **Add a row to the Versions table** with the new version, the date, and what changed. Link the version to `https://github.com/nickhafen/ai-law-lab/tree/otc-sim-vN/plugins/otc-client-simulator`, replacing `N` with the new version number.
 4. **Commit and push** the changes to `main`.
-5. **Redeploy the Cloudflare Worker.** The site's try-it card bundles these skill files into the Worker at deploy time. Until you run `npx wrangler deploy` from `cf-worker/`, the card keeps running the old version.
+5. **Redeploy the Cloudflare Worker** (once the site's try-it card exists). The card will bundle these skill files into the Worker at deploy time. Until you run `npx wrangler deploy` from `cf-worker/`, the card keeps running the old version.
 6. **Create and push the tag** for the new version, for example:
 
    ```bash
