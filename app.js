@@ -1049,7 +1049,18 @@ function bindKeyboardShortcuts() {
 // ════════════════════════════════════════════════
 //  PANEL EXERCISE — COLOR SCHEMES
 // ════════════════════════════════════════════════
+// The first scheme is the default; its colors must match :root in styles.css.
 const BUILTIN_SCHEMES = [
+  {
+    name: 'Honolulu Blue',
+    vars: {
+      '--bg': '#eef2f5', '--header': '#0076b6', '--header-text': '#ffffff',
+      '--accent': '#b0b7bc', '--accent-hover': '#9aa2a8', '--link': '#004c7a',
+      '--card': '#ffffff', '--card-shadow': '0 2px 8px rgba(0,0,0,0.10)',
+      '--text': '#0f1a24', '--muted': '#5b6670', '--border': '#cfd6db',
+      '--btn-secondary-bg': '#dde3e7', '--gold': '#0076b6'
+    }
+  },
   {
     name: 'Parchment',
     vars: {
@@ -1100,14 +1111,16 @@ const BUILTIN_SCHEMES = [
       '--btn-secondary-bg': '#2a2048', '--gold': '#ff3864'
     }
   },
+  // Blueprint: the cyanotype theme from nh-notebook-style. Pale blue on a blueprint
+  // ground, brass labels, no card shadows.
   {
-    name: 'Honolulu Blue',
+    name: 'Blueprint',
     vars: {
-      '--bg': '#eef2f5', '--header': '#0076b6', '--header-text': '#ffffff',
-      '--accent': '#b0b7bc', '--accent-hover': '#9aa2a8', '--link': '#004c7a',
-      '--card': '#ffffff', '--card-shadow': '0 2px 8px rgba(0,0,0,0.10)',
-      '--text': '#0f1a24', '--muted': '#5b6670', '--border': '#cfd6db',
-      '--btn-secondary-bg': '#dde3e7', '--gold': '#0076b6'
+      '--bg': '#16456f', '--header': '#16456f', '--header-text': '#e9f1f8',
+      '--accent': '#bfe0ff', '--accent-hover': '#8cc0ee',
+      '--card': '#1b5080', '--card-shadow': 'none',
+      '--text': '#e9f1f8', '--muted': '#b5cbe0', '--border': '#3a6a96',
+      '--btn-secondary-bg': '#123a5e', '--gold': '#e3c27f'
     }
   }
 ];
@@ -1139,8 +1152,8 @@ function renderSchemeDropdown(selectedIdx) {
 
 function applyScheme(scheme) {
   const root = document.documentElement;
-  // Most schemes leave --link to follow --accent; drop one a previous scheme set
-  if (!scheme.vars['--link']) root.style.removeProperty('--link');
+  // Most schemes have links follow --accent; set that explicitly, since the default (:root) --link is Honolulu's
+  root.style.setProperty('--link', scheme.vars['--link'] || 'var(--accent)');
   Object.entries(scheme.vars).forEach(([k, v]) => root.style.setProperty(k, v));
   if (scheme.vars['--accent']) {
     const lum = hexLuminance(scheme.vars['--accent']);
@@ -1174,7 +1187,7 @@ function applyIndividualColor(varName, value) {
   document.documentElement.style.setProperty(varName, value);
   if (varName === '--accent') {
     document.documentElement.style.setProperty('--accent-hover', value);
-    document.documentElement.style.removeProperty('--link');   // links follow a hand-picked accent
+    document.documentElement.style.setProperty('--link', 'var(--accent)');   // links follow a hand-picked accent
     const lum = hexLuminance(value);
     document.documentElement.style.setProperty('--btn-primary-text', lum > 0.35 ? '#1e2533' : '#ffffff');
   }

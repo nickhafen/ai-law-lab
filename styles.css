@@ -3,25 +3,25 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-padding-top: 80px; }
 
-/* ── ROOT VARIABLES (unified warm palette) ── */
+/* ── ROOT VARIABLES (default: Honolulu Blue — keep in step with BUILTIN_SCHEMES[0] in app.js) ── */
 :root {
   --font: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --serif: 'DM Serif Display', Georgia, serif;
-  --bg: #f0ece4;
-  --header: #5a1212;
+  --bg: #eef2f5;
+  --header: #0076b6;
   --header-text: #ffffff;
-  --accent: #b0342c;
-  --accent-hover: #8b1a1a;
-  --link: var(--accent);   /* accent used as text; a scheme overrides it when its accent is too light to read on cards */
+  --accent: #b0b7bc;
+  --accent-hover: #9aa2a8;
+  --link: #004c7a;   /* accent used as text; Honolulu's gray accent is too light to read on cards */
   --card: #ffffff;
   --card-shadow: 0 2px 8px rgba(0,0,0,0.10);
-  --text: #1c1814;
-  --muted: #6b6259;
-  --border: #d8d0c4;
-  --btn-secondary-bg: #e8e2d8;
-  --btn-primary-text: #ffffff;
+  --text: #0f1a24;
+  --muted: #5b6670;
+  --border: #cfd6db;
+  --btn-secondary-bg: #dde3e7;
+  --btn-primary-text: #1e2533;   /* dark text on the light gray accent */
   --radius: 8px;
-  --gold: #a07030;
+  --gold: #0076b6;
   --green: #2d6a4f;
   --green-light: #eaf3ee;
   --danger: #dc2626;
